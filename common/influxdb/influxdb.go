@@ -90,6 +90,11 @@ func BuildConfig(uri *url.URL) (*InfluxdbConfig, error) {
 
 	if len(uri.Host) > 0 {
 		config.Host = uri.Host
+		if uri.Scheme == "https" {
+			config.Secure = true
+		} else {
+			config.Secure = false
+		}
 	}
 	opts := uri.Query()
 	if len(opts["user"]) >= 1 {
@@ -111,13 +116,6 @@ func BuildConfig(uri *url.URL) (*InfluxdbConfig, error) {
 			return nil, fmt.Errorf("failed to parse `withfields` flag - %v", err)
 		}
 		config.WithFields = val
-	}
-	if len(opts["secure"]) >= 1 {
-		val, err := strconv.ParseBool(opts["secure"][0])
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse `secure` flag - %v", err)
-		}
-		config.Secure = val
 	}
 
 	if len(opts["insecuressl"]) >= 1 {
