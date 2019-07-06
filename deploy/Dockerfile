@@ -1,4 +1,4 @@
-FROM 1.12.6-alpine3.10 AS build-env
+FROM golang:1.12.6 AS build-env
 ADD . /src/github.com/AliyunContainerService/kube-eventer
 ENV GOPATH /:/src/github.com/AliyunContainerService/kube-eventer/vendor
 WORKDIR /src/github.com/AliyunContainerService/kube-eventer
@@ -7,7 +7,7 @@ RUN make
 
 FROM alpine3.10
 COPY --from=build-env /usr/local/go/lib/time/zoneinfo.zip /usr/local/go/lib/time/zoneinfo.zip
-COPY --from=build-env /src/github.com/AliyunContainerService/kube-eventer/kube-eventer
+COPY --from=build-env /src/github.com/AliyunContainerService/kube-eventer/kube-eventer /
 COPY --from=build-env /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 ENTRYPOINT ["/kube-eventer"]
