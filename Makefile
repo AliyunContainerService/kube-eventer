@@ -24,6 +24,7 @@ sanitize:
 	hack/run_vet.sh
 
 test-unit: clean sanitize build
+
 ifeq ($(ARCH),amd64)
 	GOARCH=$(ARCH) go test --test.short -race ./... $(FLAGS)
 else

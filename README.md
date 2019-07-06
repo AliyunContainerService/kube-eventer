@@ -11,10 +11,43 @@
 
 kube-eventer is an event emitter that sends kubernetes events to sinks(.e.g, dingtalk,sls,kafka and so on). The core design concept of kubernetes is state machine. So there will be `Normal` events when transfer to desired state and `Warning` events occur when to unexpected state. kube-eventer can help to diagnose, analysis and alarm problems.
 
+### Usage 
+1. Install eventer and configure sink 
+```
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kube-eventer
+  namespace: kube-system
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        task: monitoring
+        k8s-app: kube-eventer
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      serviceAccount: admin
+      containers:
+      - name: kube-eventer
+        image: registry.cn-beijing.aliyuncs.com/acs/eventer:v1.6.0-1f6e829-aliyun
+        imagePullPolicy: IfNotPresent
+        command:
+        - /eventer
+        - --source=kubernetes:https://kubernetes.default
+        ## .e.g,dingtalk sink demo
+        - --sink=dingtalk:[your_webhook_url]&label=[your_cluster_id]&level=[Normal or Warning(default)]
+```
+2. View events in dingtalk
+<p align="center">
+<img width=600px src="https://yqfile.alicdn.com/d9b2dce25dd46dedde7df2ed1d39dcf4b2edd061.jpeg"/>
+</p>
 
 ### Sink Configure 
 
-Supported Sink:
+Supported Sinks:
 
 | Sink Name                    | Description                       |
 | ---------------------------- | :-------------------------------- |
