@@ -33,6 +33,7 @@ const (
 	WARNING           int = 2
 	NORMAL            int = 1
 	DEFAULT_MSG_TYPE      = "text"
+	MARKDOWN_MSG_TYPE     = "markdown"
 	CONTENT_TYPE_JSON     = "application/json"
 	LABE_TEMPLATE         = "%s\n"
 )
@@ -77,6 +78,7 @@ type DingTalkSink struct {
 	Token      string
 	Level      int
 	Labels     []string
+	MsgType    string
 }
 
 func (d *DingTalkSink) Name() string {
@@ -132,7 +134,7 @@ func (d *DingTalkSink) Ding(event *v1.Event) {
 		}
 	}
 
-	msg := createMsgFromEvent(d.Labels, event)
+	msg := createMsgFromEvent(d.Labels, d.MsgType, event)
 	if msg == nil {
 		klog.Warningf("failed to create msg from event,because of %v", event)
 		return
@@ -166,9 +168,9 @@ func getLevel(level string) int {
 	return score
 }
 
-func createMsgFromEvent(labels []string, event *v1.Event) *DingTalkMsg {
+func createMsgFromEvent(labels []string, msgType string, event *v1.Event) *DingTalkMsg {
 	msg := &DingTalkMsg{}
-	msg.MsgType = DEFAULT_MSG_TYPE
+	msg.MsgType = msgType
 	template := MSG_TEMPLATE
 	if len(labels) > 0 {
 		for _, label := range labels {
@@ -231,6 +233,12 @@ func NewDingTalkSink(uri *url.URL) (*DingTalkSink, error) {
 	//add extra labels
 	if len(opts["label"]) >= 1 {
 		d.Labels = opts["label"]
+	}
+
+	if msgType := opts["msg_type"]; len(msgType) >= 1 {
+		d.MsgType = msgType[0]
+	} else {
+		d.MsgType = DEFAULT_MSG_TYPE
 	}
 
 	d.Namespaces = getValues(opts["namespaces"])

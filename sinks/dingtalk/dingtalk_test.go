@@ -23,16 +23,17 @@ func TestGetLevel(t *testing.T) {
 
 func TestCreateMsgFromEvent(t *testing.T) {
 	now := time.Now()
-	labels := make([]string, 0)
+	labels := make([]string, 1)
+	labels[0]="abcd"
 	event := &v1.Event{
 		Message:        "some thing wrong",
 		Count:          251,
 		LastTimestamp:  metav1.NewTime(now),
-		FirstTimestamp: metav1.NewTime(now),
+		FirstTimestamp: metav1.NewTime(now),		
 	}
 
-	msg := createMsgFromEvent(labels, event)
-
+	msg := createMsgFromEvent(labels,MARKDOWN_MSG_TYPE, event)
+	t.Log(msg.Text)
 	assert.True(t, msg != nil)
 }
 
