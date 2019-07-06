@@ -42,7 +42,7 @@ spec:
 ```
 2. View events in dingtalk
 <p align="center">
-<img width=600px src="https://yqfile.alicdn.com/d9b2dce25dd46dedde7df2ed1d39dcf4b2edd061.jpeg"/>
+<img width=600px src="docs/images/dingtalk.jpeg"/>
 </p>
 
 ### Sink Configure 
