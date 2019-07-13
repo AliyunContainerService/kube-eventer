@@ -8,6 +8,9 @@
 </p>
 
 ### Overview 
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![Build Status](https://travis-ci.org/AliyunContainerService/kube-eventer.svg?branch=master)](https://travis-ci.org/AliyunContainerService/kube-eventer)
+[![Codecov](https://codecov.io/gh/AliyunContainerService/kube-eventer/branch/master/graph/badge.svg)](https://codecov.io/gh/AliyunContainerService/kube-eventer)    
 
 kube-eventer is an event emitter that sends kubernetes events to sinks(.e.g, dingtalk,sls,kafka and so on). The core design concept of kubernetes is state machine. So there will be `Normal` events when transfer to desired state and `Warning` events occur when to unexpected state. kube-eventer can help to diagnose, analysis and alarm problems.
 
