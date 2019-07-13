@@ -49,7 +49,6 @@ spec:
 </p>
 
 ### Sink Configure 
-
 Supported Sinks:
 
 | Sink Name                    | Description                       |
@@ -61,10 +60,8 @@ Supported Sinks:
 | <a href="docs/en/influxdb-sink.md">influxdb</a>      | sink to influxdb                  |
 | <a href="docs/en/kafka-sink.md">kafka</a>         | sink to kafka                     |
 | <a href="docs/en/log-sink.md">log</a>               | sink to standard output           |
-|                              |                                   |
 
 ### Contributing 
-
 Please check <a href="docs/en/CONTRIBUTING.md" target="_blank">CONTRIBUTING.md</a>
 
 
