@@ -246,6 +246,7 @@ func getValues(o []string) []string {
 		if len(o[0]) == 0 {
 			return nil
 		}
+		return strings.Split(o[0], ",")
 	}
-	return strings.Split(o[0], ",")
+	return nil
 }
