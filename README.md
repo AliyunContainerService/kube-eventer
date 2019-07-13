@@ -14,6 +14,13 @@
 
 kube-eventer is an event emitter that sends kubernetes events to sinks(.e.g, dingtalk,sls,kafka and so on). The core design concept of kubernetes is state machine. So there will be `Normal` events when transfer to desired state and `Warning` events occur when to unexpected state. kube-eventer can help to diagnose, analysis and alarm problems.
 
+### Architecture diagram
+<p align="center">
+	<img src="docs/images/arch.png" width="500px" />   
+  <p align="center">
+    Architecture diagram of kube-eventer
+  </p>
+</p>
 ### Usage 
 1. Install eventer and configure sink 
 ```
