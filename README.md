@@ -20,8 +20,15 @@ kube-eventer is an event emitter that sends kubernetes events to sinks(.e.g, din
   <p align="center">
     Architecture diagram of kube-eventer
   </p>
-</p>
+</p>   
+
 ### Usage 
+Here is a demo of kube-eventer with dingtalk sink. Dingtalk is an All-in-one Mobile Workplace like slack. Dingtalk sink can get kubernetes events from eventer. You can do chatops with it. Try it following the steps below.     
+
+0. Get dingtalk token 
+Add a chatbot in a dingtalk group and get bot token.   
+<img width=600px src="docs/images/token.png"/>    
+ 
 1. Install eventer and configure sink 
 ```
 apiVersion: extensions/v1beta1
@@ -51,9 +58,7 @@ spec:
         - --sink=dingtalk:[your_webhook_url]&label=[your_cluster_id]&level=[Normal or Warning(default)]
 ```
 2. View events in dingtalk
-<p align="center">
 <img width=600px src="docs/images/dingtalk.jpeg"/>
-</p>
 
 ### Sink Configure 
 Supported Sinks:
