@@ -79,6 +79,7 @@ type DingTalkSink struct {
 	Level      int
 	Labels     []string
 	MsgType    string
+	ClusterID  string
 }
 
 func (d *DingTalkSink) Name() string {
@@ -240,6 +241,11 @@ func NewDingTalkSink(uri *url.URL) (*DingTalkSink, error) {
 	} else {
 		d.MsgType = DEFAULT_MSG_TYPE
 	}
+
+	if clusterID:=opts["cluster_id"]; len(clusterID) >= 1 {
+		d.ClusterID=clusterID
+	}
+
 
 	d.Namespaces = getValues(opts["namespaces"])
 	// kinds:https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#lists-and-simple-kinds
