@@ -3,6 +3,7 @@ package dingtalk
 import (
 	"fmt"
 	"k8s.io/api/core/v1"
+	"strings"
 )
 
 const (
@@ -16,6 +17,7 @@ const (
 	URL_ALIYUN_RESOURCE_DETAIL_TEMPLATE = URL_ALIYUN_K8S_CONSULE + "/%s/detail/%s/%s/%s/%s/pods"
 	URL_ALIYUN_POD_TEMPLATE             = URL_ALIYUN_K8S_CONSULE + "/pod/%s/%s/%s/container"
 	URL_ALIYUN_CROBJOB_TEMPLATE         = URL_ALIYUN_K8S_CONSULE + "/cronjob/detail/%s/%s/%s/%s/jobs"
+	URL_ALIYUN_SVC_TEMPLATE             = URL_ALIYUN_K8S_CONSULE + "/service/detail/%s/%s/%s/%s"
 	URL_ALIYUN_NAMESPACE_TEMPLATE       = URL_ALIYUN_K8S_CONSULE + "/namespace"
 )
 
@@ -40,28 +42,34 @@ func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event) *MarkdownM
 
 	switch event.InvolvedObject.Kind {
 	case "Deployment":
-		podsUrl := fmt.Sprintf(URL_ALIYUN_RESOURCE_DETAIL_TEMPLATE, "deployment", m.Region, m.ClusterID, event.Namespace, event.Name)
-		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, podsUrl)
+		deployName := removeDotContent(event.Name)
+		podsURL := fmt.Sprintf(URL_ALIYUN_RESOURCE_DETAIL_TEMPLATE, "deployment", m.Region, m.ClusterID, event.Namespace, deployName)
+		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, podsURL)
 		break
 	case "Pod":
-		podsUrl := fmt.Sprintf(URL_ALIYUN_POD_TEMPLATE, m.ClusterID, event.Namespace, event.Name)
-		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, podsUrl)
+		podName := removeDotContent(event.Name)
+		podsURL := fmt.Sprintf(URL_ALIYUN_POD_TEMPLATE, m.ClusterID, event.Namespace, podName)
+		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, podsURL)
 		break
 	case "StatefulSet":
-		podsUrl := fmt.Sprintf(URL_ALIYUN_RESOURCE_DETAIL_TEMPLATE, "statefulset", m.Region, m.ClusterID, event.Namespace, event.Name)
-		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, podsUrl)
+		ssName := removeDotContent(event.Name)
+		podsURL := fmt.Sprintf(URL_ALIYUN_RESOURCE_DETAIL_TEMPLATE, "statefulset", m.Region, m.ClusterID, event.Namespace, ssName)
+		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, podsURL)
 		break
 	case "DaemonSet":
-		podsUrl := fmt.Sprintf(URL_ALIYUN_RESOURCE_DETAIL_TEMPLATE, "daemonset", m.Region, m.ClusterID, event.Namespace, event.Name)
-		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, podsUrl)
+		dsName := removeDotContent(event.Name)
+		podsURL := fmt.Sprintf(URL_ALIYUN_RESOURCE_DETAIL_TEMPLATE, "daemonset", m.Region, m.ClusterID, event.Namespace, dsName)
+		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, podsURL)
 		break
 	case "CronJob":
-		jobUrl := fmt.Sprintf(URL_ALIYUN_CROBJOB_TEMPLATE, m.Region, m.ClusterID, event.Namespace, event.Name)
-		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, jobUrl)
+		jobName := removeDotContent(event.Name)
+		jobURL := fmt.Sprintf(URL_ALIYUN_CROBJOB_TEMPLATE, m.Region, m.ClusterID, event.Namespace, jobName)
+		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, jobURL)
 		break
 	case "Service":
-		svcUrl := fmt.Sprintf("%s/service/detail/%s/%s/%s/%s", URL_ALIYUN_K8S_CONSULE, m.Region, m.ClusterID, event.Namespace, event.Name)
-		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, svcUrl)
+		serviceName := removeDotContent(event.Name)
+		svcURL := fmt.Sprintf(URL_ALIYUN_SVC_TEMPLATE, m.Region, m.ClusterID, event.Namespace, serviceName)
+		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, svcURL)
 		break
 		//fixme:覆盖所有 event.InvolvedObject.Kind
 	default:
@@ -74,6 +82,14 @@ func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event) *MarkdownM
 	m.OutputText = fmt.Sprintf(MARKDOWN_TEMPLATE, level, kind, namespace, name, reason, timestamp, message)
 	return &m
 
+}
+
+// removeDotContent 每个事件由 <resource>.<hash> 组成,需要去掉.后面的部分,得到 <resource>
+func removeDotContent(s string) string {
+	if dotPosition := strings.Index(s, "."); dotPosition > -1 {
+		s = s[:dotPosition]
+	}
+	return s
 }
 
 func (m *MarkdownMsgBuilder) AddLabels(labels []string) {

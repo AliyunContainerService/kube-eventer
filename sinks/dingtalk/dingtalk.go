@@ -183,10 +183,14 @@ func createMsgFromEvent(d *DingTalkSink, event *v1.Event) *DingTalkMsg {
 	//https://open-doc.dingtalk.com/microapp/serverapi2/ye8tup#-6
 	case MARKDOWN_MSG_TYPE:
 		markdownCreator := NewMarkdownMsgBuilder(d.ClusterID, d.Region, event)
+		if d.Labels != nil && len(d.Labels) > 0 {
+			markdownCreator.AddLabels(d.Labels)
+		}
 		msg.Markdown = DingTalkMarkdown{
+			//title 加不加其实没所谓,最终不会显示
 			Title: fmt.Sprintf("Kubernetes(ID:%s) Event", d.ClusterID),
 			Text:  markdownCreator.Build(),
-		}
+		}		
 		break
 
 	default:
