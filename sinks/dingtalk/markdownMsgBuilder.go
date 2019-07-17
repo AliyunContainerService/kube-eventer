@@ -63,10 +63,10 @@ func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event) *MarkdownM
 		break
 	case "Service":
 		svcUrl := fmt.Sprintf(URL_ALIYUN_SVC_TEMPLATE, m.Region, m.ClusterID, event.Namespace, event.Name)
-		svcname := event.Name
-		//这里的event.Name 为 <svc_name>.xxxxx 需要截取处理掉.后面那部分内容,得到真正的  <svc_name>
+		serviceName := event.Name
+		//这里的event.Name 为 <service_name>.xxxxx 需要截取处理掉.后面那部分内容,得到真正的  <service_name>
 		if dotPosition := strings.Index(event.Name, "."); dotPosition > -1 {
-			svcname = event.Name[:dotPosition]
+			serviceName = event.Name[:dotPosition]
 		}
 		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, svcname, svcUrl)
 		break
