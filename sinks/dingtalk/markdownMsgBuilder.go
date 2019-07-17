@@ -3,6 +3,7 @@ package dingtalk
 import (
 	"fmt"
 	"k8s.io/api/core/v1"
+	"strings"
 )
 
 const (
@@ -16,6 +17,7 @@ const (
 	URL_ALIYUN_RESOURCE_DETAIL_TEMPLATE = URL_ALIYUN_K8S_CONSULE + "/%s/detail/%s/%s/%s/%s/pods"
 	URL_ALIYUN_POD_TEMPLATE             = URL_ALIYUN_K8S_CONSULE + "/pod/%s/%s/%s/container"
 	URL_ALIYUN_CROBJOB_TEMPLATE         = URL_ALIYUN_K8S_CONSULE + "/cronjob/detail/%s/%s/%s/%s/jobs"
+	URL_ALIYUN_SVC_TEMPLATE             = URL_ALIYUN_K8S_CONSULE + "/service/detail/%s/%s/%s/%s"
 	URL_ALIYUN_NAMESPACE_TEMPLATE       = URL_ALIYUN_K8S_CONSULE + "/namespace"
 )
 
@@ -60,10 +62,10 @@ func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event) *MarkdownM
 		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Name, jobUrl)
 		break
 	case "Service":
-		svcUrl := fmt.Sprintf("%s/service/detail/%s/%s/%s/%s", URL_ALIYUN_K8S_CONSULE, m.Region, m.ClusterID, event.Namespace, event.Name)
+		svcUrl := fmt.Sprintf(URL_ALIYUN_SVC_TEMPLATE, m.Region, m.ClusterID, event.Namespace, event.Name)
 		svcname := event.Name
 		//这里的event.Name 为 <svc_name>.xxxxx 需要截取处理掉.后面那部分内容,得到真正的  <svc_name>
-		if dotPosition := s[:strings.Index(s, ".")]; dotPosition > -1 {
+		if dotPosition := strings.Index(event.Name, "."); dotPosition > -1 {
 			svcname = event.Name[:dotPosition]
 		}
 		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, svcname, svcUrl)
