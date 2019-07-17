@@ -263,6 +263,7 @@ func NewDingTalkSink(uri *url.URL) (*DingTalkSink, error) {
 	if msgType := opts["msg_type"]; len(msgType) >= 1 {
 		d.MsgType = msgType[0]
 	} else {
+		//向下兼容,覆盖以前的版本,没有这个参数的情况
 		d.MsgType = DEFAULT_MSG_TYPE
 	}
 
