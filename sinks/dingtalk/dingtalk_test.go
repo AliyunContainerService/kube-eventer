@@ -5,10 +5,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//"github.com/olekukonko/tablewriter"
 	//"os"
-	"time"
+	"encoding/json"
+	"net/url"
+	// "time"
 )
 
 func TestGetLevel(t *testing.T) {
@@ -22,19 +24,37 @@ func TestGetLevel(t *testing.T) {
 }
 
 func TestCreateMsgFromEvent(t *testing.T) {
-	now := time.Now()
-	labels := make([]string, 0)
-	event := &v1.Event{
-		Message:        "some thing wrong",
-		Count:          251,
-		LastTimestamp:  metav1.NewTime(now),
-		FirstTimestamp: metav1.NewTime(now),
-	}
-
-	msg := createMsgFromEvent(labels, event)
-
+	// now := time.Now()
+	labels := make([]string, 2)
+	labels[0] = "abcd"
+	labels[1] = "defg"
+	event := createTestEvent()
+	u, _ := url.Parse("dingtalk:https://oapi.dingtalk.com/robot/send?access_token=<access_token>&label=<label>&level=Normal")
+	d, _ := NewDingTalkSink(u)
+	msg := createMsgFromEvent(d, event)
+	text, _ := json.Marshal(msg)
+	t.Log(string(text))
+	// t.Log(msg.Text)
 	assert.True(t, msg != nil)
 }
+
+func TestCreateMsgFromEvent_Markdown(t *testing.T) {
+	labels := make([]string, 2)
+	labels[0] = "abcd"
+	labels[1] = "defg"
+	event := createTestEvent()
+	event.InvolvedObject.Kind = "Deployment"
+	event.Name = TEST_DEPLOY_NAME
+	event.Namespace = TEST_NAMESPACE
+	u, _ := url.Parse("dingtalk:https://oapi.dingtalk.com/robot/send?access_token=<access_token>&label=<label>&level=Normal"+"&msg_type=markdown&cluster_id="+TEST_CLUSTERID+"&region="+TEST_REGION)
+	d, _ := NewDingTalkSink(u)
+	msg := createMsgFromEvent(d, event)
+	text, _ := json.Marshal(msg)
+	t.Log(string(text))
+	// t.Log(msg.Text)
+	assert.True(t, msg != nil)
+}
+
 
 //
 //func TestTableWriter(t *testing.T) {

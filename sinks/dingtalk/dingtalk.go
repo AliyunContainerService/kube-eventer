@@ -55,8 +55,14 @@ var (
 dingtalk msg struct
 */
 type DingTalkMsg struct {
-	MsgType string       `json:"msgtype"`
-	Text    DingTalkText `json:"text"`
+	MsgType  string           `json:"msgtype"`
+	Text     DingTalkText     `json:"text"`
+	Markdown DingTalkMarkdown `json:"markdown"`
+}
+
+type DingTalkMarkdown struct {
+	Title string `json:"title"`
+	Text  string `json:"text"`
 }
 
 type DingTalkText struct {
@@ -77,6 +83,9 @@ type DingTalkSink struct {
 	Token      string
 	Level      int
 	Labels     []string
+	MsgType    string
+	ClusterID  string
+	Region     string
 }
 
 func (d *DingTalkSink) Name() string {
@@ -132,7 +141,7 @@ func (d *DingTalkSink) Ding(event *v1.Event) {
 		}
 	}
 
-	msg := createMsgFromEvent(d.Labels, event)
+	msg := createMsgFromEvent(d, event)
 	if msg == nil {
 		klog.Warningf("failed to create msg from event,because of %v", event)
 		return
@@ -166,18 +175,40 @@ func getLevel(level string) int {
 	return score
 }
 
-func createMsgFromEvent(labels []string, event *v1.Event) *DingTalkMsg {
+func createMsgFromEvent(d *DingTalkSink, event *v1.Event) *DingTalkMsg {
 	msg := &DingTalkMsg{}
-	msg.MsgType = DEFAULT_MSG_TYPE
-	template := MSG_TEMPLATE
-	if len(labels) > 0 {
-		for _, label := range labels {
-			template = fmt.Sprintf(LABE_TEMPLATE, label) + template
+	msg.MsgType = d.MsgType
+
+	switch msg.MsgType {
+	//https://open-doc.dingtalk.com/microapp/serverapi2/ye8tup#-6
+	case MARKDOWN_MSG_TYPE:
+		markdownCreator := NewMarkdownMsgBuilder(d.ClusterID, d.Region, event)
+		if d.Labels != nil && len(d.Labels) > 0 {
+			markdownCreator.AddLabels(d.Labels)
 		}
+		msg.Markdown = DingTalkMarkdown{
+			//title 加不加其实没所谓,最终不会显示
+			Title: fmt.Sprintf("Kubernetes(ID:%s) Event", d.ClusterID),
+			Text:  markdownCreator.Build(),
+		}		
+		break
+
+	default:
+
+		//默认按文本模式推送
+		template := MSG_TEMPLATE
+		if len(d.Labels) > 0 {
+			for _, label := range d.Labels {
+				template = fmt.Sprintf(LABE_TEMPLATE, label) + template
+			}
+		}
+
+		msg.Text = DingTalkText{
+			Content: fmt.Sprintf(template, event.Type, event.InvolvedObject.Kind, event.Namespace, event.Name, event.Reason, event.LastTimestamp.String(), event.Message),
+		}
+		break
 	}
-	msg.Text = DingTalkText{
-		Content: fmt.Sprintf(template, event.Type, event.InvolvedObject.Kind, event.Namespace, event.Name, event.Reason, event.LastTimestamp.String(), event.Message),
-	}
+
 	return msg
 }
 
@@ -233,6 +264,21 @@ func NewDingTalkSink(uri *url.URL) (*DingTalkSink, error) {
 		d.Labels = opts["label"]
 	}
 
+	if msgType := opts["msg_type"]; len(msgType) >= 1 {
+		d.MsgType = msgType[0]
+	} else {
+		//向下兼容,覆盖以前的版本,没有这个参数的情况
+		d.MsgType = DEFAULT_MSG_TYPE
+	}
+
+	if clusterID := opts["cluster_id"]; len(clusterID) >= 1 {
+		d.ClusterID = clusterID[0]
+	}
+
+	if region := opts["region"]; len(region) >= 1 {
+		d.Region = region[0]
+	}
+
 	d.Namespaces = getValues(opts["namespaces"])
 	// kinds:https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#lists-and-simple-kinds
 	// such as node,pod,component and so on
@@ -246,6 +292,7 @@ func getValues(o []string) []string {
 		if len(o[0]) == 0 {
 			return nil
 		}
+		return strings.Split(o[0], ",")
 	}
-	return strings.Split(o[0], ",")
+	return nil
 }
