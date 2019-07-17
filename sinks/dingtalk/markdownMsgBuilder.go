@@ -68,7 +68,7 @@ func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event) *MarkdownM
 		if dotPosition := strings.Index(event.Name, "."); dotPosition > -1 {
 			serviceName = event.Name[:dotPosition]
 		}
-		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, svcname, svcUrl)
+		name = fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, serviceName, svcUrl)
 		break
 		//fixme:覆盖所有 event.InvolvedObject.Kind
 	default:
