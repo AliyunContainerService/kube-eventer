@@ -32,4 +32,4 @@ You can find `cluster_id` on [ALIYUN Kubernetes website](https://cs.console.aliy
 
 For example:
 
-    --sink=dingtalk:https://oapi.dingtalk.com/robot/send?access_token=a5c19f3e02feba7bd5dfc22bfb04afa212359acfe86fd80eb159187097b7d014&label=c550367cdf1e84dfabab013b277cc6bc2&level=Normal&msg_type=markdown&cluster_id=a5c19f3e02feba7bd5dfc22bfb04afa212359acfe86fd80eb159187097b7d014&region=cn-shenzhen
+    --sink=dingtalk:https://oapi.dingtalk.com/robot/send?access_token=a5c19f3e02feba7bd5dfc22bfb04afa212359acfe86fd80eb159187097b7d014&label=c550367cdf1e84dfabab013b277cc6bc2&level=Normal&msg_type=markdown&cluster_id=c550367cdf1e84dfabab013b277cc6bc2&region=cn-shenzhen
