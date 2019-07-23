@@ -47,6 +47,8 @@ spec:
     metadata:
       labels:
         app: kube-eventer
+    annotations:	
+        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
       dnsPolicy: ClusterFirstWithHostNet
       serviceAccount: kube-eventer
