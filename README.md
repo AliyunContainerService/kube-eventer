@@ -54,7 +54,7 @@ spec:
         - image: registry.cn-hangzhou.aliyuncs.com/acs/kube-eventer-amd64:v1.0.0-d9898e1-aliyun
           name: kube-eventer
           command:
-            - "/app/bin/kube-eventer"
+            - "/kube-eventer"
             - "--source=kubernetes:https://kubernetes.default"
             ## .e.g,dingtalk sink demo
             - --sink=dingtalk:[your_webhook_url]&label=[your_cluster_id]&level=[Normal or Warning(default)]
