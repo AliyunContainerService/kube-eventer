@@ -11,6 +11,7 @@ The following options are available:
 * `level` - Level of event (default: Warning. Options: Warning and Normal)
 * `namespaces` - Namespaces to filter (defualt: all namespaces,use commas to separate multi namespaces)
 * `kinds` - Kinds to filter (default: all kinds,use commas to separate multi kinds. Options: Node,Pod and so on.)
+* `msg_type` - Type of message (default: text. Options: text and markdown)
 
 For example:
 
