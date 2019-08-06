@@ -1,0 +1,17 @@
+mode: count
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:42.59,45.16 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:48.2,48.27 1 2
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:45.16,47.3 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:51.67,53.16 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:56.2,63.40 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:67.2,68.20 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:53.16,55.3 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:63.40,66.3 2 0
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:71.72,75.42 3 2
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:75.42,77.17 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:81.3,82.17 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:77.17,79.4 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:82.17,84.4 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:88.63,90.16 2 0
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:94.2,96.8 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/kafka/driver.go:90.16,92.3 1 0

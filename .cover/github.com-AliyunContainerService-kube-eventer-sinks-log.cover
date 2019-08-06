@@ -1,0 +1,8 @@
+mode: count
+github.com/AliyunContainerService/kube-eventer/sinks/log/log_sink.go:28.36,30.2 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/log/log_sink.go:32.30,34.2 0 0
+github.com/AliyunContainerService/kube-eventer/sinks/log/log_sink.go:36.51,39.37 3 1
+github.com/AliyunContainerService/kube-eventer/sinks/log/log_sink.go:42.2,42.24 1 1
+github.com/AliyunContainerService/kube-eventer/sinks/log/log_sink.go:39.37,41.3 1 1
+github.com/AliyunContainerService/kube-eventer/sinks/log/log_sink.go:45.59,47.2 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/log/log_sink.go:49.40,51.2 1 0

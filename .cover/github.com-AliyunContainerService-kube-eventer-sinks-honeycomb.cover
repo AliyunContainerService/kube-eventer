@@ -1,0 +1,11 @@
+mode: count
+github.com/AliyunContainerService/kube-eventer/sinks/honeycomb/driver.go:46.55,59.2 1 2
+github.com/AliyunContainerService/kube-eventer/sinks/honeycomb/driver.go:61.76,65.42 4 2
+github.com/AliyunContainerService/kube-eventer/sinks/honeycomb/driver.go:72.2,73.16 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/honeycomb/driver.go:65.42,71.3 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/honeycomb/driver.go:73.16,76.3 2 0
+github.com/AliyunContainerService/kube-eventer/sinks/honeycomb/driver.go:79.36,79.37 0 0
+github.com/AliyunContainerService/kube-eventer/sinks/honeycomb/driver.go:81.42,83.2 1 1
+github.com/AliyunContainerService/kube-eventer/sinks/honeycomb/driver.go:85.67,87.16 2 1
+github.com/AliyunContainerService/kube-eventer/sinks/honeycomb/driver.go:90.2,94.18 2 1
+github.com/AliyunContainerService/kube-eventer/sinks/honeycomb/driver.go:87.16,89.3 1 0

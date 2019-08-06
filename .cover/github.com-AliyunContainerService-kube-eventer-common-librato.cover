@@ -1,0 +1,27 @@
+mode: count
+github.com/AliyunContainerService/kube-eventer/common/librato/dummy_librato.go:25.48,27.2 1 1
+github.com/AliyunContainerService/kube-eventer/common/librato/dummy_librato.go:29.74,30.43 1 0
+github.com/AliyunContainerService/kube-eventer/common/librato/dummy_librato.go:33.2,33.12 1 0
+github.com/AliyunContainerService/kube-eventer/common/librato/dummy_librato.go:30.43,32.3 1 0
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:49.65,54.16 2 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:57.2,62.16 2 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:65.2,69.12 5 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:54.16,56.3 1 0
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:62.16,64.3 1 0
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:80.48,94.2 4 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:96.56,100.32 3 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:106.2,106.29 1 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:111.2,111.27 1 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:114.2,114.30 1 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:121.2,121.28 1 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:133.2,133.21 1 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:100.32,102.3 1 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:102.8,104.3 1 0
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:106.29,108.3 1 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:108.8,110.3 1 0
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:111.27,113.3 1 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:114.30,117.45 2 0
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:117.45,119.4 1 0
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:121.28,126.36 3 1
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:126.36,127.43 1 2
+github.com/AliyunContainerService/kube-eventer/common/librato/librato.go:127.43,129.5 1 1

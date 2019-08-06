@@ -1,0 +1,20 @@
+mode: count
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:30.31,32.15 2 5
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:35.2,35.41 1 2
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:32.15,34.3 1 3
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:38.39,40.16 2 13
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:43.2,44.30 2 8
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:52.2,52.12 1 7
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:40.16,42.3 1 5
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:44.30,47.17 3 4
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:50.3,50.15 1 3
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:47.17,49.4 1 1
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:57.33,60.24 3 2
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:66.2,67.19 2 2
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:60.24,61.12 1 3
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:64.3,64.28 1 3
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:61.12,63.4 1 1
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:70.41,72.37 2 5
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:75.2,76.12 2 3
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:72.37,74.3 1 2
+github.com/AliyunContainerService/kube-eventer/common/flags/flags.go:79.31,81.2 1 0
