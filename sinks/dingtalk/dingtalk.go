@@ -194,7 +194,7 @@ func createMsgFromEvent(d *DingTalkSink, event *v1.Event) *DingTalkMsg {
 			//title 加不加其实没所谓,最终不会显示
 			Title: fmt.Sprintf("Kubernetes(ID:%s) Event", d.ClusterID),
 			Text:  markdownCreator.Build(),
-		}		
+		}
 		break
 
 	default:

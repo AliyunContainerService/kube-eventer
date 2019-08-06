@@ -4,8 +4,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 	"strings"
+	"testing"
 	"time"
 )
 
@@ -92,12 +92,11 @@ func TestNewMarkdownMsgBuilder_Service(t *testing.T) {
 	assert.True(t, m != nil)
 }
 
-func TestRemoveDotContent(t *testing.T){
-	s :=removeDotContent("eventer.15b21c773eb1181a.sssss")
+func TestRemoveDotContent(t *testing.T) {
+	s := removeDotContent("eventer.15b21c773eb1181a.sssss")
 	t.Log(s)
-	assert.True(t,!strings.ContainsAny(s,"."))
+	assert.True(t, !strings.ContainsAny(s, "."))
 }
-
 
 func createTestEvent() *v1.Event {
 	now := time.Now()
