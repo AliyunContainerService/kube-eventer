@@ -37,10 +37,10 @@ const (
 	DEFAULT_MSG_TYPE      = "text"
 	CONTENT_TYPE_JSON     = "application/json"
 	LABE_TEMPLATE         = "%s\n"
-	//发送消息使用导的url
-	sendurl = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=`
-	//获取token使用导的url
-	get_token = `https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=`
+	//发送消息使用的url
+	SEND_MSG_URL = `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=`
+	//获取token使用的url
+	GET_TOKEN_URL = `https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=`
 )
 
 var (
@@ -176,7 +176,7 @@ func (d *WechatSink) Send(event *v1.Event) {
 		}
 
 		b := bytes.NewBuffer(msg_bytes)
-		resp, err := http.Post(sendurl + token.Access_token, CONTENT_TYPE_JSON, b)
+		resp, err := http.Post(SEND_MSG_URL + token.Access_token, CONTENT_TYPE_JSON, b)
 		if err != nil {
 			klog.Errorf("failed to send msg to dingtalk. error: %s", err.Error())
 			return
@@ -190,7 +190,7 @@ func (d *WechatSink) Send(event *v1.Event) {
 }
 
 func getToken(corp_id, corp_secret string) (at access_token, err error)  {
-	resp, err := http.Get(get_token + corp_id + "&corpsecret=" + corp_secret)
+	resp, err := http.Get(GET_TOKEN_URL + corp_id + "&corpsecret=" + corp_secret)
 	if err != nil {
 		return at, err
 	}
