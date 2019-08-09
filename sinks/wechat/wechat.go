@@ -74,6 +74,11 @@ type WechatText struct {
 	Content string `json:"content"`
 }
 
+type access_token struct {
+	Access_token string `json:"access_token"`
+	Expires_in   int    `json:"expires_in"`
+}
+
 /**
 dingtalk sink usage
 --sink:wechat:https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=[access_token]&level=Warning&label=[label]
@@ -156,8 +161,6 @@ func (d *WechatSink) Send(event *v1.Event) {
 	}
 
 	token, err := getToken(d.CorpID, d.CorpSecret)
-	klog.Error(token)
-
 	if err != nil {
 		klog.Warningf("failed to get token,because of %v", err)
 		return
@@ -165,6 +168,7 @@ func (d *WechatSink) Send(event *v1.Event) {
 
 	for _, user := range d.ToUser {
 		msg.ToUser = user
+
 		msg_bytes, err := json.Marshal(msg)
 		if err != nil {
 			klog.Warningf("failed to marshal msg %v", msg)
@@ -172,7 +176,7 @@ func (d *WechatSink) Send(event *v1.Event) {
 		}
 
 		b := bytes.NewBuffer(msg_bytes)
-		resp, err := http.Post(sendurl+token, CONTENT_TYPE_JSON, b)
+		resp, err := http.Post(sendurl + token.Access_token, CONTENT_TYPE_JSON, b)
 		if err != nil {
 			klog.Errorf("failed to send msg to dingtalk. error: %s", err.Error())
 			return
@@ -185,19 +189,18 @@ func (d *WechatSink) Send(event *v1.Event) {
 
 }
 
-func getToken(corp_id, corp_secret string) (string, error)  {
+func getToken(corp_id, corp_secret string) (at access_token, err error)  {
 	resp, err := http.Get(get_token + corp_id + "&corpsecret=" + corp_secret)
 	if err != nil {
-		return "", err
+		return at, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("get wechat token request error")
+		return at, fmt.Errorf("get wechat token request error")
 	}
 	buf, _ := ioutil.ReadAll(resp.Body)
-	var token string
-	err = json.Unmarshal(buf, &token)
-	return token, nil
+	err = json.Unmarshal(buf, &at)
+	return at, nil
 }
 
 func getLevel(level string) int {
@@ -262,6 +265,7 @@ func NewWechatSink(uri *url.URL) (*WechatSink, error) {
 		return nil, fmt.Errorf("you must provide wechat agentid")
 	}
 
+	//使用逗号分隔需要通知的用户，如果为空则通知所有当前组下的所有用户
 	if len(opts["to_user"]) >= 1 && opts["to_user"][0] != "" {
 		for _, user := range strings.Split(opts["to_user"][0],",") {
 			d.ToUser = append(d.ToUser, user)

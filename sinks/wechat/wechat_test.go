@@ -5,8 +5,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"github.com/olekukonko/tablewriter"
-	//"os"
 	"encoding/json"
 	"net/url"
 	"time"
@@ -28,14 +26,12 @@ func TestCreateMsgFromEvent(t *testing.T) {
 	labels[0] = "abcd"
 	labels[1] = "defg"
 	event := createTestEvent()
-	u, _ := url.Parse("wechat:https://wechat?corp_id=wwa8460ed120882958&corp_secret=iU3tF31T4XtrpbvKGk9z5DK2ZaqYAug6klIu8VU1eVY&agent_id=1000012&to_user=&label=<label>&level=Normal")
+	u, _ := url.Parse("wechat:https://wechat?corp_id=wwa8460ed120882958&corp_secret=iU3tF31T4XtrpbvKGk9z5DK2ZaqYAug6klIu8VU1eVY&agent_id=1000012&to_user=<user>&label=<label>&level=Normal")
 	d, _ := NewWechatSink(u)
 	d.Send(event)
 	msg := createMsgFromEvent(d, event)
 	text, _ := json.Marshal(msg)
 	t.Log(string(text))
-
-
 	// t.Log(msg.Text)
 	assert.True(t, msg != nil)
 }
