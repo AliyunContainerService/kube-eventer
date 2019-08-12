@@ -20,7 +20,6 @@ func TestGetLevel(t *testing.T) {
 	assert.True(t, 0 == none)
 }
 
-
 func TestCreateMsgFromEvent(t *testing.T) {
 	labels := make([]string, 2)
 	labels[0] = "abcd"
@@ -47,5 +46,3 @@ func createTestEvent() *v1.Event {
 	}
 	return event
 }
-
-

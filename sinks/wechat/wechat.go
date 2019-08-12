@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	WECHAT_SINK         = "WechatSink"
+	WECHAT_SINK           = "WechatSink"
 	WARNING           int = 2
 	NORMAL            int = 1
 	DEFAULT_MSG_TYPE      = "text"
@@ -61,13 +61,13 @@ var (
 wechat msg struct
 */
 type WechatMsg struct {
-	ToUser   string      `json:"touser"`
-	ToParty  string      `json:"toparty"`
-	ToTag    string      `json:"totag"`
-	MsgType  string      `json:"msgtype"`
-	AgentID  int         `json:"agentid"`
-	Text     WechatText  `json:"text"`
-	Safe     int         `json:"safe"`
+	ToUser  string     `json:"touser"`
+	ToParty string     `json:"toparty"`
+	ToTag   string     `json:"totag"`
+	MsgType string     `json:"msgtype"`
+	AgentID int        `json:"agentid"`
+	Text    WechatText `json:"text"`
+	Safe    int        `json:"safe"`
 }
 
 type WechatText struct {
@@ -172,7 +172,7 @@ func (d *WechatSink) Send(event *v1.Event) {
 		}
 
 		b := bytes.NewBuffer(msg_bytes)
-		resp, err := http.Post(SEND_MSG_URL + token.AccessToken, CONTENT_TYPE_JSON, b)
+		resp, err := http.Post(SEND_MSG_URL+token.AccessToken, CONTENT_TYPE_JSON, b)
 		if err != nil {
 			klog.Errorf("failed to send msg to dingtalk. error: %s", err.Error())
 			return
@@ -185,7 +185,7 @@ func (d *WechatSink) Send(event *v1.Event) {
 
 }
 
-func getToken(corp_id, corp_secret string) (at Token, err error)  {
+func getToken(corp_id, corp_secret string) (at Token, err error) {
 	resp, err := http.Get(GET_TOKEN_URL + corp_id + "&corpsecret=" + corp_secret)
 	if err != nil {
 		return at, err
@@ -233,7 +233,6 @@ func createMsgFromEvent(d *WechatSink, event *v1.Event) *WechatMsg {
 	return msg
 }
 
-
 func NewWechatSink(uri *url.URL) (*WechatSink, error) {
 	d := &WechatSink{
 		Level: WARNING,
@@ -253,7 +252,7 @@ func NewWechatSink(uri *url.URL) (*WechatSink, error) {
 	}
 
 	if len(opts["agent_id"]) >= 1 {
-		if AgentID, err:= strconv.Atoi(opts["agent_id"][0]); err == nil {
+		if AgentID, err := strconv.Atoi(opts["agent_id"][0]); err == nil {
 			d.AgentID = AgentID
 		} else {
 			return nil, fmt.Errorf("you must provide wechat agentid is number")
@@ -264,7 +263,7 @@ func NewWechatSink(uri *url.URL) (*WechatSink, error) {
 
 	//使用逗号分隔需要通知的用户，如果为空则通知所有当前组下的所有用户
 	if len(opts["to_user"]) >= 1 && opts["to_user"][0] != "" {
-		for _, user := range strings.Split(opts["to_user"][0],",") {
+		for _, user := range strings.Split(opts["to_user"][0], ",") {
 			d.ToUser = append(d.ToUser, user)
 		}
 	} else {
