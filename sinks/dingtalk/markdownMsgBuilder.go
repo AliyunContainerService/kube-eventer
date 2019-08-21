@@ -2,13 +2,14 @@ package dingtalk
 
 import (
 	"fmt"
-	"k8s.io/api/core/v1"
 	"strings"
+
+	v1 "k8s.io/api/core/v1"
 )
 
 const (
 	MARKDOWN_MSG_TYPE      = "markdown"
-	MARKDOWN_TEMPLATE      = "Level:%s \n\nKind:%s \n\nNamespace:%s \n\nName:%s \n\nReason:%s \n\nTimestamp:%s \n\nMessage:%s"
+	MARKDOWN_TEMPLATE      = "Level: %s \n\nKind: %s \n\nNamespace: %s \n\nName: %s \n\nNode: %s \n\nReason: %s \n\nTimestamp: %s \n\nMessage: %s"
 	MARKDOWN_LINK_TEMPLATE = "[%s](%s)"
 	MARKDOWN_TEXT_BOLD     = "**%s**"
 
@@ -76,10 +77,14 @@ func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event) *MarkdownM
 		name = event.Name
 		break
 	}
+	nodeName := ""
+	if len(event.Source.Host) > 0 {
+		nodeName = fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.Source.Host)
+	}
 	reason := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.Reason)
 	timestamp := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.LastTimestamp.String())
 	message := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.Message)
-	m.OutputText = fmt.Sprintf(MARKDOWN_TEMPLATE, level, kind, namespace, name, reason, timestamp, message)
+	m.OutputText = fmt.Sprintf(MARKDOWN_TEMPLATE, level, kind, namespace, name, nodeName, reason, timestamp, message)
 	return &m
 
 }
@@ -95,7 +100,7 @@ func removeDotContent(s string) string {
 func (m *MarkdownMsgBuilder) AddLabels(labels []string) {
 	if len(labels) > 0 {
 		for i := len(labels) - 1; i >= 0; i-- {
-			m.OutputText = fmt.Sprintf("label[%d]:**%s**\n\n", i, labels[i]) + m.OutputText
+			m.OutputText = fmt.Sprintf("label[%d]: **%s**\n\n", i, labels[i]) + m.OutputText
 		}
 
 	}
