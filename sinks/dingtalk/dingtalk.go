@@ -156,8 +156,12 @@ func (d *DingTalkSink) Ding(event *v1.Event) {
 	b := bytes.NewBuffer(msg_bytes)
 
 	resp, err := http.Post(fmt.Sprintf("https://%s?access_token=%s", d.Endpoint, d.Token), CONTENT_TYPE_JSON, b)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		klog.Errorf("failed to send msg to dingtalk,because of %s resp code is %d", err.Error(), resp.StatusCode)
+	if err != nil {
+		klog.Errorf("failed to send msg to dingtalk. error: %s", err.Error())
+		return
+	}
+	if resp != nil && resp.StatusCode != http.StatusOK {
+		klog.Errorf("failed to send msg to dingtalk, because the response code is %d", resp.StatusCode)
 		return
 	}
 }
@@ -190,7 +194,7 @@ func createMsgFromEvent(d *DingTalkSink, event *v1.Event) *DingTalkMsg {
 			//title 加不加其实没所谓,最终不会显示
 			Title: fmt.Sprintf("Kubernetes(ID:%s) Event", d.ClusterID),
 			Text:  markdownCreator.Build(),
-		}		
+		}
 		break
 
 	default:

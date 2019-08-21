@@ -31,31 +31,94 @@ Add a chatbot in a dingtalk group and get bot token.
  
 1. Install eventer and configure sink 
 ```
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
+  labels:
+    name: kube-eventer
   name: kube-eventer
   namespace: kube-system
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: kube-eventer
   template:
     metadata:
       labels:
-        task: monitoring
-        k8s-app: kube-eventer
-      annotations:
+        app: kube-eventer
+    annotations:	
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
-      serviceAccount: admin
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccount: kube-eventer
       containers:
-      - name: kube-eventer
-        image: registry.cn-hangzhou.aliyuncs.com/acs/kube-eventer-amd64:v1.0.0-d9898e1-aliyun 
-        imagePullPolicy: IfNotPresent
-        command:
-        - /eventer
-        - --source=kubernetes:https://kubernetes.default
-        ## .e.g,dingtalk sink demo
-        - --sink=dingtalk:[your_webhook_url]&label=[your_cluster_id]&level=[Normal or Warning(default)]
+        - image: registry.cn-hangzhou.aliyuncs.com/acs/kube-eventer-amd64:v1.0.0-d9898e1-aliyun
+          name: kube-eventer
+          command:
+            - "/kube-eventer"
+            - "--source=kubernetes:https://kubernetes.default"
+            ## .e.g,dingtalk sink demo
+            - --sink=dingtalk:[your_webhook_url]&label=[your_cluster_id]&level=[Normal or Warning(default)]
+          env:
+          # If TZ is assigned, set the TZ value as the time zone
+          - name: TZ
+            value: America/New_York
+          volumeMounts:
+            - name: localtime
+              mountPath: /etc/localtime
+              readOnly: true
+            - name: zoneinfo
+              mountPath: /usr/share/zoneinfo
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 500m
+              memory: 250Mi
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: zoneinfo
+          hostPath:
+            path: /usr/share/zoneinfo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-eventer
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+  name: kube-eventer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-eventer
+subjects:
+  - kind: ServiceAccount
+    name: kube-eventer
+    namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-eventer
+  namespace: kube-system
 ```
 2. View events in dingtalk
 <img width=600px src="docs/images/dingtalk.jpeg"/>

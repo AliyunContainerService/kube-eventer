@@ -49,6 +49,9 @@ var (
 func main() {
 	quitChannel := make(chan struct{}, 0)
 
+	klog.InitFlags(nil)
+	defer klog.Flush()
+
 	flag.Var(&argSources, "source", "source(s) to read events from")
 	flag.Var(&argSinks, "sink", "external sink(s) that receive events")
 	flag.BoolVar(&argVersion, "version", false, "print version info and exit")
@@ -58,9 +61,6 @@ func main() {
 		fmt.Println(version.VersionInfo())
 		os.Exit(0)
 	}
-
-	klog.InitFlags(nil)
-	defer klog.Flush()
 
 	setMaxProcs()
 

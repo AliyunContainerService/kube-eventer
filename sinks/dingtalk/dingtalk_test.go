@@ -46,7 +46,7 @@ func TestCreateMsgFromEvent_Markdown(t *testing.T) {
 	event.InvolvedObject.Kind = "Deployment"
 	event.Name = TEST_DEPLOY_NAME
 	event.Namespace = TEST_NAMESPACE
-	u, _ := url.Parse("dingtalk:https://oapi.dingtalk.com/robot/send?access_token=<access_token>&label=<label>&level=Normal"+"&msg_type=markdown&cluster_id="+TEST_CLUSTERID+"&region="+TEST_REGION)
+	u, _ := url.Parse("dingtalk:https://oapi.dingtalk.com/robot/send?access_token=<access_token>&label=<label>&level=Normal" + "&msg_type=markdown&cluster_id=" + TEST_CLUSTERID + "&region=" + TEST_REGION)
 	d, _ := NewDingTalkSink(u)
 	msg := createMsgFromEvent(d, event)
 	text, _ := json.Marshal(msg)
@@ -54,7 +54,6 @@ func TestCreateMsgFromEvent_Markdown(t *testing.T) {
 	// t.Log(msg.Text)
 	assert.True(t, msg != nil)
 }
-
 
 //
 //func TestTableWriter(t *testing.T) {

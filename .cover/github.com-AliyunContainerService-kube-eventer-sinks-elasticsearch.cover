@@ -1,0 +1,20 @@
+mode: count
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:56.84,72.40 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:76.2,77.20 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:72.40,75.3 2 0
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:80.80,83.42 3 2
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:93.2,94.16 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:83.42,85.17 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:88.3,89.17 2 2
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:85.17,87.4 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:89.17,91.4 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:94.16,96.3 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:99.46,101.2 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:103.40,105.2 0 0
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:107.71,110.16 3 0
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:115.2,116.71 2 0
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:119.2,119.34 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:123.2,124.21 2 0
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:110.16,113.3 2 0
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:116.71,118.3 1 0
+github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch/driver.go:119.34,121.3 1 0

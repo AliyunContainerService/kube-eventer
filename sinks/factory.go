@@ -16,6 +16,7 @@ package sinks
 
 import (
 	"fmt"
+	"github.com/AliyunContainerService/kube-eventer/sinks/wechat"
 
 	"k8s.io/klog"
 
@@ -52,6 +53,8 @@ func (this *SinkFactory) Build(uri flags.Uri) (core.EventSink, error) {
 		return dingtalk.NewDingTalkSink(&uri.Val)
 	case "sls":
 		return sls.NewSLSSink(&uri.Val)
+	case "wechat":
+		return wechat.NewWechatSink(&uri.Val)
 	default:
 		return nil, fmt.Errorf("Sink not recognized: %s", uri.Key)
 	}

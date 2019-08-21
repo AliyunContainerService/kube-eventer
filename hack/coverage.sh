@@ -22,7 +22,7 @@ generate_cover_data() {
 
     for pkg in "$@"; do
         f="$workdir/$(echo $pkg | tr / -).cover"
-        godep go test -test.short -covermode="$mode" -coverprofile="$f" "$pkg"
+        go test -test.short -covermode="$mode" -coverprofile="$f" "$pkg"
     done
 
     echo "mode: $mode" >"$profile"
@@ -30,7 +30,7 @@ generate_cover_data() {
 }
 
 show_cover_report() {
-    godep go tool cover -${1}="$profile"
+    go tool cover -${1}="$profile"
 }
 
 push_to_coveralls() {
@@ -38,7 +38,7 @@ push_to_coveralls() {
     goveralls -coverprofile="$profile" -service=travis-ci -repotoken $COVERALLS_TOKEN
 }
 
-generate_cover_data $(godep go list ./...)
+generate_cover_data $(go list ./...)
 show_cover_report func
 case "$1" in
 "")

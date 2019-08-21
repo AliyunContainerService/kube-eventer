@@ -2,7 +2,7 @@
 
 To use the kafka sink add the following flag:
 
-    --sink="kafka:<?<OPTIONS>>"
+    --sink=kafka:<?<OPTIONS>>
 
 Normally, kafka server has multi brokers, so brokers' list need be configured for producer.
 So, we provide kafka brokers' list and topics about timeseries & topic in url's query string.
@@ -20,6 +20,6 @@ Options can be set in query string, like this:
 
 For example,
 
-    --sink="kafka:?brokers=localhost:9092&brokers=localhost:9093&timeseriestopic=testseries"
+    --sink=kafka:?brokers=localhost:9092&brokers=localhost:9093&timeseriestopic=testseries
     or
-    --sink="kafka:?brokers=localhost:9092&brokers=localhost:9093&eventstopic=testtopic"
+    --sink=kafka:?brokers=localhost:9092&brokers=localhost:9093&eventstopic=testtopic
