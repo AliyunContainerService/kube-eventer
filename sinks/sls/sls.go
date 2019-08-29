@@ -54,6 +54,7 @@ type Config struct {
 	token           string
 	project         string
 	logStore        string
+	topic           string
 	internal        bool
 	regionId        string
 }
@@ -86,6 +87,9 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 		LogItems: sls.LogGroup{
 			Logs: logs,
 		},
+	}
+	if len(s.Config.topic) > 0 {
+		request.LogItems.Topic = &s.Config.topic
 	}
 
 	err := s.client().PutLogs(request)
@@ -180,6 +184,10 @@ func parseConfig(uri *url.URL) (*Config, error) {
 		c.logStore = opts["logStore"][0]
 	} else {
 		return nil, errors.New("please provide logStore name of sls.")
+	}
+
+	if len(opts["topic"]) >= 1 {
+		c.topic = opts["logStore"][0]
 	}
 
 	if len(opts["accessKeyId"]) >= 1 {
