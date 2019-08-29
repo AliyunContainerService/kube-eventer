@@ -85,9 +85,11 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 		Project:  s.Project,
 		LogStore: s.LogStore,
 		LogItems: sls.LogGroup{
-			Logs:  logs,
-			Topic: &s.Config.topic,
+			Logs: logs,
 		},
+	}
+	if len(s.Config.topic) > 0 {
+		request.LogItems.Topic = &s.Config.topic
 	}
 
 	err := s.client().PutLogs(request)
