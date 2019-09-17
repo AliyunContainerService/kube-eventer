@@ -34,12 +34,16 @@ const (
 )
 
 type ElasticSearchService struct {
-	EsClient    *esClient
-	baseIndex   string
-	ClusterName string
+	EsClient     *esClient
+	baseIndex    string
+	ClusterName  string
+	UseNamespace bool
 }
 
-func (esSvc *ElasticSearchService) Index(date time.Time) string {
+func (esSvc *ElasticSearchService) Index(date time.Time, namespace string) string {
+	if len(namespace) > 0 {
+		return date.Format(fmt.Sprintf("%s-%s-2006.01.02", esSvc.baseIndex, namespace))
+	}
 	return date.Format(fmt.Sprintf("%s-2006.01.02", esSvc.baseIndex))
 }
 func (esSvc *ElasticSearchService) IndexAlias(typeName string) string {
@@ -51,12 +55,12 @@ func (esSvc *ElasticSearchService) FlushData() error {
 }
 
 // SaveDataIntoES save metrics and events to ES by using ES client
-func (esSvc *ElasticSearchService) SaveData(date time.Time, typeName string, sinkData []interface{}) error {
+func (esSvc *ElasticSearchService) SaveData(date time.Time, typeName string, namespace string, sinkData []interface{}) error {
 	if typeName == "" || len(sinkData) == 0 {
 		return nil
 	}
 
-	indexName := esSvc.Index(date)
+	indexName := esSvc.Index(date, namespace)
 
 	// Use the IndexExists service to check if a specified index exists.
 	exists, err := esSvc.EsClient.IndexExists(indexName)
@@ -148,6 +152,10 @@ func CreateElasticSearchService(uri *url.URL) (*ElasticSearchService, error) {
 	esSvc.baseIndex = ESIndex
 	if len(opts["index"]) > 0 {
 		esSvc.baseIndex = opts["index"][0]
+	}
+
+	if len(opts["use_namespace"]) > 0 {
+		esSvc.UseNamespace = true
 	}
 
 	var startupFnsV5 []elastic5.ClientOptionFunc
