@@ -41,10 +41,12 @@ type ElasticSearchService struct {
 }
 
 func (esSvc *ElasticSearchService) Index(date time.Time, namespace string) string {
+	dateStr := date.Format("2006.01.02")
 	if len(namespace) > 0 {
-		return date.Format(fmt.Sprintf("%s-%s-2006.01.02", esSvc.baseIndex, namespace))
+		return fmt.Sprintf("%s-%s-%s", esSvc.baseIndex, namespace, dateStr)
 	}
-	return date.Format(fmt.Sprintf("%s-2006.01.02", esSvc.baseIndex))
+	return fmt.Sprintf("%s-%s", esSvc.baseIndex, date)
+
 }
 func (esSvc *ElasticSearchService) IndexAlias(typeName string) string {
 	return fmt.Sprintf("%s-%s", esSvc.baseIndex, typeName)
