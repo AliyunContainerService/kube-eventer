@@ -15,224 +15,230 @@
 package slack
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"k8s.io/api/core/v1"
-	"k8s.io/klog"
-	"kube-eventer/core"
-	"net/http"
-	"net/url"
-	"strings"
-	"time"
+	apps_v1beta1 "k8s.io/api/apps/v1beta1"
+	batch_v1 "k8s.io/api/batch/v1"
+	api_v1 "k8s.io/api/core/v1"
+	ext_v1beta1 "k8s.io/api/extensions/v1beta1"
+	"kube-eventer/util"
+	"log"
+	"os"
+
+	"github.com/nlopes/slack"
 )
 
-const (
-	SLACK_SINK            = "SlackSink"
-	WARNING           int = 2
-	DEFAULT_MSG_TYPE      = "text"
-	CONTENT_TYPE_JSON     = "application/json"
-	LABE_TEMPLATE         = "%s\n"
-)
-
-var (
-	MSG_TEMPLATE = "Level:%s \nKind:%s \nNamespace:%s \nName:%s \nReason:%s \nTimestamp:%s \nMessage:%s"
-
-	MSG_TEMPLATE_ARR = [][]string{
-		{"Level"},
-		{"Kind"},
-		{"Namespace"},
-		{"Name"},
-		{"Reason"},
-		{"Timestamp"},
-		{"Message"},
-	}
-)
-
-type SlackMsg struct {
-	MsgType string    `json:"msgtype"`
-	Text    SlackText `json:"text"`
+var slackColors = map[string]string{
+	"Normal":  "good",
+	"Warning": "warning",
+	"Danger":  "danger",
 }
 
-type SlackText struct {
-	Content string `json:"content"`
+var slackErrMsg = `
+%s
+You need to set both slack token and channel for slack notify,
+using "--token/-t" and "--channel/-c", or using environment variables:
+export SLACK_TOKEN=slack_token
+export SLACK_CHANNEL=slack_channel
+Command line flags will override environment variables
+`
+
+var m = map[string]string{
+	"created": "Normal",
+	"deleted": "Danger",
+	"updated": "Warning",
 }
 
-type SlackSink struct {
-	Color      string
-	Icon       string
-	MsgType    string
-	Token      string
-	Username   string
-	Level      int
-	Labels     []string
-	Namespaces []string
-	Kinds      []string
+// Slack contains slack configuration
+type Config struct {
+	Token   string `json:"token"`
+	Channel string `json:"channel"`
 }
 
-func (s *SlackSink) Name() string {
-	return SLACK_SINK
+// Slack handler implements handler.Handler interface,
+// Notify event to slack channel
+type Slack struct {
+	Token   string
+	Channel string
 }
 
-func (s *SlackSink) Face(icon string) {
-	s.Icon = icon
+type Event struct {
+	Namespace string
+	Kind      string
+	Component string
+	Host      string
+	Reason    string
+	Status    string
+	Name      string
 }
 
-func (s *SlackSink) Stop() {
-	//do nothing
-}
+func (s *Slack) Init(c *Config) error {
+	token := c.Token
+	channel := c.Channel
 
-func (s *SlackSink) ExportEvents(batch *core.EventBatch) {
-	for _, event := range batch.Events {
-		if s.isEventLevelDangerous(event.Type) {
-			s.Notify(event)
-			// add threshold
-			time.Sleep(time.Millisecond * 50)
-		}
-	}
-}
-
-func (s *SlackSink) isEventLevelDangerous(level string) bool {
-	score := getLevel(level)
-	if score >= s.Level {
-		return true
-	}
-	return false
-}
-
-func (s *SlackSink) Notify(event *v1.Event) {
-	if s.Namespaces != nil {
-		skip := true
-		for _, namespace := range s.Namespaces {
-			if namespace == event.Namespace {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			return
-		}
+	if token == "" {
+		token = os.Getenv("SLACK_TOKEN")
 	}
 
-	if s.Kinds != nil {
-		skip := true
-		for _, kind := range s.Kinds {
-			if kind == event.InvolvedObject.Kind {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			return
-		}
+	if channel == "" {
+		channel = os.Getenv("SLACK_CHANNEL")
 	}
 
-	msg := createMsgFromEvent(s, event)
-	if msg == nil {
-		klog.Warningf("failed to create msg from event,because of %v", event)
-		return
+	s.Token = token
+	s.Channel = channel
+
+	return checkMissingSlackVars(s)
+}
+
+func checkMissingSlackVars(s *Slack) error {
+	if s.Token == "" || s.Channel == "" {
+		return fmt.Errorf(slackErrMsg, "Missing slack token or channel")
 	}
 
-	msgBytes, err := json.Marshal(msg)
+	return nil
+}
+
+// New create new KubewatchEvent
+func New(obj interface{}, action string) Event {
+	var namespace, kind, component, host, reason, status, name string
+
+	objectMeta := util.GetObjectMetaData(obj)
+	namespace = objectMeta.Namespace
+	name = objectMeta.Name
+	reason = action
+	status = m[action]
+
+	switch object := obj.(type) {
+	case *ext_v1beta1.DaemonSet:
+		kind = "daemon set"
+	case *apps_v1beta1.Deployment:
+		kind = "deployment"
+	case *batch_v1.Job:
+		kind = "job"
+	case *api_v1.Namespace:
+		kind = "namespace"
+	case *ext_v1beta1.Ingress:
+		kind = "ingress"
+	case *api_v1.PersistentVolume:
+		kind = "persistent volume"
+	case *api_v1.Pod:
+		kind = "pod"
+		host = object.Spec.NodeName
+	case *api_v1.ReplicationController:
+		kind = "replication controller"
+	case *ext_v1beta1.ReplicaSet:
+		kind = "replica set"
+	case *api_v1.Service:
+		kind = "service"
+		component = string(object.Spec.Type)
+	case *api_v1.Secret:
+		kind = "secret"
+	case *api_v1.ConfigMap:
+		kind = "configmap"
+	case Event:
+		name = object.Name
+		kind = object.Kind
+		namespace = object.Namespace
+	}
+
+	kbEvent := Event{
+		Namespace: namespace,
+		Kind:      kind,
+		Component: component,
+		Host:      host,
+		Reason:    reason,
+		Status:    status,
+		Name:      name,
+	}
+	return kbEvent
+}
+
+// ObjectCreated calls notifySlack on event creation
+func (s *Slack) ObjectCreated(obj interface{}) {
+	notifySlack(s, obj, "created")
+}
+
+// ObjectDeleted calls notifySlack on event creation
+func (s *Slack) ObjectDeleted(obj interface{}) {
+	notifySlack(s, obj, "deleted")
+}
+
+// ObjectUpdated calls notifySlack on event creation
+func (s *Slack) ObjectUpdated(oldObj, newObj interface{}) {
+	notifySlack(s, newObj, "updated")
+}
+
+// TestHandler tests the handler configurarion by sending test messages.
+func (s *Slack) TestHandler() {
+	api := slack.New(s.Token)
+	attachment := slack.Attachment{
+		Fields: []slack.AttachmentField{
+			{
+				Title: "kube-eventer",
+				Value: "Testing Handler Configuration. This is a Test message.",
+			},
+		},
+	}
+	channelID, timestamp, err := api.PostMessage(s.Channel, "", slack.MsgOptionAttachments(attachment))
 	if err != nil {
-		klog.Warningf("failed to marshal msg %v", msg)
+		log.Printf("%s\n", err)
 		return
 	}
 
-	b := bytes.NewBuffer(msgBytes)
-
-	resp, err := http.Post(fmt.Sprintf("https://hooks.slack.com/services/%s", s.Token), CONTENT_TYPE_JSON, b)
-	if err != nil {
-		klog.Errorf("failed to send msg to slack hooks. error: %s", err.Error())
-		return
-	}
-	if resp != nil && resp.StatusCode != http.StatusOK {
-		klog.Errorf("failed to send msg to slack hooks, because the response code is %d", resp.StatusCode)
-		return
-	}
-
+	log.Printf("Message successfully sent to channel %s at %s", channelID, timestamp)
 }
 
-func getLevel(level string) int {
-	score := 0
-	switch level {
-	case v1.EventTypeWarning:
-		score += 2
-	case v1.EventTypeNormal:
-		score += 1
+func notifySlack(s *Slack, obj interface{}, action string) {
+	e := New(obj, action)
+	api := slack.New(s.Token)
+	attachment := prepareSlackAttachment(e)
+	channelID, timestamp, err := api.PostMessage(s.Channel, "", slack.MsgOptionAttachments(attachment))
+	if err != nil {
+		log.Printf("%s\n", err)
+		return
+	}
+
+	log.Printf("Message successfully sent to channel %s at %s", channelID, timestamp)
+}
+
+func prepareSlackAttachment(e Event) slack.Attachment {
+
+	attachment := slack.Attachment{
+		Fields: []slack.AttachmentField{
+			{
+				Title: "kube-eventer",
+				Value: e.Message(),
+			},
+		},
+	}
+
+	if color, ok := slackColors[e.Status]; ok {
+		attachment.Color = color
+	}
+
+	attachment.MarkdownIn = []string{"fields"}
+
+	return attachment
+}
+
+// Message returns event message in standard format.
+// included as a part of event packege to enhance code resuablity across handlers.
+func (e *Event) Message() (msg string) {
+	// using switch over if..else, since the format could vary based on the kind of the object in future.
+	switch e.Kind {
+	case "namespace":
+		msg = fmt.Sprintf(
+			"A namespace `%s` has been `%s`",
+			e.Name,
+			e.Reason,
+		)
 	default:
-		//score will remain 0
-	}
-	return score
-}
-
-func createMsgFromEvent(s *SlackSink, event *v1.Event) *SlackMsg {
-	msg := &SlackMsg{}
-	msg.MsgType = DEFAULT_MSG_TYPE
-
-	//默认按文本模式推送
-	template := MSG_TEMPLATE
-	if len(s.Labels) > 0 {
-		for _, label := range s.Labels {
-			template = fmt.Sprintf(LABE_TEMPLATE, label) + template
-		}
-	}
-
-	msg.Text = SlackText{
-		Content: fmt.Sprintf(template, event.Type, event.InvolvedObject.Kind, event.Namespace, event.Name, event.Reason, event.LastTimestamp.String(), event.Message),
+		msg = fmt.Sprintf(
+			"A `%s` in namespace `%s` has been `%s`:\n`%s`",
+			e.Kind,
+			e.Namespace,
+			e.Reason,
+			e.Name,
+		)
 	}
 	return msg
-}
-
-func NewSlackSink(url *url.URL) (*SlackSink, error) {
-	s := &SlackSink{
-		Level: WARNING,
-	}
-
-	opts := url.Query()
-
-	if len(opts["token"]) >= 1 {
-		s.Token = opts["token"][0]
-	} else {
-		return nil, fmt.Errorf("you must provide slack bot token")
-	}
-
-	if len(opts["color"]) >= 1 {
-		s.Color = opts["color"][0]
-	}
-
-	if len(opts["icon"]) >= 1 {
-		s.Color = opts["icon"][0]
-	}
-
-	if len(opts["username"]) >= 1 {
-		s.Username = opts["username"][0]
-	}
-
-	if len(opts["level"]) >= 1 {
-		s.Level = getLevel(opts["level"][0])
-	}
-
-	if len(opts["label"]) >= 1 {
-		s.Labels = opts["label"]
-	}
-
-	s.MsgType = DEFAULT_MSG_TYPE
-
-	s.Namespaces = getValues(opts["namespaces"])
-	// kinds:https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#lists-and-simple-kinds
-	// such as node,pod,component and so on
-	s.Kinds = getValues(opts["kinds"])
-
-	return s, nil
-}
-
-func getValues(o []string) []string {
-	if len(o) >= 1 {
-		if len(o[0]) == 0 {
-			return nil
-		}
-		return strings.Split(o[0], ",")
-	}
-	return nil
 }
