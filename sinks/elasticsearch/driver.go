@@ -31,7 +31,7 @@ const (
 )
 
 // SaveDataFunc is a pluggable function to enforce limits on the object
-type SaveDataFunc func(date time.Time, sinkData []interface{}) error
+type SaveDataFunc func(date time.Time, namespace string, sinkData []interface{}) error
 
 type elasticSearchSink struct {
 	esSvc     esCommon.ElasticSearchService
@@ -78,6 +78,7 @@ func eventToPoint(event *kube_api.Event, clusterName string) (*EsSinkPoint, erro
 }
 
 func (sink *elasticSearchSink) ExportEvents(eventBatch *event_core.EventBatch) {
+	var namespace string
 	sink.Lock()
 	defer sink.Unlock()
 	for _, event := range eventBatch.Events {
@@ -85,7 +86,10 @@ func (sink *elasticSearchSink) ExportEvents(eventBatch *event_core.EventBatch) {
 		if err != nil {
 			klog.Warningf("Failed to convert event to point: %v", err)
 		}
-		err = sink.saveData(point.LastOccurrenceTimestamp, []interface{}{*point})
+		if sink.esSvc.UseNamespace {
+			namespace = event.Namespace
+		}
+		err = sink.saveData(point.LastOccurrenceTimestamp, namespace, []interface{}{*point})
 		if err != nil {
 			klog.Warningf("Failed to export data to ElasticSearch sink: %v", err)
 		}
@@ -113,8 +117,8 @@ func NewElasticSearchSink(uri *url.URL) (event_core.EventSink, error) {
 	}
 
 	esSink.esSvc = *esSvc
-	esSink.saveData = func(date time.Time, sinkData []interface{}) error {
-		return esSvc.SaveData(date, typeName, sinkData)
+	esSink.saveData = func(date time.Time, namespace string, sinkData []interface{}) error {
+		return esSvc.SaveData(date, typeName, namespace, sinkData)
 	}
 	esSink.flushData = func() error {
 		return esSvc.FlushData()

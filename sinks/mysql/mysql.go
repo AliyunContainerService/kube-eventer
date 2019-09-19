@@ -28,14 +28,13 @@ import (
 type SaveDataFunc func(sinkData []interface{}) error
 
 type mysqlSink struct {
-	mysqlSvc *mysql_common.MysqlService
+	mysqlSvc  *mysql_common.MysqlService
 	saveData  SaveDataFunc
 	flushData func() error
-	closeDB func() error
+	closeDB   func() error
 	sync.RWMutex
-	uri  *url.URL
+	uri *url.URL
 }
-
 
 const (
 	// Maximum number of mysql Points to be sent in one batch.
@@ -54,7 +53,6 @@ func (sink *mysqlSink) createDatabase() error {
 
 	return nil
 }
-
 
 // Generate point value for event
 func getEventValue(event *kube_api.Event) (string, error) {
