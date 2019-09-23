@@ -14,18 +14,18 @@
 package elasticsearch
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
-	"k8s.io/klog"
-
-	"errors"
-	"os"
-
+	elastic7 "github.com/olivere/elastic/v7"
 	elastic2 "gopkg.in/olivere/elastic.v3"
 	elastic5 "gopkg.in/olivere/elastic.v5"
+	elastic6 "gopkg.in/olivere/elastic.v6"
+	"k8s.io/klog"
 )
 
 const (
@@ -83,6 +83,10 @@ func (esSvc *ElasticSearchService) SaveData(date time.Time, typeName string, nam
 			ack = i.Acknowledged
 		case *elastic5.IndicesCreateResult:
 			ack = i.Acknowledged
+		case *elastic6.IndicesCreateResult:
+			ack = i.Acknowledged
+		case *elastic7.IndicesCreateResult:
+			ack = i.Acknowledged
 		}
 		if !ack {
 			return errors.New("Failed to acknoledge index creation")
@@ -101,6 +105,10 @@ func (esSvc *ElasticSearchService) SaveData(date time.Time, typeName string, nam
 		hasAlias = a.Indices[indexName].HasAlias(aliasName)
 	case *elastic5.AliasesResult:
 		hasAlias = a.Indices[indexName].HasAlias(aliasName)
+	case *elastic6.AliasesResult:
+		hasAlias = a.Indices[indexName].HasAlias(aliasName)
+	case *elastic7.AliasesResult:
+		hasAlias = a.Indices[indexName].HasAlias(aliasName)
 	}
 	if !hasAlias {
 		createAlias, err := esSvc.EsClient.AddAlias(indexName, esSvc.IndexAlias(typeName))
@@ -113,6 +121,10 @@ func (esSvc *ElasticSearchService) SaveData(date time.Time, typeName string, nam
 		case *elastic2.AliasResult:
 			ack = i.Acknowledged
 		case *elastic5.AliasResult:
+			ack = i.Acknowledged
+		case *elastic6.AliasResult:
+			ack = i.Acknowledged
+		case *elastic7.AliasResult:
 			ack = i.Acknowledged
 		}
 		if !ack {
@@ -160,6 +172,8 @@ func CreateElasticSearchService(uri *url.URL) (*ElasticSearchService, error) {
 		esSvc.UseNamespace = true
 	}
 
+	var startupFnsV7 []elastic7.ClientOptionFunc
+	var startupFnsV6 []elastic6.ClientOptionFunc
 	var startupFnsV5 []elastic5.ClientOptionFunc
 	var startupFnsV2 []elastic2.ClientOptionFunc
 
@@ -168,9 +182,13 @@ func CreateElasticSearchService(uri *url.URL) (*ElasticSearchService, error) {
 	if len(opts["nodes"]) > 0 {
 		startupFnsV2 = append(startupFnsV2, elastic2.SetURL(opts["nodes"]...))
 		startupFnsV5 = append(startupFnsV5, elastic5.SetURL(opts["nodes"]...))
+		startupFnsV6 = append(startupFnsV6, elastic6.SetURL(opts["nodes"]...))
+		startupFnsV7 = append(startupFnsV7, elastic7.SetURL(opts["nodes"]...))
 	} else if uri.Scheme != "" && uri.Host != "" {
 		startupFnsV2 = append(startupFnsV2, elastic2.SetURL(uri.Scheme+"://"+uri.Host))
 		startupFnsV5 = append(startupFnsV5, elastic5.SetURL(uri.Scheme+"://"+uri.Host))
+		startupFnsV6 = append(startupFnsV6, elastic6.SetURL(uri.Scheme+"://"+uri.Host))
+		startupFnsV7 = append(startupFnsV7, elastic7.SetURL(uri.Scheme+"://"+uri.Host))
 	} else {
 		return nil, errors.New("There is no node assigned for connecting ES cluster")
 	}
@@ -180,6 +198,8 @@ func CreateElasticSearchService(uri *url.URL) (*ElasticSearchService, error) {
 	if len(opts["esUserName"]) > 0 && len(opts["esUserSecret"]) > 0 {
 		startupFnsV2 = append(startupFnsV2, elastic2.SetBasicAuth(opts["esUserName"][0], opts["esUserSecret"][0]))
 		startupFnsV5 = append(startupFnsV5, elastic5.SetBasicAuth(opts["esUserName"][0], opts["esUserSecret"][0]))
+		startupFnsV6 = append(startupFnsV6, elastic6.SetBasicAuth(opts["esUserName"][0], opts["esUserSecret"][0]))
+		startupFnsV7 = append(startupFnsV7, elastic7.SetBasicAuth(opts["esUserName"][0], opts["esUserSecret"][0]))
 	}
 
 	if len(opts["maxRetries"]) > 0 {
@@ -189,6 +209,8 @@ func CreateElasticSearchService(uri *url.URL) (*ElasticSearchService, error) {
 		}
 		startupFnsV2 = append(startupFnsV2, elastic2.SetMaxRetries(maxRetries))
 		startupFnsV5 = append(startupFnsV5, elastic5.SetMaxRetries(maxRetries))
+		startupFnsV6 = append(startupFnsV6, elastic6.SetMaxRetries(maxRetries))
+		startupFnsV7 = append(startupFnsV7, elastic7.SetMaxRetries(maxRetries))
 	}
 
 	if len(opts["healthCheck"]) > 0 {
@@ -198,6 +220,8 @@ func CreateElasticSearchService(uri *url.URL) (*ElasticSearchService, error) {
 		}
 		startupFnsV2 = append(startupFnsV2, elastic2.SetHealthcheck(healthCheck))
 		startupFnsV5 = append(startupFnsV5, elastic5.SetHealthcheck(healthCheck))
+		startupFnsV6 = append(startupFnsV6, elastic6.SetHealthcheck(healthCheck))
+		startupFnsV7 = append(startupFnsV7, elastic7.SetHealthcheck(healthCheck))
 	}
 
 	if len(opts["startupHealthcheckTimeout"]) > 0 {
@@ -207,6 +231,8 @@ func CreateElasticSearchService(uri *url.URL) (*ElasticSearchService, error) {
 		}
 		startupFnsV2 = append(startupFnsV2, elastic2.SetHealthcheckTimeoutStartup(timeout))
 		startupFnsV5 = append(startupFnsV5, elastic5.SetHealthcheckTimeoutStartup(timeout))
+		startupFnsV6 = append(startupFnsV6, elastic6.SetHealthcheckTimeoutStartup(timeout))
+		startupFnsV7 = append(startupFnsV7, elastic7.SetHealthcheckTimeoutStartup(timeout))
 	}
 
 	if os.Getenv("AWS_ACCESS_KEY_ID") != "" || os.Getenv("AWS_ACCESS_KEY") != "" ||
@@ -220,6 +246,8 @@ func CreateElasticSearchService(uri *url.URL) (*ElasticSearchService, error) {
 
 		startupFnsV2 = append(startupFnsV2, elastic2.SetHttpClient(awsClient), elastic2.SetSniff(false))
 		startupFnsV5 = append(startupFnsV5, elastic5.SetHttpClient(awsClient), elastic5.SetSniff(false))
+		startupFnsV6 = append(startupFnsV6, elastic6.SetHttpClient(awsClient), elastic6.SetSniff(false))
+		startupFnsV7 = append(startupFnsV7, elastic7.SetHttpClient(awsClient), elastic7.SetSniff(false))
 	} else {
 		if len(opts["sniff"]) > 0 {
 			sniff, err := strconv.ParseBool(opts["sniff"][0])
@@ -228,6 +256,8 @@ func CreateElasticSearchService(uri *url.URL) (*ElasticSearchService, error) {
 			}
 			startupFnsV2 = append(startupFnsV2, elastic2.SetSniff(sniff))
 			startupFnsV5 = append(startupFnsV5, elastic5.SetSniff(sniff))
+			startupFnsV6 = append(startupFnsV6, elastic6.SetSniff(sniff))
+			startupFnsV7 = append(startupFnsV7, elastic7.SetSniff(sniff))
 		}
 	}
 
@@ -249,6 +279,10 @@ func CreateElasticSearchService(uri *url.URL) (*ElasticSearchService, error) {
 		esSvc.EsClient, err = newEsClientV2(startupFnsV2, bulkWorkers)
 	case 5:
 		esSvc.EsClient, err = newEsClientV5(startupFnsV5, bulkWorkers, pipeline)
+	case 6:
+		esSvc.EsClient, err = newEsClientV6(startupFnsV6, bulkWorkers, pipeline)
+	case 7:
+		esSvc.EsClient, err = newEsClientV7(startupFnsV7, bulkWorkers, pipeline)
 	default:
 		return nil, UnsupportedVersion{}
 	}
