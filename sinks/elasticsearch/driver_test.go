@@ -57,7 +57,7 @@ func NewFakeSink() fakeESSink {
 			saveData:  SaveDataIntoES_Stub,
 			flushData: func() error { return nil },
 			esSvc: esCommon.ElasticSearchService{
-				EsClient:    esCommon.NewMockClient(),
+				EsClient:    &esCommon.Elastic5Wrapper{},
 				ClusterName: esCommon.ESClusterName,
 			},
 		},

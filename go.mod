@@ -13,7 +13,8 @@ require (
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/influxdata/influxdb v1.7.7
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/mailru/easyjson v0.0.0-20190614124828-94de47d64c63 // indirect
+	github.com/olivere/elastic v6.2.23+incompatible
+	github.com/olivere/elastic/v7 v7.0.6
 	github.com/pborman/uuid v1.2.0
 	github.com/prometheus/client_golang v1.0.0
 	github.com/riemann/riemann-go-client v0.4.0
@@ -28,11 +29,10 @@ require (
 	golang.org/x/text v0.3.2 // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/appengine v1.5.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/olivere/elastic.v3 v3.0.75
 	gopkg.in/olivere/elastic.v5 v5.0.81
-	gopkg.in/yaml.v2 v2.2.2 // indirect
+	gopkg.in/olivere/elastic.v6 v6.2.23
 	k8s.io/api v0.0.0-20190627205229-acea843d18eb
 	k8s.io/apimachinery v0.0.0-20190627205106-bc5732d141a8
 	k8s.io/apiserver v0.0.0-20190606205144-71ebb8303503
