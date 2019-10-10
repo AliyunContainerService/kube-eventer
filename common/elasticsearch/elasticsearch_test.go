@@ -173,6 +173,30 @@ func TestCreateElasticSearchServiceWithIngestPipeline(t *testing.T) {
 
 }
 
+func TestIndexName(t *testing.T) {
+
+	esURI := "https://foo.com:9200?sniff=false&healthCheck=false"
+	url, err := url.Parse(esURI)
+	if err != nil {
+		t.Fatalf("Error when parsing URL: %s", err.Error())
+	}
+	esSvc, err := CreateElasticSearchService(url)
+	if err != nil {
+		t.Fatalf("Creating svc: %s", err.Error())
+	}
+	indexDate := time.Date(2000, 2, 1, 0, 0, 0, 0, time.UTC)
+	indexName := esSvc.Index(indexDate, "")
+	if indexName != "heapster-2000.02.01" {
+		t.Fatalf("Unexpected index name %s", indexName)
+	}
+
+	indexName = esSvc.Index(indexDate, "application")
+	if indexName != "heapster-application-2000.02.01" {
+		t.Fatalf("Unexpected index name %s", indexName)
+	}
+
+}
+
 func TestCreateElasticSearchServiceSingleDnsEntrypointV5(t *testing.T) {
 	clusterName := "sandbox"
 	esURI := fmt.Sprintf("https://foo.com:9200?"+
