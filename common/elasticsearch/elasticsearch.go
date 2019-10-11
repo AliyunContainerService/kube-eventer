@@ -68,9 +68,9 @@ func (esSvc *ElasticSearchService) Index(date time.Time, namespace string) strin
 	if len(namespace) > 0 {
 		return fmt.Sprintf("%s-%s-%s", esSvc.baseIndex, namespace, dateStr)
 	}
-	return fmt.Sprintf("%s-%s", esSvc.baseIndex, date)
-
+	return fmt.Sprintf("%s-%s", esSvc.baseIndex, dateStr)
 }
+
 func (esSvc *ElasticSearchService) IndexAlias(typeName string) string {
 	return fmt.Sprintf("%s-%s", esSvc.baseIndex, typeName)
 }
