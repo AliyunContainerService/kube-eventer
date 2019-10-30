@@ -16,7 +16,7 @@ spec:
       serviceAccount: admin
       containers:
       - name: kube-eventer
-        image: registry.aliyuncs.com/acs/kube-eventer-amd64:v1.1.0-03a3e2b-aliyun
+        image: registry.aliyuncs.com/acs/kube-eventer-amd64:v1.1.0-63e7f98-aliyun
         imagePullPolicy: IfNotPresent
         command:
         - /kube-eventer
