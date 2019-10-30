@@ -16,14 +16,13 @@ package version
 
 import (
 	"fmt"
+)
 
-	"k8s.io/client-go/pkg/version"
+var (
+	Version   = ""
+	GitCommit = ""
 )
 
 func VersionInfo() string {
-
-	info := version.Get()
-	v := fmt.Sprintf("GoVersion:\t%s\nPlatform:\t%s\nVersion:\t%s\nBuildTime:\t%s\nGitCommit:\t%s\n\n",
-		info.GoVersion, info.Platform, info.GitVersion, info.BuildDate, info.GitCommit)
-	return v
+	return fmt.Sprintf("version: %s\ncommit: %s\n", Version, GitCommit)
 }
