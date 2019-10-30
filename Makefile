@@ -7,7 +7,7 @@ ALL_ARCHITECTURES=amd64 arm arm64 ppc64le s390x
 ML_PLATFORMS=linux/amd64,linux/arm,linux/arm64,linux/ppc64le,linux/s390x
 
 
-VERSION?=v1.0.0
+VERSION?=v1.1.0
 GIT_COMMIT:=$(shell git rev-parse --short HEAD)
 
 
@@ -35,7 +35,7 @@ test-unit-cov: clean sanitize build
 	hack/coverage.sh
 
 docker-container:
-	docker build --pull -t $(PREFIX)/kube-eventer-$(ARCH):$(VERSION)-$(GIT_COMMIT) -f deploy/Dockerfile .
+	docker build --pull -t $(PREFIX)/kube-eventer-$(ARCH):$(VERSION)-$(GIT_COMMIT)-aliyun -f deploy/Dockerfile .
 
 clean:
 	rm -f kube-eventer
