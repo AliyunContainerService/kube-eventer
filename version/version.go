@@ -24,5 +24,5 @@ var (
 )
 
 func VersionInfo() string {
-	return fmt.Sprintf("version: %s\ncommit: %s\n", Version, GitCommit)
+	return fmt.Sprintf("kube-eventer version: %s commit: %s\n", Version, GitCommit)
 }
