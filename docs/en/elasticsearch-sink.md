@@ -15,10 +15,11 @@ additional node in the cluster. For example:
 
 If you run your ElasticSearch cluster behind a loadbalancer (or otherwise do
 not want to specify multiple nodes) then you can do the following:
-```
-  --sink=elasticsearch:http://elasticsearch.example.com:9200?sniff=false
-```
 
+(*) Be sure to add your version tag in your sink;
+```
+  --sink=elasticsearch:http://elasticsearch.example.com:9200?sniff=false&ver=6
+```
 Besides this, the following options can be set in query string:
 
 (*) Note that the keys are case sensitive
