@@ -15,18 +15,18 @@ use kube_event;
 
 create table kube_event
 (
-    id               bigint(20)   not null auto_increment primary key comment 'key',
-    name             varchar(64)  not null default '' comment 'name',
-    namespace        varchar(64)  not null default '' comment 'namespace',
+    id               bigint(20)   not null auto_increment primary key comment 'event primary key',
+    name             varchar(64)  not null default '' comment 'evenet name',
+    namespace        varchar(64)  not null default '' comment 'evenet namespace',
     event_id         varchar(64)  not null default '' comment 'event_id',
-    type             varchar(64)  not null default '' comment 'type',
-    reason           varchar(64)  not null default '' comment 'reason',
-    message          text  not null  comment 'message' ,
-    kind             varchar(64)  not null default '' comment 'kind' ,
-    first_occurrence_time   varchar(64)    not null default '' comment '创建时间',
-    last_occurrence_time    varchar(64)    not null default '' comment '更新时间',
+    type             varchar(64)  not null default '' comment 'event type Warning or Normal',
+    reason           varchar(64)  not null default '' comment 'event reason',
+    message          text  not null  comment 'event message' ,
+    kind             varchar(64)  not null default '' comment 'event kind' ,
+    first_occurrence_time   varchar(64)    not null default '' comment 'event first occurrence time',
+    last_occurrence_time    varchar(64)    not null default '' comment 'event last occurrence time',
     unique index event_id_index (event_id)
-) ENGINE = InnoDB default CHARSET = utf8 comment ='Event表';
+) ENGINE = InnoDB default CHARSET = utf8 comment ='Event info tables';
 ```
 
 For example:
