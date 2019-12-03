@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 
@@ -205,8 +204,7 @@ func CreateElasticSearchService(uri *url.URL) (*ElasticSearchService, error) {
 		config.Timeout = &timeout
 	}
 
-	if os.Getenv("AWS_ACCESS_KEY_ID") != "" || os.Getenv("AWS_ACCESS_KEY") != "" ||
-		os.Getenv("AWS_SECRET_ACCESS_KEY") != "" || os.Getenv("AWS_SECRET_KEY") != "" {
+	if useSigV4(opts) {
 		klog.Info("Configuring with AWS credentials..")
 
 		awsClient, err := createAWSClient()

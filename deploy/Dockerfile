@@ -3,6 +3,7 @@ ADD . /src/github.com/AliyunContainerService/kube-eventer
 ENV GOPATH /:/src/github.com/AliyunContainerService/kube-eventer/vendor
 WORKDIR /src/github.com/AliyunContainerService/kube-eventer
 RUN apt-get update -y && apt-get install gcc ca-certificates
+ENV GO111MODULE on
 RUN make
 
 FROM alpine:3.10
