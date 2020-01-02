@@ -2,3 +2,5 @@
 kube-eventer 
 .git 
 coverage.txt
+.vscode
+__debug_bin
