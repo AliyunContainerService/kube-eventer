@@ -52,6 +52,17 @@ func (this *SourceFactory) BuildAll(uris flags.Uris) ([]core.EventSource, error)
 	return result, nil
 }
 
+func (this *SourceFactory) BuildInCluster() ([]core.EventSource, error) {
+	result := []core.EventSource{}
+	source, err := kube.NewKubernetesSource(nil)
+	if err != nil {
+		klog.Errorf("Failed to create incluster client: %v", err)
+	} else {
+		result = append(result, source)
+	}
+	return result, nil
+}
+
 func NewSourceFactory() *SourceFactory {
 	return &SourceFactory{}
 }

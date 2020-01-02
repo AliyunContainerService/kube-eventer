@@ -29,6 +29,7 @@ import (
 
 	"github.com/AliyunContainerService/kube-eventer/api"
 	"github.com/AliyunContainerService/kube-eventer/common/flags"
+	"github.com/AliyunContainerService/kube-eventer/core"
 	"github.com/AliyunContainerService/kube-eventer/manager"
 	"github.com/AliyunContainerService/kube-eventer/sinks"
 	"github.com/AliyunContainerService/kube-eventer/sources"
@@ -71,11 +72,17 @@ func main() {
 	}
 
 	// sources
-	if len(argSources) != 1 {
+	if len(argSources) > 1 {
 		klog.Fatal("Wrong number of sources specified")
 	}
 	sourceFactory := sources.NewSourceFactory()
-	sources, err := sourceFactory.BuildAll(argSources)
+	var sources []core.EventSource
+	var err error
+	if len(argSources) == 0 {
+		sources, err = sourceFactory.BuildInCluster()
+	} else {
+		sources, err = sourceFactory.BuildAll(argSources)
+	}
 	if err != nil {
 		klog.Fatalf("Failed to create sources: %v", err)
 	}

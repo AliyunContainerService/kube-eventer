@@ -15,7 +15,9 @@
 package kubernetes
 
 import (
+	"flag"
 	"net/url"
+	"path/filepath"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -27,6 +29,9 @@ import (
 	kubewatch "k8s.io/apimachinery/pkg/watch"
 	kubeclient "k8s.io/client-go/kubernetes"
 	kubev1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog"
 )
 
@@ -36,6 +41,7 @@ const (
 )
 
 var (
+	argKubeConfig *string
 	// Last time of event since unix epoch in seconds
 	lastEventTimestamp = prometheus.NewGauge(
 		prometheus.GaugeOpts{
@@ -61,6 +67,9 @@ var (
 )
 
 func init() {
+	if home := homedir.HomeDir(); home != "" {
+		argKubeConfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	}
 	prometheus.MustRegister(lastEventTimestamp)
 	prometheus.MustRegister(totalEventsNum)
 	prometheus.MustRegister(scrapEventsDuration)
@@ -172,8 +181,16 @@ func (this *KubernetesEventSource) watch() {
 	}
 }
 
-func NewKubernetesSource(uri *url.URL) (*KubernetesEventSource, error) {
-	kubeConfig, err := kubeconfig.GetKubeClientConfig(uri)
+func NewKubernetesSource(uri *url.URL) (results *KubernetesEventSource, err error) {
+	var kubeConfig *rest.Config
+	if uri == nil {
+		kubeConfig, err = rest.InClusterConfig()
+		if err == rest.ErrNotInCluster {
+			kubeConfig, err = clientcmd.BuildConfigFromFlags("", *argKubeConfig)
+		}
+	} else {
+		kubeConfig, err = kubeconfig.GetKubeClientConfig(uri)
+	}
 	if err != nil {
 		return nil, err
 	}
