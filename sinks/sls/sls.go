@@ -187,7 +187,7 @@ func parseConfig(uri *url.URL) (*Config, error) {
 	}
 
 	if len(opts["topic"]) >= 1 {
-		c.topic = opts["logStore"][0]
+		c.topic = opts["topic"][0]
 	}
 
 	if len(opts["accessKeyId"]) >= 1 {
