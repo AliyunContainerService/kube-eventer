@@ -10,7 +10,6 @@ import (
 	//"os"
 	"encoding/json"
 	"net/url"
-	// "time"
 )
 
 func TestGetLevel(t *testing.T) {

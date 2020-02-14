@@ -35,6 +35,7 @@ const (
 	DEFAULT_MSG_TYPE      = "text"
 	CONTENT_TYPE_JSON     = "application/json"
 	LABE_TEMPLATE         = "%s\n"
+	TIME_FORMAT           = "2006-01-02 15:04:05"
 )
 
 var (
@@ -208,7 +209,7 @@ func createMsgFromEvent(d *DingTalkSink, event *v1.Event) *DingTalkMsg {
 		}
 
 		msg.Text = DingTalkText{
-			Content: fmt.Sprintf(template, event.Type, event.InvolvedObject.Kind, event.Namespace, event.Name, event.Reason, event.LastTimestamp.String(), event.Message),
+			Content: fmt.Sprintf(template, event.Type, event.InvolvedObject.Kind, event.Namespace, event.Name, event.Reason, event.LastTimestamp.Format(TIME_FORMAT), event.Message),
 		}
 		break
 	}
