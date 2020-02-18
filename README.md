@@ -53,7 +53,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       serviceAccount: kube-eventer
       containers:
-        - image: registry.aliyuncs.com/acs/kube-eventer-amd64:v1.1.0-63e7f98-aliyun
+        - image: registry.aliyuncs.com/acs/kube-eventer-amd64:v1.1.0-c93a835-aliyun
           name: kube-eventer
           command:
             - "/kube-eventer"
@@ -63,7 +63,7 @@ spec:
           env:
           # If TZ is assigned, set the TZ value as the time zone
           - name: TZ
-            value: America/New_York
+            value: "Asia/Shanghai" 
           volumeMounts:
             - name: localtime
               mountPath: /etc/localtime
