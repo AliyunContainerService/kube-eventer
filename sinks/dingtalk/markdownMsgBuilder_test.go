@@ -1,24 +1,27 @@
 package dingtalk
 
 import (
-	"github.com/stretchr/testify/assert"
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	TEST_CLUSTERID        = ""
-	TEST_REGION           = ""
-	TEST_DEPLOY_NAME      = ""
-	TEST_POD_NAME         = ""
-	TEST_STATEFULSET_NAME = ""
-	TEST_DAEMONSET_NAME   = ""
-	TEST_SERVICE_NAME     = ""
-	TEST_CROBJOB          = ""
-	TEST_NAMESPACE        = ""
+const (
+	TEST_CLUSTERID        = "abcdefghijklmnopqrstuvwxyz"
+	TEST_REGION           = "cn-shenzhen"
+	TEST_NODENAME         = "testnode"
+	TEST_DEPLOY_NAME      = "testdeploy"
+	TEST_POD_NAME         = "testpod"
+	TEST_STATEFULSET_NAME = "testss"
+	TEST_DAEMONSET_NAME   = "testds"
+	TEST_SERVICE_NAME     = "testservice"
+	TEST_CROBJOB          = "logs-cleaner"
+	TEST_NAMESPACE        = "default"
+	TEST_RESOURCE_TYPE    = "Deployment"
 )
 
 func TestNewMarkdownMsgBuilder_Deployment(t *testing.T) {

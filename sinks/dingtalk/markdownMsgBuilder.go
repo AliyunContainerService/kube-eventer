@@ -9,7 +9,7 @@ import (
 
 const (
 	MARKDOWN_MSG_TYPE      = "markdown"
-	MARKDOWN_TEMPLATE      = "Level: %s \n\nKind: %s \n\nNamespace: %s \n\nName: %s \n\nNode: %s \n\nReason: %s \n\nTimestamp: %s \n\nMessage: %s"
+	MARKDOWN_TEMPLATE      = "Level: %s \n\nKind: %s \n\nNamespace: %s \n\nName: %s \n\nReason: %s \n\nTimestamp: %s \n\nMessage: %s"
 	MARKDOWN_LINK_TEMPLATE = "[%s](%s)"
 	MARKDOWN_TEXT_BOLD     = "**%s**"
 
@@ -77,19 +77,15 @@ func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event) *MarkdownM
 		name = event.Name
 		break
 	}
-	nodeName := ""
-	if len(event.Source.Host) > 0 {
-		nodeName = fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.Source.Host)
-	}
 	reason := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.Reason)
 	timestamp := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.LastTimestamp.String())
 	message := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.Message)
-	m.OutputText = fmt.Sprintf(MARKDOWN_TEMPLATE, level, kind, namespace, name, nodeName, reason, timestamp, message)
+	m.OutputText = fmt.Sprintf(MARKDOWN_TEMPLATE, level, kind, namespace, name, reason, timestamp, message)
 	return &m
 
 }
 
-// removeDotContent 每个事件由 <resource>.<hash> 组成,需要去掉.后面的部分,得到 <resource>
+// removeDotContent 每个 Event 由 <resource>.<UnixNano> 组成,需要去掉.后面的部分,得到 <resource>
 func removeDotContent(s string) string {
 	if dotPosition := strings.Index(s, "."); dotPosition > -1 {
 		s = s[:dotPosition]
@@ -98,12 +94,21 @@ func removeDotContent(s string) string {
 }
 
 func (m *MarkdownMsgBuilder) AddLabels(labels []string) {
-	if len(labels) > 0 {
+	if labels != nil && len(labels) > 0 {
 		for i := len(labels) - 1; i >= 0; i-- {
-			m.OutputText = fmt.Sprintf("label[%d]: **%s**\n\n", i, labels[i]) + m.OutputText
+			if label := strings.TrimSpace(labels[i]); len(label) > 0 {
+				m.OutputText = fmt.Sprintf("label[%d]: **%s**\n\n", i, labels[i]) + m.OutputText
+			}
 		}
-
 	}
+}
+
+func (m *MarkdownMsgBuilder) AddNodeName(nodeName string) {
+	if len(nodeName) < 1 {
+		return
+	}
+	nodeInfo := fmt.Sprintf("Node: "+MARKDOWN_TEXT_BOLD+" \n\n", nodeName)
+	m.OutputText = nodeInfo + m.OutputText
 }
 
 func (m *MarkdownMsgBuilder) Build() string {
