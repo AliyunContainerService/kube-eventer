@@ -16,8 +16,11 @@ spec:
       serviceAccount: admin
       containers:
       - name: kube-eventer
-        image: registry.cn-beijing.aliyuncs.com/acs/kube-eventer-amd64:v1.0.0-d9898e1-aliyun
+        image: registry.aliyuncs.com/acs/kube-eventer-amd64:v1.1.0-c93a835-aliyun
         imagePullPolicy: IfNotPresent
+        env:
+        - name: TZ
+          value: "Asia/Shanghai"
         command:
         - /kube-eventer
         - --source=kubernetes:https://kubernetes.default

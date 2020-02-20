@@ -1,9 +1,4 @@
-reviewers:
-- almogbaku
-- andyxning
-- huangyuqi
 approvers:
-- almogbaku
-- andyxning
-- huangyuqi
-
+- rralcala
+reviewers:
+- rralcala

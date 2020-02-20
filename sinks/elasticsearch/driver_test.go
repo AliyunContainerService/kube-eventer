@@ -38,7 +38,7 @@ type fakeESSink struct {
 
 var FakeESSink fakeESSink
 
-func SaveDataIntoES_Stub(date time.Time, sinkData []interface{}) error {
+func SaveDataIntoES_Stub(date time.Time, namespace string, sinkData []interface{}) error {
 	for _, data := range sinkData {
 		jsonItems, err := json.Marshal(data)
 		if err != nil {
@@ -57,7 +57,7 @@ func NewFakeSink() fakeESSink {
 			saveData:  SaveDataIntoES_Stub,
 			flushData: func() error { return nil },
 			esSvc: esCommon.ElasticSearchService{
-				EsClient:    esCommon.NewMockClient(),
+				EsClient:    &esCommon.Elastic5Wrapper{},
 				ClusterName: esCommon.ESClusterName,
 			},
 		},

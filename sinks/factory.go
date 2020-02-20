@@ -16,10 +16,6 @@ package sinks
 
 import (
 	"fmt"
-	"github.com/AliyunContainerService/kube-eventer/sinks/wechat"
-
-	"k8s.io/klog"
-
 	"github.com/AliyunContainerService/kube-eventer/common/flags"
 	"github.com/AliyunContainerService/kube-eventer/core"
 	"github.com/AliyunContainerService/kube-eventer/sinks/dingtalk"
@@ -28,8 +24,11 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/sinks/influxdb"
 	"github.com/AliyunContainerService/kube-eventer/sinks/kafka"
 	"github.com/AliyunContainerService/kube-eventer/sinks/log"
+	"github.com/AliyunContainerService/kube-eventer/sinks/mysql"
 	"github.com/AliyunContainerService/kube-eventer/sinks/riemann"
 	"github.com/AliyunContainerService/kube-eventer/sinks/sls"
+	"github.com/AliyunContainerService/kube-eventer/sinks/wechat"
+	"k8s.io/klog"
 )
 
 type SinkFactory struct {
@@ -41,6 +40,8 @@ func (this *SinkFactory) Build(uri flags.Uri) (core.EventSink, error) {
 		return logsink.CreateLogSink()
 	case "influxdb":
 		return influxdb.CreateInfluxdbSink(&uri.Val)
+	case "mysql":
+		return mysql.CreateMysqlSink(&uri.Val)
 	case "elasticsearch":
 		return elasticsearch.NewElasticSearchSink(&uri.Val)
 	case "kafka":

@@ -14,45 +14,54 @@
 package elasticsearch
 
 import (
-	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	awsauth "github.com/smartystreets/go-aws-auth"
+	"k8s.io/klog"
 )
 
+// AWSSigningTransport used to sign outgoing requests to AWS ES
 type AWSSigningTransport struct {
 	HTTPClient  *http.Client
 	Credentials awsauth.Credentials
+	Session     *session.Session
 }
 
 // RoundTrip implementation
 func (a AWSSigningTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if a.Session.Config.Credentials.IsExpired() {
+		a.newSession()
+	}
 	return a.HTTPClient.Do(awsauth.Sign4(req, a.Credentials))
 }
 
 func createAWSClient() (*http.Client, error) {
-	id := os.Getenv("AWS_ACCESS_KEY_ID")
-	if id == "" {
-		id = os.Getenv("AWS_ACCESS_KEY")
-	}
+	signingTransport := AWSSigningTransport{HTTPClient: http.DefaultClient}
+	signingTransport.newSession()
 
-	secret := os.Getenv("AWS_SECRET_ACCESS_KEY")
-	if secret == "" {
-		secret = os.Getenv("AWS_SECRET_KEY")
-	}
-
-	if id == "" || secret == "" {
-		return nil, fmt.Errorf("Failed to configure AWS authentication. Both `AWS_ACCESS_KEY_ID` and " +
-			"`AWS_SECRET_ACCESS_KEY` environment veriables required")
-	}
-
-	signingTransport := AWSSigningTransport{
-		Credentials: awsauth.Credentials{
-			AccessKeyID:     id,
-			SecretAccessKey: secret,
-		},
-		HTTPClient: http.DefaultClient,
-	}
 	return &http.Client{Transport: http.RoundTripper(signingTransport)}, nil
+}
+
+func useSigV4(opts url.Values) bool {
+	return os.Getenv("AWS_ACCESS_KEY_ID") != "" || os.Getenv("AWS_ACCESS_KEY") != "" ||
+		os.Getenv("AWS_SECRET_ACCESS_KEY") != "" || os.Getenv("AWS_SECRET_KEY") != "" ||
+		len(opts["sigv4"]) > 0
+}
+
+func (a *AWSSigningTransport) newSession() {
+	newSession := session.Must(session.NewSession())
+	credentials, err := newSession.Config.Credentials.Get()
+	if err != nil {
+		klog.Fatalf("error getting aws credentials: %v", err)
+	}
+	a.Session = newSession
+	a.Credentials = awsauth.Credentials{
+		AccessKeyID:     credentials.AccessKeyID,
+		SecretAccessKey: credentials.SecretAccessKey,
+		SecurityToken:   credentials.SessionToken,
+	}
+
 }

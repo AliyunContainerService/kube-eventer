@@ -47,13 +47,13 @@ spec:
     metadata:
       labels:
         app: kube-eventer
-    annotations:	
+      annotations:	
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
       dnsPolicy: ClusterFirstWithHostNet
       serviceAccount: kube-eventer
       containers:
-        - image: registry.cn-hangzhou.aliyuncs.com/acs/kube-eventer-amd64:v1.0.0-d9898e1-aliyun
+        - image: registry.aliyuncs.com/acs/kube-eventer-amd64:v1.1.0-c93a835-aliyun
           name: kube-eventer
           command:
             - "/kube-eventer"
@@ -63,7 +63,7 @@ spec:
           env:
           # If TZ is assigned, set the TZ value as the time zone
           - name: TZ
-            value: America/New_York
+            value: "Asia/Shanghai" 
           volumeMounts:
             - name: localtime
               mountPath: /etc/localtime
@@ -134,7 +134,8 @@ Supported Sinks:
 | <a href="docs/en/honeycomb-sink.md">honeycomb</a>     | sink to honeycomb                 |
 | <a href="docs/en/influxdb-sink.md">influxdb</a>      | sink to influxdb                  |
 | <a href="docs/en/kafka-sink.md">kafka</a>         | sink to kafka                     |
-| <a href="docs/en/log-sink.md">log</a>               | sink to standard output           |
+| <a href="docs/en/mysql-sink.md">mysql</a>               | sink to mysql database           |
+| <a href="docs/en/wechat-sink.md">wechat</a>               | sink to wechat           |
 
 ### Contributing 
 Please check <a href="docs/en/CONTRIBUTING.md" target="_blank">CONTRIBUTING.md</a>

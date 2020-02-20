@@ -53,7 +53,7 @@ func TestCreateElasticSearchServiceV2(t *testing.T) {
 		t.Fatalf("Error when creating client: %s", err.Error())
 	}
 
-	actualClientRefl := reflect.ValueOf(esSvc.EsClient).Elem().FieldByName("clientV2").Elem()
+	actualClientRefl := reflect.ValueOf(esSvc.EsClient).Elem().FieldByName("client").Elem()
 	expectedClientRefl := reflect.ValueOf(expectedClient).Elem()
 
 	if actualClientRefl.FieldByName("basicAuthUsername").String() != expectedClientRefl.FieldByName("basicAuthUsername").String() {
@@ -62,9 +62,6 @@ func TestCreateElasticSearchServiceV2(t *testing.T) {
 	if actualClientRefl.FieldByName("basicAuthUsername").String() != expectedClientRefl.FieldByName("basicAuthUsername").String() {
 		t.Fatal("basicAuthUsername is not equal")
 	}
-	//if actualClientRefl.FieldByName("maxRetries").Int() != expectedClientRefl.FieldByName("maxRetries").Int() {
-	//	t.Fatal("maxRetries is not equal")
-	//}
 	if actualClientRefl.FieldByName("healthcheckTimeoutStartup").Int() != expectedClientRefl.FieldByName("healthcheckTimeoutStartup").Int() {
 		t.Fatal("healthcheckTimeoutStartup is not equal")
 	}
@@ -104,7 +101,7 @@ func TestCreateElasticSearchServiceV5(t *testing.T) {
 		t.Fatalf("Error when creating client: %s", err.Error())
 	}
 
-	actualClientRefl := reflect.ValueOf(esSvc.EsClient).Elem().FieldByName("clientV5").Elem()
+	actualClientRefl := reflect.ValueOf(esSvc.EsClient).Elem().FieldByName("client").Elem()
 	expectedClientRefl := reflect.ValueOf(expectedClient).Elem()
 
 	if actualClientRefl.FieldByName("basicAuthUsername").String() != expectedClientRefl.FieldByName("basicAuthUsername").String() {
@@ -164,13 +161,40 @@ func TestCreateElasticSearchServiceWithIngestPipeline(t *testing.T) {
 		t.Fatalf("Error when creating config: %s", err.Error())
 	}
 
-	if esSvc.EsClient.pipeline != pipeline {
-		t.Fatalf("Ingest pipline is not equal. Expected: %s, Got: %s", pipeline, esSvc.EsClient.pipeline)
+	f, ok := esSvc.EsClient.(*Elastic5Wrapper)
+	fmt.Println(f, ok)
+	if !ok {
+		t.Fatalf("ElasticSearch client not using version 5+ (required for pipeline). Got: %T", esSvc.EsClient)
 	}
 
-	if esSvc.EsClient.version < 5 {
-		t.Fatalf("ElasticSearch client not using version 5+ (required for pipeline). Got: %d", esSvc.EsClient.version)
+	if f.pipeline != pipeline {
+		t.Fatalf("Ingest pipline is not equal. Expected: %s, Got: %s", pipeline, f.pipeline)
 	}
+
+}
+
+func TestIndexName(t *testing.T) {
+
+	esURI := "https://foo.com:9200?sniff=false&healthCheck=false"
+	url, err := url.Parse(esURI)
+	if err != nil {
+		t.Fatalf("Error when parsing URL: %s", err.Error())
+	}
+	esSvc, err := CreateElasticSearchService(url)
+	if err != nil {
+		t.Fatalf("Creating svc: %s", err.Error())
+	}
+	indexDate := time.Date(2000, 2, 1, 0, 0, 0, 0, time.UTC)
+	indexName := esSvc.Index(indexDate, "")
+	if indexName != "heapster-2000.02.01" {
+		t.Fatalf("Unexpected index name %s", indexName)
+	}
+
+	indexName = esSvc.Index(indexDate, "application")
+	if indexName != "heapster-application-2000.02.01" {
+		t.Fatalf("Unexpected index name %s", indexName)
+	}
+
 }
 
 func TestCreateElasticSearchServiceSingleDnsEntrypointV5(t *testing.T) {
@@ -199,7 +223,7 @@ func TestCreateElasticSearchServiceSingleDnsEntrypointV5(t *testing.T) {
 		t.Fatalf("Error when creating client: %s", err.Error())
 	}
 
-	actualClientRefl := reflect.ValueOf(esSvc.EsClient).Elem().FieldByName("clientV5").Elem()
+	actualClientRefl := reflect.ValueOf(esSvc.EsClient).Elem().FieldByName("client").Elem()
 	expectedClientRefl := reflect.ValueOf(expectedClient).Elem()
 
 	if actualClientRefl.FieldByName("basicAuthUsername").String() != expectedClientRefl.FieldByName("basicAuthUsername").String() {
@@ -243,7 +267,7 @@ func TestCreateElasticSearchServiceSingleDnsEntrypointV2(t *testing.T) {
 		t.Fatalf("Error when creating client: %s", err.Error())
 	}
 
-	actualClientRefl := reflect.ValueOf(esSvc.EsClient).Elem().FieldByName("clientV2").Elem()
+	actualClientRefl := reflect.ValueOf(esSvc.EsClient).Elem().FieldByName("client").Elem()
 	expectedClientRefl := reflect.ValueOf(expectedClient).Elem()
 
 	if actualClientRefl.FieldByName("basicAuthUsername").String() != expectedClientRefl.FieldByName("basicAuthUsername").String() {
