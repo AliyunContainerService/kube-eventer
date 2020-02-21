@@ -2,3 +2,4 @@
 kube-eventer 
 .git 
 coverage.txt
+.DS_Store
