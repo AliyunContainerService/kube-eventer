@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/AliyunContainerService/kube-eventer/core"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
 
@@ -188,9 +188,8 @@ func createMsgFromEvent(d *DingTalkSink, event *v1.Event) *DingTalkMsg {
 	//https://open-doc.dingtalk.com/microapp/serverapi2/ye8tup#-6
 	case MARKDOWN_MSG_TYPE:
 		markdownCreator := NewMarkdownMsgBuilder(d.ClusterID, d.Region, event)
-		if d.Labels != nil && len(d.Labels) > 0 {
-			markdownCreator.AddLabels(d.Labels)
-		}
+		markdownCreator.AddNodeName(event.Source.Host)
+		markdownCreator.AddLabels(d.Labels)
 		msg.Markdown = DingTalkMarkdown{
 			//title 加不加其实没所谓,最终不会显示
 			Title: fmt.Sprintf("Kubernetes(ID:%s) Event", d.ClusterID),
@@ -199,7 +198,6 @@ func createMsgFromEvent(d *DingTalkSink, event *v1.Event) *DingTalkMsg {
 		break
 
 	default:
-
 		//默认按文本模式推送
 		template := MSG_TEMPLATE
 		if len(d.Labels) > 0 {
@@ -207,7 +205,6 @@ func createMsgFromEvent(d *DingTalkSink, event *v1.Event) *DingTalkMsg {
 				template = fmt.Sprintf(LABE_TEMPLATE, label) + template
 			}
 		}
-
 		msg.Text = DingTalkText{
 			Content: fmt.Sprintf(template, event.Type, event.InvolvedObject.Kind, event.Namespace, event.Name, event.Reason, event.LastTimestamp.Format(TIME_FORMAT), event.Message),
 		}
