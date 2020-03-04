@@ -103,7 +103,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  annotations:
   name: kube-eventer
 roleRef:
   apiGroup: rbac.authorization.k8s.io
