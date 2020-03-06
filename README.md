@@ -31,7 +31,7 @@ Add a chatbot in a dingtalk group and get bot token.
  
 1. Install eventer and configure sink 
 ```
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
