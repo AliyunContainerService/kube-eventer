@@ -191,7 +191,7 @@ func (sink *influxdbSink) createDatabase() error {
 	}
 
 	q := influxdb.Query{
-		Command: fmt.Sprintf(`CREATE DATABASE %s WITH NAME "default"`, sink.c.DbName),
+		Command: fmt.Sprintf(`CREATE DATABASE "%s" WITH NAME "default"`, sink.c.DbName),
 	}
 
 	if resp, err := sink.client.Query(q); err != nil {
