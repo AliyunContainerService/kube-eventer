@@ -191,7 +191,7 @@ func (sink *influxdbSink) createDatabase() error {
 	}
 
 	q := influxdb.Query{
-		Command: fmt.Sprintf(`CREATE DATABASE %s WITH NAME "default"`, sink.c.DbName),
+		Command: fmt.Sprintf(`CREATE DATABASE "%s" WITH NAME "default"`, sink.c.DbName),
 	}
 
 	if resp, err := sink.client.Query(q); err != nil {
@@ -211,7 +211,7 @@ func (sink *influxdbSink) createDatabase() error {
 
 func (sink *influxdbSink) createRetentionPolicy() error {
 	q := influxdb.Query{
-		Command: fmt.Sprintf(`CREATE RETENTION POLICY "default" ON %s DURATION 0d REPLICATION 1 DEFAULT`, sink.c.DbName),
+		Command: fmt.Sprintf(`CREATE RETENTION POLICY "default" ON "%s" DURATION 0d REPLICATION 1 DEFAULT`, sink.c.DbName),
 	}
 
 	if resp, err := sink.client.Query(q); err != nil {
