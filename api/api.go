@@ -18,11 +18,9 @@ import (
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"k8s.io/apiserver/pkg/server/healthz"
 )
 
 func init() {
-	healthz.InstallHandler(http.DefaultServeMux, healthzChecker())
-
+	http.HandleFunc("/healtz", healthzChecker)
 	http.Handle("/metrics", promhttp.Handler())
 }
