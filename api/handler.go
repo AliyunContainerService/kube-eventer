@@ -15,13 +15,11 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/AliyunContainerService/kube-eventer/manager"
-	"k8s.io/apiserver/pkg/server/healthz"
 	"k8s.io/klog"
 )
 
@@ -30,18 +28,18 @@ const (
 	MaxEventsScrapeDelay = 3 * time.Minute
 )
 
-func healthzChecker() healthz.HealthzChecker {
-	return healthz.NamedCheck("healthz", func(r *http.Request) error {
-		if time.Since(manager.LatestScrapeTime) > MaxEventsScrapeDelay {
-			msg := fmt.Sprintf(
-				"No event batch within %s (latest: %s)",
-				MaxEventsScrapeDelay,
-				manager.LatestScrapeTime,
-			)
-			klog.Warning(msg)
-			return errors.New(msg)
-		}
+func healthzChecker(w http.ResponseWriter, r *http.Request) {
+	if time.Since(manager.LatestScrapeTime) > MaxEventsScrapeDelay {
+		msg := fmt.Sprintf(
+			"No event batch within %s (latest: %s)",
+			MaxEventsScrapeDelay,
+			manager.LatestScrapeTime,
+		)
+		klog.Warning(msg)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(fmt.Sprintf("error: %s", msg)))
 
-		return nil
-	})
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ok"))
 }
