@@ -57,6 +57,7 @@ func NewEsClient2(config ElasticConfig, bulkWorkers int) (*Elastic2Wrapper, erro
 		Name("ElasticSearchWorker").
 		Workers(bulkWorkers).
 		After(bulkAfterCBV2).
+		Stats(true).
 		BulkActions(1000).               // commit if # requests >= 1000
 		BulkSize(2 << 20).               // commit if size of requests >= 2 MB
 		FlushInterval(10 * time.Second). // commit every 10s
@@ -98,6 +99,13 @@ func (es *Elastic2Wrapper) HasAlias(indexName string, aliasName string) (bool, e
 		return false, err
 	}
 	return aliases.Indices[indexName].HasAlias(aliasName), nil
+}
+
+func (es *Elastic2Wrapper) ErrorStats() int64 {
+	if es.bulkProcessor != nil {
+		return es.bulkProcessor.Stats().Failed
+	}
+	return 0
 }
 
 func (es *Elastic2Wrapper) AddBulkReq(index, typeName string, data interface{}) error {

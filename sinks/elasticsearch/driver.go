@@ -15,6 +15,7 @@
 package elasticsearch
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"net/url"
 	"sync"
 	"time"
@@ -38,6 +39,7 @@ type elasticSearchSink struct {
 	saveData  SaveDataFunc
 	flushData func() error
 	sync.RWMutex
+	errorRate prometheus.Gauge
 }
 
 type EsSinkPoint struct {
@@ -94,9 +96,13 @@ func (sink *elasticSearchSink) ExportEvents(eventBatch *event_core.EventBatch) {
 			klog.Warningf("Failed to export data to ElasticSearch sink: %v", err)
 		}
 	}
+
 	err := sink.flushData()
 	if err != nil {
 		klog.Warningf("Failed to flushing data to ElasticSearch sink: %v", err)
+	}
+	if sink.errorRate != nil {
+		sink.errorRate.Set(float64(sink.esSvc.ErrorStats()))
 	}
 }
 
@@ -123,6 +129,15 @@ func NewElasticSearchSink(uri *url.URL) (event_core.EventSink, error) {
 	esSink.flushData = func() error {
 		return esSvc.FlushData()
 	}
+
+	esSink.errorRate = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "eventer",
+			Subsystem: "elasticsearch",
+			Name:      "errors",
+			Help:      "Bulk processing errors.",
+		})
+	prometheus.MustRegister(esSink.errorRate)
 
 	klog.V(2).Info("ElasticSearch sink setup successfully")
 	return &esSink, nil
