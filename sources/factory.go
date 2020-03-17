@@ -29,7 +29,10 @@ type SourceFactory struct {
 func (this *SourceFactory) Build(uri flags.Uri) (core.EventSource, error) {
 	switch uri.Key {
 	case "kubernetes":
-		src, err := kube.NewKubernetesSource(&uri.Val)
+		src, err := kube.NewKubernetesSource(&uri.Val, false)
+		return src, err
+	case "kubernetes-eventsapi":
+		src, err := kube.NewKubernetesSource(&uri.Val, true)
 		return src, err
 	default:
 		return nil, fmt.Errorf("Source not recognized: %s", uri.Key)

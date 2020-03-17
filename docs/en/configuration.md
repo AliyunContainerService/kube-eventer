@@ -13,6 +13,10 @@ If you don't want to setup inClusterConfig, you can still use kube-eventer! To r
 
 	--source=kubernetes:http://<address-of-kubernetes-master>:<http-port>?inClusterConfig=false
 
+To use the events.k8s.io/v1beta1 api instead of core/v1 kubernetes source add the following flag instead:
+
+	--source=kubernetes-eventsapi:<KUBERNETES_MASTER>[?<KUBERNETES_OPTIONS>]
+	
 This requires the apiserver to be setup completely without auth, which can be done by binding the insecure port to all interfaces (see the apiserver `--insecure-bind-address` option) but *WARNING* be aware of the security repercussions. Only do this if you trust *EVERYONE* on your network. Or you can setup proxy with command `kubectl proxy --port=8080` in local when debugging kube-eventer.
 
 The following options are available:

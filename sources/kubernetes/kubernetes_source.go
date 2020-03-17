@@ -18,20 +18,23 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-
 	kubeconfig "github.com/AliyunContainerService/kube-eventer/common/kubernetes"
 	"github.com/AliyunContainerService/kube-eventer/core"
+
+	"github.com/prometheus/client_golang/prometheus"
 	kubeapi "k8s.io/api/core/v1"
+	"k8s.io/api/events/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubewatch "k8s.io/apimachinery/pkg/watch"
 	kubeclient "k8s.io/client-go/kubernetes"
-	kubev1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	clientCore "k8s.io/client-go/kubernetes/typed/core/v1"
+	clientEvents "k8s.io/client-go/kubernetes/typed/events/v1beta1"
 	"k8s.io/klog"
 )
 
 const (
-	// Number of object pointers. Big enough so it won't be hit anytime soon with reasonable GetNewEvents frequency.
+	// LocalEventsBufferSize number of object pointers.
+	// big enough so it won't be hit anytime soon with reasonable GetNewEvents frequency
 	LocalEventsBufferSize = 100000
 )
 
@@ -66,17 +69,19 @@ func init() {
 	prometheus.MustRegister(scrapEventsDuration)
 }
 
-// Implements core.EventSource interface.
-type KubernetesEventSource struct {
+// EventSource implements core.EventSource interface.
+type EventSource struct {
 	// Large local buffer, periodically read.
 	localEventsBuffer chan *kubeapi.Event
 
 	stopChannel chan struct{}
 
-	eventClient kubev1core.EventInterface
+	eventClient    clientCore.EventInterface
+	eventNewClient clientEvents.EventInterface
 }
 
-func (this *KubernetesEventSource) GetNewEvents() *core.EventBatch {
+// GetNewEvents returns all the received events and flushes the buffer
+func (k8ssrc *EventSource) GetNewEvents() *core.EventBatch {
 	startTime := time.Now()
 	defer func() {
 		lastEventTimestamp.Set(float64(time.Now().Unix()))
@@ -90,7 +95,7 @@ func (this *KubernetesEventSource) GetNewEvents() *core.EventBatch {
 event_loop:
 	for {
 		select {
-		case event := <-this.localEventsBuffer:
+		case event := <-k8ssrc.localEventsBuffer:
 			result.Events = append(result.Events, event)
 		default:
 			break event_loop
@@ -102,23 +107,38 @@ event_loop:
 	return &result
 }
 
-func (this *KubernetesEventSource) watch() {
+func (k8ssrc *EventSource) watch() {
 	// Outer loop, for reconnections.
+	var watcher kubewatch.Interface
+	var err error
+	var meta metav1.ListInterface
+	var event *kubeapi.Event
+	var newEvent *v1beta1.Event
+	useNewAPI := k8ssrc.eventNewClient != nil
+
 	for {
-		events, err := this.eventClient.List(metav1.ListOptions{})
+		if useNewAPI {
+			meta, err = k8ssrc.eventNewClient.List(metav1.ListOptions{})
+		} else {
+			meta, err = k8ssrc.eventClient.List(metav1.ListOptions{})
+		}
 		if err != nil {
 			klog.Errorf("Failed to load events: %v", err)
 			time.Sleep(time.Second)
 			continue
 		}
 		// Do not write old events.
-
-		resourceVersion := events.ResourceVersion
-
-		watcher, err := this.eventClient.Watch(
-			metav1.ListOptions{
+		if useNewAPI {
+			watcher, err = k8ssrc.eventNewClient.Watch(metav1.ListOptions{
 				Watch:           true,
-				ResourceVersion: resourceVersion})
+				ResourceVersion: meta.GetResourceVersion(),
+			})
+		} else {
+			watcher, err = k8ssrc.eventClient.Watch(
+				metav1.ListOptions{
+					Watch:           true,
+					ResourceVersion: meta.GetResourceVersion()})
+		}
 		if err != nil {
 			klog.Errorf("Failed to start watch for new events: %v", err)
 			time.Sleep(time.Second)
@@ -126,6 +146,7 @@ func (this *KubernetesEventSource) watch() {
 		}
 
 		watchChannel := watcher.ResultChan()
+
 		// Inner loop, for update processing.
 	inner_loop:
 		for {
@@ -144,12 +165,17 @@ func (this *KubernetesEventSource) watch() {
 					klog.Errorf("Received unexpected error: %#v", watchUpdate.Object)
 					break inner_loop
 				}
-
-				if event, ok := watchUpdate.Object.(*kubeapi.Event); ok {
+				if useNewAPI {
+					newEvent, ok = watchUpdate.Object.(*v1beta1.Event)
+					event = convertFromV1beta1(newEvent)
+				} else {
+					event, ok = watchUpdate.Object.(*kubeapi.Event)
+				}
+				if ok {
 					switch watchUpdate.Type {
 					case kubewatch.Added, kubewatch.Modified:
 						select {
-						case this.localEventsBuffer <- event:
+						case k8ssrc.localEventsBuffer <- event:
 							// Ok, buffer not full.
 						default:
 							// Buffer full, need to drop the event.
@@ -163,8 +189,7 @@ func (this *KubernetesEventSource) watch() {
 				} else {
 					klog.Errorf("Wrong object received: %v", watchUpdate)
 				}
-
-			case <-this.stopChannel:
+			case <-k8ssrc.stopChannel:
 				klog.Infof("Event watching stopped")
 				return
 			}
@@ -172,7 +197,10 @@ func (this *KubernetesEventSource) watch() {
 	}
 }
 
-func NewKubernetesSource(uri *url.URL) (*KubernetesEventSource, error) {
+// NewKubernetesSource connects to the cluster, sets up a watch an returns a running source of events
+func NewKubernetesSource(uri *url.URL, useEventsAPI bool) (*EventSource, error) {
+	var eventClient clientCore.EventInterface
+	var eventNewClient clientEvents.EventInterface
 	kubeConfig, err := kubeconfig.GetKubeClientConfig(uri)
 	if err != nil {
 		return nil, err
@@ -181,12 +209,48 @@ func NewKubernetesSource(uri *url.URL) (*KubernetesEventSource, error) {
 	if err != nil {
 		return nil, err
 	}
-	eventClient := kubeClient.CoreV1().Events(kubeapi.NamespaceAll)
-	result := KubernetesEventSource{
+	if useEventsAPI {
+		eventNewClient = kubeClient.EventsV1beta1().Events(kubeapi.NamespaceAll)
+	} else {
+		eventClient = kubeClient.CoreV1().Events(kubeapi.NamespaceAll)
+	}
+	result := EventSource{
 		localEventsBuffer: make(chan *kubeapi.Event, LocalEventsBufferSize),
 		stopChannel:       make(chan struct{}),
 		eventClient:       eventClient,
+		eventNewClient:    eventNewClient,
 	}
 	go result.watch()
 	return &result, nil
+}
+
+func convertFromV1beta1(event *v1beta1.Event) *kubeapi.Event {
+	var series *kubeapi.EventSeries
+	if event.Series != nil {
+		series = &kubeapi.EventSeries{
+			Count:            event.Series.Count,
+			LastObservedTime: event.Series.LastObservedTime,
+			State:            kubeapi.EventSeriesState(event.Series.State),
+		}
+	} else {
+		series = nil
+	}
+	return &kubeapi.Event{
+		TypeMeta:            event.TypeMeta,
+		ObjectMeta:          event.ObjectMeta,
+		InvolvedObject:      event.Regarding,
+		Reason:              event.Reason,
+		Message:             event.Note,
+		Source:              event.DeprecatedSource,
+		FirstTimestamp:      event.DeprecatedFirstTimestamp,
+		LastTimestamp:       event.DeprecatedLastTimestamp,
+		Count:               event.DeprecatedCount,
+		Type:                event.Type,
+		EventTime:           event.EventTime,
+		Series:              series,
+		Action:              event.Action,
+		Related:             event.Related,
+		ReportingController: event.ReportingController,
+		ReportingInstance:   event.ReportingInstance,
+	}
 }
