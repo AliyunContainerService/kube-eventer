@@ -31,4 +31,4 @@ create table kube_event
 
 For example:
 
-    --sink="mysql:?root:transwarp@tcp(172.16.180.132:3306)/kube_event?charset=utf8"
+    --sink=mysql:?root:transwarp@tcp(172.16.180.132:3306)/kube_event?charset=utf8
