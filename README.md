@@ -140,8 +140,9 @@ Supported Sinks:
 Please check <a href="docs/en/CONTRIBUTING.md" target="_blank">CONTRIBUTING.md</a>
 
 You can also ask for help in our Dingtalk group.
-
-![](docs/images/dingtalk-group.jpg)
+<p align="center">
+  <img src="docs/images/dingtalk-group.jpg" width=300px />
+</p>
 
 
 ### License 
