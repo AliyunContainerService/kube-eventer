@@ -41,6 +41,7 @@ type elasticWrapper interface {
 	AddAlias(index string, alias string) (bool, error)
 	HasAlias(index string, alias string) (bool, error)
 	AddBulkReq(index, typeName string, data interface{}) error
+	ErrorStats() int64
 	FlushBulk() error
 }
 
@@ -76,6 +77,10 @@ func (esSvc *ElasticSearchService) IndexAlias(typeName string) string {
 
 func (esSvc *ElasticSearchService) FlushData() error {
 	return esSvc.EsClient.FlushBulk()
+}
+
+func (esSvc *ElasticSearchService) ErrorStats() int64 {
+	return esSvc.EsClient.ErrorStats()
 }
 
 // SaveDataIntoES save metrics and events to ES by using ES client

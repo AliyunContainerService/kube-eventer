@@ -121,6 +121,9 @@ func startHTTPServer() {
 func validateFlags() error {
 	var minFrequency = 5 * time.Second
 
+	if *argHealthzPort > 65534 {
+		return fmt.Errorf("invalid port supplied for healthz %d", *argHealthzPort)
+	}
 	if *argFrequency < minFrequency {
 		return fmt.Errorf("frequency needs to be no less than %s, supplied %s", minFrequency,
 			*argFrequency)
