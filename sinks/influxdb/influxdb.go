@@ -58,7 +58,6 @@ const (
 	// Value Field name
 	valueField = "value"
 
-	/* ---------------------------------*/
 	// Kubernetes Event const
 	kubeKind = "kind"
 	evenType = "type"
@@ -69,7 +68,6 @@ const (
 	eventMessage = "message"
 	firstTimestamp = "firstTimestamp"
 	lastTimestamp = "lastTimestamp"
-	/* -------------------------------- */
 	
 	// Event special tags
 	dbNotFoundError = "database not found"
@@ -120,9 +118,9 @@ func eventToPointWithFields(event *kube_api.Event) (*influxdb.Point, error) {
 
 // getWorkloadName get workload name, deployment is no problem
 func getWorkloadName(podName string) string{
-		s := strings.Split(podName,"-")
-		n := len(s) - 2
-		return strings.Join(s[:n],"-")
+		splPodName := strings.Split(podName,"-")
+		effectiveLen := len(splPodName) - 2
+		return strings.Join(splPodName[:effectiveLen],"-")
 }
 
 // selectEventData  Select kubernetes events data from value
