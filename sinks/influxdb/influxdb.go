@@ -44,7 +44,6 @@ type eventStruct struct{
 		evenType string
 		nameSpace string
 		podName string
-		workloadName string 
 		reason string
 		message string
 		firstTimestamp string 
@@ -63,7 +62,6 @@ const (
 	evenType = "type"
 	nameSpace = "nameSpace"
 	podName = "podName"
-	workloadName = "workloadName"
 	eventReason = "reason"
 	eventMessage = "message"
 	firstTimestamp = "firstTimestamp"
@@ -116,12 +114,6 @@ func eventToPointWithFields(event *kube_api.Event) (*influxdb.Point, error) {
 	return &point, nil
 }
 
-// getWorkloadName get workload name, deployment is no problem
-func getWorkloadName(podName string) string{
-		splPodName := strings.Split(podName,"-")
-		effectiveLen := len(splPodName) - 2
-		return strings.Join(splPodName[:effectiveLen],"-")
-}
 
 // selectEventData  Select kubernetes events data from value
 func selectEventData(value string) eventStruct{
@@ -131,7 +123,6 @@ func selectEventData(value string) eventStruct{
 		eventData.kind = jsoniter.Get(data,"involvedObject","kind").ToString()
 		eventData.nameSpace = jsoniter.Get(data,"involvedObject","namespace").ToString()
 		eventData.podName = jsoniter.Get(data,"involvedObject","name").ToString()
-		eventData.workloadName = getWorkloadName(eventData.podName)
 		eventData.reason = jsoniter.Get(data,"reason").ToString()
 		eventData.message = jsoniter.Get(data,"message").ToString()
 		eventData.firstTimestamp = jsoniter.Get(data,"firstTimestamp").ToString()
@@ -157,7 +148,6 @@ func eventToPoint(event *kube_api.Event) (*influxdb.Point, error) {
 			evenType: eventData.evenType,
 			nameSpace: eventData.nameSpace,
 			podName: eventData.podName,
-			workloadName: eventData.workloadName,
 			eventReason: eventData.reason,
 			eventMessage: eventData.message,
 			firstTimestamp: eventData.firstTimestamp,
