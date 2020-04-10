@@ -1,7 +1,7 @@
 
 <!--  
 Thanks for sending a pull request!  Here are some tips for you: 
-感谢你提交了 pull request ，俺这里有本武林秘籍想送给你：
+感谢你提交了 pull request ，一些 tips 供您参考：
 
 -->
 
