@@ -67,6 +67,7 @@ type Config struct {
 	project  string
 	logStore string
 	topic    string
+	regionId string
 	internal bool
 }
 
@@ -199,6 +200,12 @@ func parseConfig(uri *url.URL) (*Config, error) {
 
 	if len(opts["topic"]) >= 1 {
 		c.topic = opts["topic"][0]
+	}
+
+	if len(opts["regionId"]) >= 1 {
+		c.regionId = opts["regionId"][0]
+	} else {
+		c.regionId = os.Getenv("RegionId")
 	}
 
 	if len(opts["internal"]) >= 1 {
