@@ -234,7 +234,7 @@ func parseConfig(uri *url.URL) (*Config, error) {
 // newClient creates client using AK or metadata
 func newClient(c *Config) (*sls.Client, error) {
 	if c.regionId == "" || c.accessKeyId == "" || c.accessKeySecret == "" {
-		klog.Info("accessKeyId,accessKeySecret or regionId is empty and use metadata instead.")
+		klog.Info("accessKeyId,accessKeySecret or regionId is empty.")
 		m := metadata.NewMetaData(nil)
 		regionId, err := m.Region()
 		if err != nil {
@@ -276,10 +276,12 @@ func newClient(c *Config) (*sls.Client, error) {
 			if t.Before(time.Now()) {
 				klog.Errorf("invalid token which is expired")
 			}
+			klog.Info("get token by ram role.")
 			akInfo.AccessKeyId = string(ak)
 			akInfo.AccessKeySecret = string(sk)
 			akInfo.SecurityToken = string(token)
 		} else {
+			klog.Info("use metadata instead outside params.")
 			roleName, err := m.RoleName()
 			if err != nil {
 				klog.Errorf("failed to get RoleName,because of %s", err.Error())
