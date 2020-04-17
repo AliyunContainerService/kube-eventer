@@ -28,6 +28,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/sinks/riemann"
 	"github.com/AliyunContainerService/kube-eventer/sinks/sls"
 	"github.com/AliyunContainerService/kube-eventer/sinks/wechat"
+	"github.com/AliyunContainerService/kube-eventer/sinks/webhook"
 	"k8s.io/klog"
 )
 
@@ -56,6 +57,8 @@ func (this *SinkFactory) Build(uri flags.Uri) (core.EventSink, error) {
 		return sls.NewSLSSink(&uri.Val)
 	case "wechat":
 		return wechat.NewWechatSink(&uri.Val)
+	case "wehook":
+		return webhook.NewWebhookSink(&uri.Val)
 	default:
 		return nil, fmt.Errorf("Sink not recognized: %s", uri.Key)
 	}

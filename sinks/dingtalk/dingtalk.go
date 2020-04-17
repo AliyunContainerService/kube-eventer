@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/AliyunContainerService/kube-eventer/core"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
 
@@ -213,34 +213,6 @@ func createMsgFromEvent(d *DingTalkSink, event *v1.Event) *DingTalkMsg {
 
 	return msg
 }
-
-//func drawEventTableText(labels []string, event *v1.Event) string {
-//	tableString := &strings.Builder{}
-//	table := tablewriter.NewWriter(tableString)
-//
-//	data := make([][]string, 7)
-//
-//	for index, _ := range MSG_TEMPLATE_ARR {
-//		data[index] = append(data[index], MSG_TEMPLATE_ARR[index]...)
-//	}
-//
-//	data[0] = append(data[0], event.Type)
-//	data[1] = append(data[1], event.InvolvedObject.Kind)
-//	data[2] = append(data[2], event.Namespace)
-//	data[3] = append(data[3], event.Name)
-//	data[4] = append(data[4], event.Reason)
-//	data[5] = append(data[5], event.LastTimestamp.String())
-//	data[6] = append(data[6], event.Message)
-//
-//	for _, v := range data {
-//		table.Append(v)
-//	}
-//	table.SetHeader([]string{"", strings.Join(labels, ",")})
-//
-//	table.Render() // Send output
-//
-//	return tableString.String()
-//}
 
 func NewDingTalkSink(uri *url.URL) (*DingTalkSink, error) {
 	d := &DingTalkSink{
