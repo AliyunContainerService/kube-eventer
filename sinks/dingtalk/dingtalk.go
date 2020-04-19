@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/AliyunContainerService/kube-eventer/core"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
 
@@ -157,6 +157,7 @@ func (d *DingTalkSink) Ding(event *v1.Event) {
 	b := bytes.NewBuffer(msg_bytes)
 
 	resp, err := http.Post(fmt.Sprintf("https://%s?access_token=%s", d.Endpoint, d.Token), CONTENT_TYPE_JSON, b)
+	defer resp.Body.Close()
 	if err != nil {
 		klog.Errorf("failed to send msg to dingtalk. error: %s", err.Error())
 		return
