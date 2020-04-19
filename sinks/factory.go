@@ -20,12 +20,10 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/core"
 	"github.com/AliyunContainerService/kube-eventer/sinks/dingtalk"
 	"github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch"
-	"github.com/AliyunContainerService/kube-eventer/sinks/honeycomb"
 	"github.com/AliyunContainerService/kube-eventer/sinks/influxdb"
 	"github.com/AliyunContainerService/kube-eventer/sinks/kafka"
 	"github.com/AliyunContainerService/kube-eventer/sinks/log"
 	"github.com/AliyunContainerService/kube-eventer/sinks/mysql"
-	"github.com/AliyunContainerService/kube-eventer/sinks/riemann"
 	"github.com/AliyunContainerService/kube-eventer/sinks/sls"
 	"github.com/AliyunContainerService/kube-eventer/sinks/wechat"
 	"k8s.io/klog"
@@ -46,10 +44,6 @@ func (this *SinkFactory) Build(uri flags.Uri) (core.EventSink, error) {
 		return elasticsearch.NewElasticSearchSink(&uri.Val)
 	case "kafka":
 		return kafka.NewKafkaSink(&uri.Val)
-	case "riemann":
-		return riemann.CreateRiemannSink(&uri.Val)
-	case "honeycomb":
-		return honeycomb.NewHoneycombSink(&uri.Val)
 	case "dingtalk":
 		return dingtalk.NewDingTalkSink(&uri.Val)
 	case "sls":

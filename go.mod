@@ -7,7 +7,6 @@ require (
 	github.com/aws/aws-sdk-go v1.19.6
 	github.com/denverdino/aliyungo v0.0.0-20190410085603-611ead8a6fed
 	github.com/go-sql-driver/mysql v1.4.1
-	github.com/golang/protobuf v1.3.2
 	github.com/google/cadvisor v0.33.1
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/influxdata/influxdb v1.7.7
