@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -247,41 +246,48 @@ func newClient(c *Config) (*sls.Client, error) {
 			//获取token config json
 			encodeTokenCfg, err := ioutil.ReadFile(ConfigPath)
 			if err != nil {
-				klog.Fatalf("failed to read token config, err: %v", err)
+				klog.Errorf("failed to read token config, err: %v", err)
+				return nil, err
 			}
 			err = json.Unmarshal(encodeTokenCfg, &akInfo)
 			if err != nil {
-				klog.Fatalf("error unmarshal token config: %v", err)
+				klog.Errorf("error unmarshal token config: %v", err)
+				return nil, err
 			}
 			keyring := akInfo.Keyring
 			ak, err := Decrypt(akInfo.AccessKeyId, []byte(keyring))
 			if err != nil {
-				klog.Fatalf("failed to decode ak, err: %v", err)
+				klog.Errorf("failed to decode ak, err: %v", err)
+				return nil, err
 			}
 
 			sk, err := Decrypt(akInfo.AccessKeySecret, []byte(keyring))
 			if err != nil {
-				klog.Fatalf("failed to decode sk, err: %v", err)
+				klog.Errorf("failed to decode sk, err: %v", err)
+				return nil, err
 			}
 
 			token, err := Decrypt(akInfo.SecurityToken, []byte(keyring))
 			if err != nil {
-				klog.Fatalf("failed to decode token, err: %v", err)
+				klog.Errorf("failed to decode token, err: %v", err)
+				return nil, err
 			}
 			layout := "2006-01-02T15:04:05Z"
 			t, err := time.Parse(layout, akInfo.Expiration)
 			if err != nil {
-				fmt.Errorf(err.Error())
+				klog.Errorf("failed to parse sts expiration,err: %v", err)
+				return nil, err
 			}
 			if t.Before(time.Now()) {
 				klog.Errorf("invalid token which is expired")
+				return nil, err
 			}
 			klog.Info("get token by ram role.")
 			akInfo.AccessKeyId = string(ak)
 			akInfo.AccessKeySecret = string(sk)
 			akInfo.SecurityToken = string(token)
 		} else {
-			klog.Info("use metadata instead outside params.")
+			klog.Info("use metadata instead of add token.")
 			roleName, err := m.RoleName()
 			if err != nil {
 				klog.Errorf("failed to get RoleName,because of %s", err.Error())
