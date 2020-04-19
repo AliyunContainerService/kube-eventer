@@ -2,9 +2,9 @@ package filters
 
 import (
 	"k8s.io/api/core/v1"
+	log "k8s.io/klog"
 	"reflect"
 	"regexp"
-	log "k8s.io/klog"
 )
 
 type GenericFilter struct {

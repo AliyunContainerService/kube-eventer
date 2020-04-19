@@ -20,11 +20,11 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/AliyunContainerService/kube-eventer/common/kubernetes"
 	"github.com/AliyunContainerService/kube-eventer/core"
 	kubeapi "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubewatch "k8s.io/apimachinery/pkg/watch"
-	"github.com/AliyunContainerService/kube-eventer/common/kubernetes"
 
 	kubev1core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog"

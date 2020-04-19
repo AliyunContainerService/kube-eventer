@@ -1,79 +1,160 @@
 package webhook
 
 import (
-	"net/url"
-	"github.com/AliyunContainerService/kube-eventer/core"
+	"bytes"
+	"fmt"
 	"github.com/AliyunContainerService/kube-eventer/common/filters"
 	"github.com/AliyunContainerService/kube-eventer/common/kubernetes"
-	"k8s.io/klog"
+	"github.com/AliyunContainerService/kube-eventer/core"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
+	"net/http"
+	"net/url"
+	"strings"
+	"text/template"
+	"time"
 )
 
 const (
-	WebhookSinkName = "webhook"
-	Warning         = "Warning"
-	Normal          = "Normal"
+	SinkName = "webHook"
+	Warning  = "Warning"
+	Normal   = "Normal"
 )
 
 var (
-	defaultBodyTemplate = ``
+	// body template of event
+	defaultBodyTemplate = `
+{
+	"EventType": "{{ .Type }}",
+	"EventKind": "{{ .Kind }}"
+	"EventReason": "{{ .Reason }}",
+	"EventTime": "{{ .EventTime }}",
+	"EventMessage": "{{ .Message }}"
+}`
 )
 
-type WebhookSink struct {
+type WebHookSink struct {
 	filters                map[string]filters.Filter
+	headerMap              map[string]string
 	endpoint               string
-	level                  string
 	method                 string
-	headers                []string
+	bodyTemplate           string
 	bodyConfigMapName      string
 	bodyConfigMapNamespace string
-	bodyTemplate           string
 }
 
-func (ws *WebhookSink) Name() string {
-	return WebhookSinkName
+func (ws *WebHookSink) Name() string {
+	return SinkName
 }
 
-func (ws *WebhookSink) ExportEvents(batch *core.EventBatch) {
-	
+func (ws *WebHookSink) ExportEvents(batch *core.EventBatch) {
+	for _, event := range batch.Events {
+		err := ws.Send(event)
+		if err != nil {
+			klog.Warningf("Failed to send event to WebHook sink,because of %v", err)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 }
 
-func (ws *WebhookSink) Stop() {
+// send msg to generic webHook
+func (ws *WebHookSink) Send(event *v1.Event) (err error) {
+
+	body, err := ws.RenderBodyTemplate(event)
+	if err != nil {
+		klog.Errorf("Failed to RenderBodyTemplate,because of %v", err)
+		return err
+	}
+
+	req, err := http.NewRequest(ws.method, ws.endpoint, strings.NewReader(body))
+
+	// append header to http request
+	if ws.headerMap != nil && len(ws.headerMap) != 0 {
+		for k, v := range ws.headerMap {
+			req.Header.Set(k, v)
+		}
+	}
+
+	if err != nil {
+		klog.Errorf("Failed to create request,because of %v", err)
+		return
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		klog.Errorf("Failed to send event to sink,because of %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp != nil && resp.StatusCode != http.StatusOK {
+		klog.Errorf("failed to send msg to sink, because the response code is %d", resp.StatusCode)
+		return
+	}
+	return nil
+}
+
+func (ws *WebHookSink) RenderBodyTemplate(event *v1.Event) (body string, err error) {
+	var tpl bytes.Buffer
+	tp, err := template.New("body").Parse(ws.bodyTemplate)
+	if err != nil {
+		klog.Errorf("Failed to parse template,because of %v", err)
+		return "", err
+	}
+	if err := tp.Execute(&tpl, event); err != nil {
+		klog.Errorf("Failed to renderTemplate,because of %v", err)
+		return "", err
+	}
+	return tpl.String(), nil
+}
+
+func (ws *WebHookSink) Stop() {
 	// not implement
 	return
 }
 
-func NewWebhookSink(uri *url.URL) (*WebhookSink, error) {
-	s := &WebhookSink{
-		level:   Warning,
-		filters: make(map[string]filters.Filter),
+// init WebHookSink with url params
+func NewWebHookSink(uri *url.URL) (*WebHookSink, error) {
+	s := &WebHookSink{
+		// default http method
+		method:       http.MethodGet,
+		bodyTemplate: defaultBodyTemplate,
+		filters:      make(map[string]filters.Filter),
 	}
+
 	if len(uri.Host) > 0 {
-		s.endpoint = uri.Host + uri.Path
+		s.endpoint = uri.String()
+	} else {
+		klog.Errorf("uri host's length is 0 and pls check your uri: %v", uri)
+		return nil, fmt.Errorf("uri host is not valid.url: %v", uri)
 	}
+
 	opts := uri.Query()
 
 	if len(opts["method"]) >= 1 {
 		s.method = opts["method"][0]
 	}
 
-	// set header of webhook
-	s.headers = opts["header"]
+	// set header of webHook
+	s.headerMap = parseHeaders(opts["header"])
 
+	level := Warning
 	if len(opts["level"]) >= 1 {
-		s.level = opts["level"][0]
+		level = opts["level"][0]
 	}
-	s.filters["LevelFilter"] = filters.NewGenericFilter("Type", []string{s.level}, false)
+	s.filters["LevelFilter"] = filters.NewGenericFilter("Type", []string{level}, false)
 
+	// namespace filter doesn't support regexp
 	namespaces := filters.GetValues(opts["namespaces"])
-	// kinds:https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#lists-and-simple-kinds
-	s.filters["NamespacesFilter"] = filters.NewGenericFilter("Namespace", namespaces, true)
+	s.filters["NamespacesFilter"] = filters.NewGenericFilter("Namespace", namespaces, false)
 
 	// such as node,pod,component and so on
+	// kinds:https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#lists-and-simple-kinds
 	kinds := filters.GetValues(opts["kinds"])
 	s.filters["KindsFilter"] = filters.NewGenericFilter("Kind", kinds, false)
 
-	// reason filter
+	// reason filter support regexp.
 	reasons := opts["reason"]
 	s.filters["ReasonsFilter"] = filters.NewGenericFilter("Reason", reasons, true)
 
@@ -88,24 +169,34 @@ func NewWebhookSink(uri *url.URL) (*WebhookSink, error) {
 
 		client, err := kubernetes.GetKubernetesClient(nil)
 		if err != nil {
-			klog.Warning("Failed to get kubernetes client and use default bodyTemplate instead")
+			klog.Warningf("Failed to get kubernetes client and use default bodyTemplate instead")
 			s.bodyTemplate = defaultBodyTemplate
 			return s, nil
 		}
 		configmap, err := client.CoreV1().ConfigMaps(s.bodyConfigMapNamespace).Get(s.bodyConfigMapName, metav1.GetOptions{})
 		if err != nil {
-			klog.Warning("Failed to get configMap %s in namespace %s and use default bodyTemplate instead,because of %v", s.bodyConfigMapName, s.bodyConfigMapNamespace, err)
+			klog.Warningf("Failed to get configMap %s in namespace %s and use default bodyTemplate instead,because of %v", s.bodyConfigMapName, s.bodyConfigMapNamespace, err)
 			s.bodyTemplate = defaultBodyTemplate
 			return s, nil
 		}
-		if content, ok := configmap.Data["body"]; !ok {
-			klog.Warning("Failed to get configMap content and use default bodyTemplate instead,because of %v", content, err)
+		if content, ok := configmap.Data["content"]; !ok {
+			klog.Warningf("Failed to get configMap content and use default bodyTemplate instead,because of %v", err)
 			s.bodyTemplate = defaultBodyTemplate
 			return s, nil
-		}else{
+		} else {
 			s.bodyTemplate = content
 		}
 	}
 
 	return s, nil
+}
+
+func parseHeaders(headers []string) map[string]string {
+	headerMap := make(map[string]string)
+	for _, h := range headers {
+		if arr := strings.Split(h, "="); len(arr) == 2 {
+			headerMap[arr[0]] = arr[1]
+		}
+	}
+	return headerMap
 }

@@ -19,4 +19,3 @@ func GetValues(o []string) []string {
 	}
 	return nil
 }
-
