@@ -12,6 +12,8 @@ env:
 # You don't need to test on very old versions of the Go compiler. It's the user's
 # responsibility to keep their compiler up to date.
 go:
+  - 1.14.x
+  - 1.13.x
   - 1.12.x
   - 1.11.x
 
@@ -25,7 +27,8 @@ git:
 
 # Don't email me the results of the test runs.
 notifications:
-  email: false
+  email:
+  - zhongwei.lzw@alibaba-inc.com
 
 # Anything in before_script that returns a nonzero exit code will flunk the
 # build and immediately stop. It's sorta like having set -e enabled in bash.
@@ -38,6 +41,7 @@ before_script:
 # .golangci.yml file at the top level of your repo.
 script:
 #  - golangci-lint run       # run a bunch of code checkers/linters in parallel
+  - ./hack/check_gofmt.sh
   - go test ./... -race -coverprofile=coverage.txt -covermode=atomic
   
 after_success:
