@@ -20,12 +20,12 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	kubeconfig "github.com/AliyunContainerService/kube-eventer/common/kubernetes"
+	"github.com/AliyunContainerService/kube-eventer/common/kubernetes"
 	"github.com/AliyunContainerService/kube-eventer/core"
 	kubeapi "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubewatch "k8s.io/apimachinery/pkg/watch"
-	kubeclient "k8s.io/client-go/kubernetes"
+
 	kubev1core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog"
 )
@@ -173,12 +173,9 @@ func (this *KubernetesEventSource) watch() {
 }
 
 func NewKubernetesSource(uri *url.URL) (*KubernetesEventSource, error) {
-	kubeConfig, err := kubeconfig.GetKubeClientConfig(uri)
+	kubeClient, err := kubernetes.GetKubernetesClient(uri)
 	if err != nil {
-		return nil, err
-	}
-	kubeClient, err := kubeclient.NewForConfig(kubeConfig)
-	if err != nil {
+		klog.Errorf("Failed to create kubernetes client,because of %v", err)
 		return nil, err
 	}
 	eventClient := kubeClient.CoreV1().Events(kubeapi.NamespaceAll)

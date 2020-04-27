@@ -21,6 +21,8 @@ import (
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes"
+	kubeclient "k8s.io/client-go/kubernetes"
 	kube_rest "k8s.io/client-go/rest"
 	kubeClientCmd "k8s.io/client-go/tools/clientcmd"
 	kubeClientCmdApi "k8s.io/client-go/tools/clientcmd/api"
@@ -35,6 +37,8 @@ const (
 	defaultServiceAccountFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	defaultInClusterConfig    = true
 )
+
+var KubernetesClientSingleton kubernetes.Interface = nil
 
 func getConfigOverrides(uri *url.URL) (*kubeClientCmd.ConfigOverrides, error) {
 	kubeConfigOverride := kubeClientCmd.ConfigOverrides{
@@ -145,4 +149,20 @@ func GetKubeClientConfig(uri *url.URL) (*kube_rest.Config, error) {
 	kubeConfig.ContentType = "application/vnd.kubernetes.protobuf"
 
 	return kubeConfig, nil
+}
+
+func GetKubernetesClient(uri *url.URL) (client kubernetes.Interface, err error) {
+	if uri == nil {
+		return KubernetesClientSingleton, nil
+	}
+	kubeConfig, err := GetKubeClientConfig(uri)
+	if err != nil {
+		return nil, err
+	}
+	kubeClient, err := kubeclient.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	KubernetesClientSingleton = kubeClient
+	return kubeClient, nil
 }
