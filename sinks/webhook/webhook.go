@@ -27,7 +27,7 @@ var (
 	defaultBodyTemplate = `
 {
 	"EventType": "{{ .Type }}",
-	"EventKind": "{{ .Kind }}"
+	"EventKind": "{{ .InvolvedObject.Kind }}"
 	"EventReason": "{{ .Reason }}",
 	"EventTime": "{{ .EventTime }}",
 	"EventMessage": "{{ .Message }}"
