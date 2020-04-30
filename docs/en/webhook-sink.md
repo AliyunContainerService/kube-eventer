@@ -9,7 +9,7 @@ The following options are available:
 * `level` - Level of event (optional. default: Warning. Options: Warning and Normal)
 * `namespaces` - Namespaces to filter (optional. default: all namespaces,use commas to separate multi namespaces, Regexp pattern support)
 * `kinds` - Kinds to filter (optional. default: all kinds,use commas to separate multi kinds. Options: Node,Pod and so on.)
-* `reason` - Reason to filter (optional. default: empty, Regexp pattern support). You can use multi reason field in query.
+* `reason` - Reason to filter (optional. default: empty, Regexp pattern support). You can use multi reason fields in query.
 * `method` - Method to send request (optional. default: GET)
 * `header` - Header in request (optional. default: empty). You can use multi header field in query.
 * `custom_body_configmap` - The configmap name of request body template. You can use Template to customize request body. (optional.)
@@ -24,7 +24,7 @@ The default request body template is below.
 ```$xslt
 {
 	"EventType": "{{ .Type }}",
-	"EventKind": "{{ .Kind }}"
+	"EventKind": "{{ .InvolvedObject.Kind }}"
 	"EventReason": "{{ .Reason }}",
 	"EventTime": "{{ .EventTime }}",
 	"EventMessage": "{{ .Message }}"
@@ -104,7 +104,7 @@ The configMap must have a field called `content` and then put custom body templa
 apiVersion: v1
 data:
   content: >-
-    {"EventType": "{{ .Type }}","EventKind": "{{ .Kind }}""EventReason": "{{
+    {"EventType": "{{ .Type }}","EventKind": "{{ .InvolvedObject.Kind }}""EventReason": "{{
     .Reason }}","EventTime": "{{ .EventTime }}","EventMessage": "{{ .Message
     }}"}
 kind: ConfigMap
