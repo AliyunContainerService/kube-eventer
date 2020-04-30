@@ -112,3 +112,46 @@ metadata:
   name: custom-webhook-body 
   namespace: kube-system 
 ```
+
+#### Typical Scenarios
+##### Dingtalk 
+Params 
+```
+--sink=webhook:https://oapi.dingtalk.com/robot/send?access_token=token&level=Normal&kinds=Pod&header=Content-Type=application/json&custom_body_configmap=custom-body&custom_body_configmap_namespace=kube-system&method=POST
+```
+configmap Body
+```
+{	"msgtype": "text",
+	"text": {"content":"EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .EventTime }}\nEventMessage:{{ .Message }}"},
+	"markdown": {"title":"","text":""}
+}
+```
+##### wechat 
+Params 
+```
+--sink=webhook:http://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=633a31f6-7f9c-4bc4-97a0-0ec1eefa5898&level=Normal&kinds=Pod&header=Content-Type=application/json&custom_body_configmap=custom-body&custom_body_configmap_namespace=kube-system&method=POST
+```
+configmap Body 
+```
+{"msgtype": "text","text": {"content": "EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .EventTime }}\nEventMessage:{{ .Message }}"}}
+```
+##### slack 
+Params 
+```
+--sink=https://hooks.slack.com/services/d/B00000000/XXX?&level=Normal&kinds=Pod&header=Content-Type=application/json&custom_body_configmap=custom-body&custom_body_configmap_namespace=kube-system&method=POST
+```
+configmap Body 
+```
+{"channel": "testing",
+"username": "Eventer",
+"text":"EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .EventTime }}\nEventMessage:{{ .Message }}"}
+```
+##### bear chat 
+Params 
+```
+--sink=webhook:https://hook.bearychat.com/=bwIsS/incoming/xxxxxxxxxxxxxxxxxxxxxx?&level=Normal&kinds=Pod&header=Content-Type=application/json&custom_body_configmap=custom-body&custom_body_configmap_namespace=kube-system&method=POST
+```
+configmap Body 
+```
+"text":"EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .EventTime }}\nEventMessage:{{ .Message }}"
+```
