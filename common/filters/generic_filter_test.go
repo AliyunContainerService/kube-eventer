@@ -1,10 +1,11 @@
 package filters
 
 import (
-	"github.com/stretchr/testify/assert"
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -51,6 +52,16 @@ var (
 		Reason: "SuccessfulReason",
 		Type:   v1.EventTypeNormal,
 	}
+
+	emptyReasonEventPod = &v1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "Event3",
+			Namespace: "kube-system",
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind: "Node",
+		},
+	}
 )
 
 func TestKindFilter(t *testing.T) {
@@ -64,7 +75,7 @@ func TestKindFilter(t *testing.T) {
 func TestNamespaceFilter(t *testing.T) {
 	namespaceFilter := NewGenericFilter("Namespace", []string{"default", "kube-system"}, false)
 
-	assert.False(t, namespaceFilter.Filter(emptyNamespaceEventPod), "empty should not be matched.")
+	assert.False(t, namespaceFilter.Filter(emptyNamespaceEventPod), "EmptyNamespace should not be matched.")
 	assert.True(t, namespaceFilter.Filter(defaultNamespaceEventPod), "default namespace should be matched.")
 	assert.True(t, namespaceFilter.Filter(kubeSystemNamespaceEventPod), "kube-system namespace should be matched.")
 }
@@ -76,6 +87,7 @@ func TestReasonFilter(t *testing.T) {
 	assert.True(t, reasonFilter.Filter(defaultNamespaceEventPod), "FailedReason should be matched.")
 	assert.True(t, reasonFilter.Filter(kubeSystemNamespaceEventPod), "FailedReason should be matched.")
 	assert.False(t, reasonFilter.Filter(SuccessfulReasonEvent), "SuccessfulReason should be not matched.")
+	assert.False(t, reasonFilter.Filter(emptyReasonEventPod), "EmptyReason should be not matched.")
 }
 
 func TestComplexReasonFilter(t *testing.T) {
@@ -84,5 +96,17 @@ func TestComplexReasonFilter(t *testing.T) {
 	assert.True(t, reasonFilter.Filter(emptyNamespaceEventPod), "FailedReason should not be matched.")
 	assert.True(t, reasonFilter.Filter(defaultNamespaceEventPod), "FailedReason should be matched.")
 	assert.True(t, reasonFilter.Filter(kubeSystemNamespaceEventPod), "FailedReason should be matched.")
-	assert.True(t, reasonFilter.Filter(SuccessfulReasonEvent), "SuccessfulReason should be not matched.")
+	assert.True(t, reasonFilter.Filter(SuccessfulReasonEvent), "SuccessfulReason should be matched.")
+	assert.False(t, reasonFilter.Filter(emptyReasonEventPod), "EmptyReason should be not matched.")
+}
+
+func TestEmptyReasonFilter(t *testing.T) {
+	// when enable regexp, empty regexp key should be return true
+	emptyReasonFilter := NewGenericFilter("Reason", []string{}, true)
+
+	assert.True(t, emptyReasonFilter.Filter(emptyNamespaceEventPod), "FailedReason should be matched.")
+	assert.True(t, emptyReasonFilter.Filter(defaultNamespaceEventPod), "FailedReason should be matched.")
+	assert.True(t, emptyReasonFilter.Filter(kubeSystemNamespaceEventPod), "FailedReason should be matched.")
+	assert.True(t, emptyReasonFilter.Filter(SuccessfulReasonEvent), "SuccessfulReason should be matched.")
+	assert.True(t, emptyReasonFilter.Filter(emptyReasonEventPod), "EmptyReason should be matched.")
 }
