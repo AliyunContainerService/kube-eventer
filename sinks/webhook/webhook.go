@@ -3,17 +3,18 @@ package webhook
 import (
 	"bytes"
 	"fmt"
-	"github.com/AliyunContainerService/kube-eventer/common/filters"
-	"github.com/AliyunContainerService/kube-eventer/common/kubernetes"
-	"github.com/AliyunContainerService/kube-eventer/core"
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
 	"net/http"
 	"net/url"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/AliyunContainerService/kube-eventer/common/filters"
+	"github.com/AliyunContainerService/kube-eventer/common/kubernetes"
+	"github.com/AliyunContainerService/kube-eventer/core"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 const (
@@ -60,6 +61,12 @@ func (ws *WebHookSink) ExportEvents(batch *core.EventBatch) {
 
 // send msg to generic webHook
 func (ws *WebHookSink) Send(event *v1.Event) (err error) {
+
+	for _, v := range ws.filters {
+		if !v.Filter(event) {
+			return
+		}
+	}
 
 	body, err := ws.RenderBodyTemplate(event)
 	if err != nil {
