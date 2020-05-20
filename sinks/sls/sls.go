@@ -19,9 +19,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
-	"fmt"
 	"net/url"
 	"os"
 	"strconv"
@@ -233,7 +233,7 @@ func parseConfig(uri *url.URL) (*Config, error) {
 
 // newClient creates client using AK or metadata
 func newClient(c *Config) (*sls.Client, error) {
-	m:=metadata.NewMetaData(nil)
+	m := metadata.NewMetaData(nil)
 	region, err := GetRegionFromEnv()
 	if err != nil {
 		region, err = m.Region()
@@ -281,7 +281,7 @@ func newClient(c *Config) (*sls.Client, error) {
 		akInfo.AccessKeyId = string(ak)
 		akInfo.AccessKeySecret = string(sk)
 		akInfo.SecurityToken = string(token)
-	}else {
+	} else {
 		roleName, err := m.RoleName()
 		if err != nil {
 			klog.Errorf("failed to get RoleName,because of %s", err.Error())
@@ -331,10 +331,10 @@ func Decrypt(s string, keyring []byte) ([]byte, error) {
 	return origData, nil
 }
 
-func GetRegionFromEnv()(region string,err error) {
+func GetRegionFromEnv() (region string, err error) {
 	region = os.Getenv("RegionId")
-	if region==""{
-		return "",errors.New("not found region info in env")
+	if region == "" {
+		return "", errors.New("not found region info in env")
 	}
-	return  region,nil
+	return region, nil
 }
