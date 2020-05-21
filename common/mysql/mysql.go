@@ -17,9 +17,10 @@ package mysql
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
+
 	_ "github.com/go-sql-driver/mysql"
 	"k8s.io/klog"
-	"net/url"
 )
 
 type MysqlService struct {
@@ -46,14 +47,18 @@ func (mySvc MysqlService) SaveData(sinkData []interface{}) error {
 		return nil
 	}
 
+	tx, err := mySvc.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
 	// Prepare statement for inserting data
 	stmtIns, err := mySvc.db.Prepare("INSERT INTO kube_event(namespace,kind,name,type,reason,message,event_id,first_occurrence_time,last_occurrence_time) VALUES(?,?,?,?,?,?,?,?,?)")
 	if err != nil {
 		klog.Errorf("failed to Prepare statement for inserting data ")
 		return err
 	}
-
-	defer stmtIns.Close()
 
 	for _, data := range sinkData {
 
@@ -68,7 +73,12 @@ func (mySvc MysqlService) SaveData(sinkData []interface{}) error {
 		klog.Infof("Insert Mysql Data Suc...")
 
 	}
-
+	err = tx.Commit()
+	if err != nil {
+		klog.Errorf("failed to commit")
+		return err
+	}
+	stmtIns.Close()
 	return nil
 }
 
