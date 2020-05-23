@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -232,81 +233,73 @@ func parseConfig(uri *url.URL) (*Config, error) {
 
 // newClient creates client using AK or metadata
 func newClient(c *Config) (*sls.Client, error) {
-	if c.regionId == "" || c.accessKeyId == "" || c.accessKeySecret == "" {
-		klog.Info("accessKeyId,accessKeySecret or regionId is empty.")
-		m := metadata.NewMetaData(nil)
-		regionId, err := m.Region()
+	m := metadata.NewMetaData(nil)
+	region, err := GetRegionFromEnv()
+	if err != nil {
+		region, err = m.Region()
 		if err != nil {
 			klog.Errorf("failed to get Region,because of %s", err.Error())
 			return nil, err
 		}
-
-		var akInfo AKInfo
-		if _, err := os.Stat(ConfigPath); err == nil {
-			//获取token config json
-			encodeTokenCfg, err := ioutil.ReadFile(ConfigPath)
-			if err != nil {
-				klog.Errorf("failed to read token config, err: %v", err)
-				return nil, err
-			}
-			err = json.Unmarshal(encodeTokenCfg, &akInfo)
-			if err != nil {
-				klog.Errorf("error unmarshal token config: %v", err)
-				return nil, err
-			}
-			keyring := akInfo.Keyring
-			ak, err := Decrypt(akInfo.AccessKeyId, []byte(keyring))
-			if err != nil {
-				klog.Errorf("failed to decode ak, err: %v", err)
-				return nil, err
-			}
-
-			sk, err := Decrypt(akInfo.AccessKeySecret, []byte(keyring))
-			if err != nil {
-				klog.Errorf("failed to decode sk, err: %v", err)
-				return nil, err
-			}
-
-			token, err := Decrypt(akInfo.SecurityToken, []byte(keyring))
-			if err != nil {
-				klog.Errorf("failed to decode token, err: %v", err)
-				return nil, err
-			}
-			layout := "2006-01-02T15:04:05Z"
-			t, err := time.Parse(layout, akInfo.Expiration)
-			if err != nil {
-				klog.Errorf("failed to parse sts expiration,err: %v", err)
-				return nil, err
-			}
-			if t.Before(time.Now()) {
-				klog.Errorf("invalid token which is expired")
-				return nil, err
-			}
-			klog.Info("get token by ram role.")
-			akInfo.AccessKeyId = string(ak)
-			akInfo.AccessKeySecret = string(sk)
-			akInfo.SecurityToken = string(token)
-		} else {
-			klog.Info("use metadata instead of add token.")
-			roleName, err := m.RoleName()
-			if err != nil {
-				klog.Errorf("failed to get RoleName,because of %s", err.Error())
-				return nil, err
-			}
-
-			auth, err := m.RamRoleToken(roleName)
-			if err != nil {
-				klog.Errorf("failed to get RamRoleToken,because of %s", err.Error())
-				return nil, err
-			}
-			akInfo.AccessKeyId = auth.AccessKeyId
-			akInfo.AccessKeySecret = auth.AccessKeySecret
-			akInfo.SecurityToken = auth.SecurityToken
-		}
-		client := sls.NewClientForAssumeRole(common.Region(regionId), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
-		return client, nil
 	}
-	return sls.NewClient(common.Region(c.regionId), c.internal, c.accessKeyId, c.accessKeySecret), nil
+
+	var akInfo AKInfo
+	if _, err := os.Stat(ConfigPath); err == nil {
+		//获取token config json
+		encodeTokenCfg, err := ioutil.ReadFile(ConfigPath)
+		if err != nil {
+			klog.Fatalf("failed to read token config, err: %v", err)
+		}
+		err = json.Unmarshal(encodeTokenCfg, &akInfo)
+		if err != nil {
+			klog.Fatalf("error unmarshal token config: %v", err)
+		}
+		keyring := akInfo.Keyring
+		ak, err := Decrypt(akInfo.AccessKeyId, []byte(keyring))
+		if err != nil {
+			klog.Fatalf("failed to decode ak, err: %v", err)
+		}
+
+		sk, err := Decrypt(akInfo.AccessKeySecret, []byte(keyring))
+		if err != nil {
+			klog.Fatalf("failed to decode sk, err: %v", err)
+		}
+
+		token, err := Decrypt(akInfo.SecurityToken, []byte(keyring))
+		if err != nil {
+			klog.Fatalf("failed to decode token, err: %v", err)
+		}
+		layout := "2006-01-02T15:04:05Z"
+		t, err := time.Parse(layout, akInfo.Expiration)
+		if err != nil {
+			fmt.Errorf(err.Error())
+		}
+		if t.Before(time.Now()) {
+			klog.Errorf("invalid token which is expired")
+		}
+		klog.Info("get token by ram role.")
+		akInfo.AccessKeyId = string(ak)
+		akInfo.AccessKeySecret = string(sk)
+		akInfo.SecurityToken = string(token)
+	} else {
+		roleName, err := m.RoleName()
+		if err != nil {
+			klog.Errorf("failed to get RoleName,because of %s", err.Error())
+			return nil, err
+		}
+
+		auth, err := m.RamRoleToken(roleName)
+		if err != nil {
+			klog.Errorf("failed to get RamRoleToken,because of %s", err.Error())
+			return nil, err
+		}
+		akInfo.AccessKeyId = auth.AccessKeyId
+		akInfo.AccessKeySecret = auth.AccessKeySecret
+		akInfo.SecurityToken = auth.SecurityToken
+	}
+
+	client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
+	return client, nil
 }
 
 func PKCS5UnPadding(origData []byte) []byte {
@@ -336,4 +329,12 @@ func Decrypt(s string, keyring []byte) ([]byte, error) {
 
 	origData = PKCS5UnPadding(origData)
 	return origData, nil
+}
+
+func GetRegionFromEnv() (region string, err error) {
+	region = os.Getenv("RegionId")
+	if region == "" {
+		return "", errors.New("not found region info in env")
+	}
+	return region, nil
 }
