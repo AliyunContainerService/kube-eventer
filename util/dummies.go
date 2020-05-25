@@ -35,7 +35,7 @@ func (this *DummySink) Name() string {
 func (this *DummySink) ExportEvents(*core.EventBatch) {
 	this.mutex.Lock()
 	this.exportCount++
-	this.mutex.Unlock()
+	defer this.mutex.Unlock()
 
 	time.Sleep(this.latency)
 }
@@ -43,7 +43,7 @@ func (this *DummySink) ExportEvents(*core.EventBatch) {
 func (this *DummySink) Stop() {
 	this.mutex.Lock()
 	this.stopped = true
-	this.mutex.Unlock()
+	defer this.mutex.Unlock()
 
 	time.Sleep(this.latency)
 }

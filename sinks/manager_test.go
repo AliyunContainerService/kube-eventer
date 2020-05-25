@@ -27,21 +27,21 @@ import (
 
 func doThreeBatches(manager core.EventSink) time.Duration {
 	now := time.Now()
-	batch := core.EventBatch{
-		Timestamp: now,
-		Events:    []*kube_api.Event{},
-	}
+	for i := 0; i < 3; i++ {
+		batch := core.EventBatch{
+			Timestamp: time.Now(),
+			Events:    []*kube_api.Event{},
+		}
 
-	manager.ExportEvents(&batch)
-	manager.ExportEvents(&batch)
-	manager.ExportEvents(&batch)
+		manager.ExportEvents(&batch)
+	}
 
 	elapsed := time.Now().Sub(now)
 	return elapsed
 }
 
 func TestAllExportsInTime(t *testing.T) {
-	timeout := 3 * time.Second
+	timeout := 4 * time.Second
 
 	sink1 := util.NewDummySink("s1", time.Second)
 	sink2 := util.NewDummySink("s2", time.Second)
@@ -57,7 +57,7 @@ func TestAllExportsInTime(t *testing.T) {
 }
 
 func TestOneExportInTime(t *testing.T) {
-	timeout := 3 * time.Second
+	timeout := 4 * time.Second
 
 	sink1 := util.NewDummySink("s1", time.Second)
 	sink2 := util.NewDummySink("s2", 30*time.Second)
@@ -76,7 +76,7 @@ func TestOneExportInTime(t *testing.T) {
 }
 
 func TestNoExportInTime(t *testing.T) {
-	timeout := 3 * time.Second
+	timeout := 4 * time.Second
 
 	sink1 := util.NewDummySink("s1", 30*time.Second)
 	sink2 := util.NewDummySink("s2", 30*time.Second)
@@ -95,7 +95,7 @@ func TestNoExportInTime(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	timeout := 3 * time.Second
+	timeout := 4 * time.Second
 
 	sink1 := util.NewDummySink("s1", 30*time.Second)
 	sink2 := util.NewDummySink("s2", 30*time.Second)
