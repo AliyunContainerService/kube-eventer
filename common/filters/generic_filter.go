@@ -1,10 +1,11 @@
 package filters
 
 import (
-	"k8s.io/api/core/v1"
-	log "k8s.io/klog"
 	"reflect"
 	"regexp"
+
+	v1 "k8s.io/api/core/v1"
+	log "k8s.io/klog"
 )
 
 type GenericFilter struct {
@@ -13,12 +14,28 @@ type GenericFilter struct {
 	regexp bool
 }
 
+func IsZero(v reflect.Value) bool {
+	return !v.IsValid() || reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
+}
+
 func (gf *GenericFilter) Filter(event *v1.Event) (matched bool) {
+
 	if gf.keys == nil || len(gf.keys) == 0 {
+		// when enable regexp, empty regexp key should be return true
+		if gf.regexp {
+			matched = true
+			return
+		}
+
 		return false
 	}
 
 	field := reflect.Indirect(reflect.ValueOf(event)).FieldByName(gf.field)
+
+	// when field value is zero should be return false
+	if IsZero(field) {
+		return false
+	}
 
 	for _, k := range gf.keys {
 		// enable regexp
