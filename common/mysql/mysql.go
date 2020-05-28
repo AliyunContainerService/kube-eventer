@@ -17,9 +17,10 @@ package mysql
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
-	"k8s.io/klog"
 	"net/url"
+
+	"github.com/go-sql-driver/mysql"
+	"k8s.io/klog"
 )
 
 type MysqlService struct {
@@ -46,8 +47,23 @@ func (mySvc MysqlService) SaveData(sinkData []interface{}) error {
 		return nil
 	}
 
+	cfg, err := mysql.ParseDSN(mySvc.dsn)
+	if err != nil {
+		klog.Errorf("failed to Parse DSN")
+		return err
+	}
+
+	var statementDBName string
+	if len(cfg.DBName) == 0 {
+		statementDBName = "kube_event"
+	} else {
+		statementDBName = cfg.DBName
+	}
+
+	prepareStatement := fmt.Sprintf("INSERT INTO %s (namespace,kind,name,type,reason,message,event_id,first_occurrence_time,last_occurrence_time) VALUES(?,?,?,?,?,?,?,?,?)", statementDBName)
+
 	// Prepare statement for inserting data
-	stmtIns, err := mySvc.db.Prepare("INSERT INTO kube_event(namespace,kind,name,type,reason,message,event_id,first_occurrence_time,last_occurrence_time) VALUES(?,?,?,?,?,?,?,?,?)")
+	stmtIns, err := mySvc.db.Prepare(prepareStatement)
 	if err != nil {
 		klog.Errorf("failed to Prepare statement for inserting data ")
 		return err
