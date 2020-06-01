@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -108,7 +107,7 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 
 	err := s.client().PutLogs(request)
 	if err != nil {
-		klog.Errorf("failed to put events to sls,because of %s", err.Error())
+		klog.Errorf("failed to put events to sls,because of %v", err)
 	}
 }
 
@@ -238,7 +237,7 @@ func newClient(c *Config) (*sls.Client, error) {
 	if err != nil {
 		region, err = m.Region()
 		if err != nil {
-			klog.Errorf("failed to get Region,because of %s", err.Error())
+			klog.Errorf("failed to get Region,because of %v", err)
 			return nil, err
 		}
 	}
@@ -272,10 +271,10 @@ func newClient(c *Config) (*sls.Client, error) {
 		layout := "2006-01-02T15:04:05Z"
 		t, err := time.Parse(layout, akInfo.Expiration)
 		if err != nil {
-			fmt.Errorf(err.Error())
+			klog.Errorf("failed to parse time layout, %v", err)
 		}
 		if t.Before(time.Now()) {
-			klog.Errorf("invalid token which is expired")
+			klog.Error("invalid token which is expired")
 		}
 		klog.Info("get token by ram role.")
 		akInfo.AccessKeyId = string(ak)
@@ -284,13 +283,13 @@ func newClient(c *Config) (*sls.Client, error) {
 	} else {
 		roleName, err := m.RoleName()
 		if err != nil {
-			klog.Errorf("failed to get RoleName,because of %s", err.Error())
+			klog.Errorf("failed to get RoleName,because of %v", err)
 			return nil, err
 		}
 
 		auth, err := m.RamRoleToken(roleName)
 		if err != nil {
-			klog.Errorf("failed to get RamRoleToken,because of %s", err.Error())
+			klog.Errorf("failed to get RamRoleToken,because of %v", err)
 			return nil, err
 		}
 		akInfo.AccessKeyId = auth.AccessKeyId
