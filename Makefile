@@ -7,7 +7,7 @@ ALL_ARCHITECTURES=amd64 arm arm64 ppc64le s390x
 ML_PLATFORMS=linux/amd64,linux/arm,linux/arm64,linux/ppc64le,linux/s390x
 
 
-VERSION?=v1.1.0
+VERSION?=v1.2.0
 GIT_COMMIT:=$(shell git rev-parse --short HEAD)
 
 
