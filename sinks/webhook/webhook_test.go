@@ -10,40 +10,26 @@ import (
 )
 
 const (
-	webhookSinkValid  = "https://oapi.dingtalk.com/robot/send?access_token=token&level=Normal&namespaces=a,b&kinds=c,d&header=contentType=demo&header=content2=3"
-	webhookSinkFilter = "https://oapi.example.com/robot/send?access_token=token&level=Normal&namespaces=a,b&kinds=c,d&reason=Failed&header=contentType=demo&header=content2=3"
+	webhookSink = "https://oapi.dingtalk.com/robot/send?access_token=token&level=Warning&namespaces=kube-system&kinds=Pod&header=contentType=demo&header=content2=3"
 )
 
 var (
-	kubeSystemNamespaceEventPod = &v1.Event{
+	newEvent = &v1.Event{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "Event2",
+			Name: "Event1",
+		},
+		InvolvedObject: v1.ObjectReference{
+			Kind:      "Pod",
 			Namespace: "kube-system",
 		},
-		TypeMeta: metav1.TypeMeta{
-			Kind: "Pod",
-		},
 		Reason:  "FailedStartUp",
-		Type:    Normal,
-		Message: "DEMO",
-	}
-
-	newWebhookFilterEventPod = &v1.Event{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "Event1",
-			Namespace: "a",
-		},
-		TypeMeta: metav1.TypeMeta{
-			Kind: "c",
-		},
-		Reason:  "FailedStartUp",
-		Type:    Normal,
+		Type:    Warning,
 		Message: "DEMO",
 	}
 )
 
 func TestNewWebhookSink(t *testing.T) {
-	uri, err := url.Parse(webhookSinkValid)
+	uri, err := url.Parse(webhookSink)
 	if err != nil {
 		t.Fatalf("Failed to prase webhookSinkValid,err: %v", err)
 	}
@@ -52,11 +38,11 @@ func TestNewWebhookSink(t *testing.T) {
 		t.Fatalf("Failed to create NewWebhookSink,err: %v", err)
 	}
 
-	assert.True(t, webhookSinkValid == w.endpoint, "endpoint should be the same")
+	assert.True(t, webhookSink == w.endpoint, "endpoint should be the same")
 }
 
 func TestNewWebhookFilter(t *testing.T) {
-	uri, err := url.Parse(webhookSinkFilter)
+	uri, err := url.Parse(webhookSink)
 	if err != nil {
 		t.Fatalf("Failed to prase webhookSinkFilter,err: %v", err)
 	}
@@ -65,9 +51,7 @@ func TestNewWebhookFilter(t *testing.T) {
 		t.Fatalf("Failed to create NewWebhookSink,err: %v", err)
 	}
 
-	assert.True(t, webhookSinkFilter == w.endpoint, "endpoint should be the same")
-	assert.True(t, w.MockSend(newWebhookFilterEventPod), "newWebhookFilterEventPod should be matched.")
-	assert.False(t, w.MockSend(kubeSystemNamespaceEventPod), "kubeSystemNamespaceEventPod should not be matched.")
+	assert.True(t, w.MockSend(newEvent), "newEvent should be matched.")
 }
 
 func (ws *WebHookSink) MockSend(event *v1.Event) (matched bool) {
