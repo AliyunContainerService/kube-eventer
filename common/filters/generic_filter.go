@@ -19,20 +19,23 @@ func IsZero(v reflect.Value) bool {
 }
 
 func (gf *GenericFilter) Filter(event *v1.Event) (matched bool) {
+	var field reflect.Value
 
-	if gf.keys == nil || len(gf.keys) == 0 {
-		// when enable regexp, empty regexp key should be return true
-		if gf.regexp {
-			matched = true
-			return
-		}
-
-		return false
+	switch gf.field {
+	case "Kind":
+		field = reflect.Indirect(reflect.ValueOf(event)).FieldByNameFunc(func(name string) bool {
+			return name == "InvolvedObject"
+		}).FieldByName("Kind")
+	case "Namespace":
+		field = reflect.Indirect(reflect.ValueOf(event)).FieldByNameFunc(func(name string) bool {
+			return name == "InvolvedObject"
+		}).FieldByName("Namespace")
+	case "Type":
+		field = reflect.Indirect(reflect.ValueOf(event)).FieldByName("Type")
+	case "Reason":
+		field = reflect.Indirect(reflect.ValueOf(event)).FieldByName("Reason")
 	}
 
-	field := reflect.Indirect(reflect.ValueOf(event)).FieldByName(gf.field)
-
-	// when field value is zero should be return false
 	if IsZero(field) {
 		return false
 	}

@@ -61,7 +61,6 @@ func (ws *WebHookSink) ExportEvents(batch *core.EventBatch) {
 
 // send msg to generic webHook
 func (ws *WebHookSink) Send(event *v1.Event) (err error) {
-
 	for _, v := range ws.filters {
 		if !v.Filter(event) {
 			return
@@ -85,19 +84,19 @@ func (ws *WebHookSink) Send(event *v1.Event) (err error) {
 
 	if err != nil {
 		klog.Errorf("Failed to create request,because of %v", err)
-		return
+		return err
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		klog.Errorf("Failed to send event to sink,because of %v", err)
-		return
+		return err
 	}
 	defer resp.Body.Close()
 
 	if resp != nil && resp.StatusCode != http.StatusOK {
 		klog.Errorf("failed to send msg to sink, because the response code is %d", resp.StatusCode)
-		return
+		return fmt.Errorf("failed to send msg to sink, because the response code is %d", resp.StatusCode)
 	}
 	return nil
 }
@@ -149,21 +148,27 @@ func NewWebHookSink(uri *url.URL) (*WebHookSink, error) {
 	level := Warning
 	if len(opts["level"]) >= 1 {
 		level = opts["level"][0]
+		s.filters["LevelFilter"] = filters.NewGenericFilter("Type", []string{level}, false)
 	}
-	s.filters["LevelFilter"] = filters.NewGenericFilter("Type", []string{level}, false)
 
-	// namespace filter doesn't support regexp
-	namespaces := filters.GetValues(opts["namespaces"])
-	s.filters["NamespacesFilter"] = filters.NewGenericFilter("Namespace", namespaces, false)
+	if len(opts["namespaces"]) >= 1 {
+		// namespace filter doesn't support regexp
+		namespaces := filters.GetValues(opts["namespaces"])
+		s.filters["NamespacesFilter"] = filters.NewGenericFilter("Namespace", namespaces, false)
+	}
 
-	// such as node,pod,component and so on
-	// kinds:https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#lists-and-simple-kinds
-	kinds := filters.GetValues(opts["kinds"])
-	s.filters["KindsFilter"] = filters.NewGenericFilter("Kind", kinds, false)
+	if len(opts["kinds"]) >= 1 {
+		// such as node,pod,component and so on
+		// kinds:https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#lists-and-simple-kinds
+		kinds := filters.GetValues(opts["kinds"])
+		s.filters["KindsFilter"] = filters.NewGenericFilter("Kind", kinds, false)
+	}
 
-	// reason filter support regexp.
-	reasons := opts["reason"]
-	s.filters["ReasonsFilter"] = filters.NewGenericFilter("Reason", reasons, true)
+	if len(opts["reason"]) >= 1 {
+		// reason filter support regexp.
+		reasons := filters.GetValues(opts["reason"])
+		s.filters["ReasonsFilter"] = filters.NewGenericFilter("Reason", reasons, true)
+	}
 
 	if len(opts["custom_body_configmap"]) >= 1 {
 		s.bodyConfigMapName = opts["custom_body_configmap"][0]
