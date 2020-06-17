@@ -30,7 +30,7 @@ var (
 	"EventType": "{{ .Type }}",
 	"EventKind": "{{ .InvolvedObject.Kind }}"
 	"EventReason": "{{ .Reason }}",
-	"EventTime": "{{ .EventTime }}",
+	"EventTime": "{{ .LastTimestamp }}",
 	"EventMessage": "{{ .Message }}"
 }`
 )

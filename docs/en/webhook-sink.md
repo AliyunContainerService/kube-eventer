@@ -26,7 +26,7 @@ The default request body template is below.
 	"EventType": "{{ .Type }}",
 	"EventKind": "{{ .InvolvedObject.Kind }}"
 	"EventReason": "{{ .Reason }}",
-	"EventTime": "{{ .EventTime }}",
+	"EventTime": "{{ .LastTimestamp }}",
 	"EventMessage": "{{ .Message }}"
 }
 ```
@@ -105,7 +105,7 @@ apiVersion: v1
 data:
   content: >-
     {"EventType": "{{ .Type }}","EventKind": "{{ .InvolvedObject.Kind }}""EventReason": "{{
-    .Reason }}","EventTime": "{{ .EventTime }}","EventMessage": "{{ .Message
+    .Reason }}","EventTime": "{{ .LastTimestamp }}","EventMessage": "{{ .Message
     }}"}
 kind: ConfigMap
 metadata: 
@@ -122,7 +122,7 @@ Params
 configmap Body
 ```
 {	"msgtype": "text",
-	"text": {"content":"EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .EventTime }}\nEventMessage:{{ .Message }}"},
+	"text": {"content":"EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .LastTimestamp }}\nEventMessage:{{ .Message }}"},
 	"markdown": {"title":"","text":""}
 }
 ```
@@ -133,7 +133,7 @@ Params
 ```
 configmap Body 
 ```
-{"msgtype": "text","text": {"content": "EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .EventTime }}\nEventMessage:{{ .Message }}"}}
+{"msgtype": "text","text": {"content": "EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .LastTimestamp }}\nEventMessage:{{ .Message }}"}}
 ```
 #### slack 
 Params 
@@ -144,7 +144,7 @@ configmap Body
 ```
 {"channel": "testing",
 "username": "Eventer",
-"text":"EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .EventTime }}\nEventMessage:{{ .Message }}"}
+"text":"EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .LastTimestamp }}\nEventMessage:{{ .Message }}"}
 ```
 #### bear chat 
 Params 
@@ -153,5 +153,5 @@ Params
 ```
 configmap Body 
 ```
-"text":"EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .EventTime }}\nEventMessage:{{ .Message }}"
+"text":"EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .LastTimestamp }}\nEventMessage:{{ .Message }}"
 ```
