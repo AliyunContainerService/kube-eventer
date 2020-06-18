@@ -108,6 +108,7 @@ func (ws *WebHookSink) RenderBodyTemplate(event *v1.Event) (body string, err err
 		klog.Errorf("Failed to parse template,because of %v", err)
 		return "", err
 	}
+	event.Message = strings.Replace(event.Message, `"`, ``, -1)
 	if err := tp.Execute(&tpl, event); err != nil {
 		klog.Errorf("Failed to renderTemplate,because of %v", err)
 		return "", err
