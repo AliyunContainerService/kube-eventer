@@ -71,8 +71,8 @@ func eventToPoint(event *kube_api.Event, clusterName string) (*EsSinkPoint, erro
 	}
 	
 	point := EsSinkPoint{
-		FirstOccurrenceTimestamp: event.FirstTimestamp.Time.UTC(),
-		LastOccurrenceTimestamp:  event.LastTimestamp.Time.UTC(),
+		FirstOccurrenceTimestamp: firstOccurrenceTimestamp,
+		LastOccurrenceTimestamp:  lastOccurrenceTimestamp,
 		Message:                  event.Message,
 		Reason:                   event.Reason,
 		Type:                     event.Type,
