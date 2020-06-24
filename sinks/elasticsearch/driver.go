@@ -57,7 +57,7 @@ type EsSinkPoint struct {
 
 func eventToPoint(event *kube_api.Event, clusterName string) (*EsSinkPoint, error) {
 	var (
-		lastOccurrenceTimestamp = event.LastTimestamp.Time.UTC()
+		lastOccurrenceTimestamp  = event.LastTimestamp.Time.UTC()
 		firstOccurrenceTimestamp = event.FirstTimestamp.Time.UTC()
 	)
 
@@ -69,7 +69,7 @@ func eventToPoint(event *kube_api.Event, clusterName string) (*EsSinkPoint, erro
 	if event.FirstTimestamp.UTC().IsZero() {
 		firstOccurrenceTimestamp = event.CreationTimestamp.Time.UTC()
 	}
-	
+
 	point := EsSinkPoint{
 		FirstOccurrenceTimestamp: firstOccurrenceTimestamp,
 		LastOccurrenceTimestamp:  lastOccurrenceTimestamp,
