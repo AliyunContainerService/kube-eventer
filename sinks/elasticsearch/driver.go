@@ -15,7 +15,6 @@
 package elasticsearch
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	"net/url"
 	"sync"
 	"time"
@@ -23,6 +22,7 @@ import (
 	esCommon "github.com/AliyunContainerService/kube-eventer/common/elasticsearch"
 	event_core "github.com/AliyunContainerService/kube-eventer/core"
 	"github.com/AliyunContainerService/kube-eventer/metrics/core"
+	"github.com/prometheus/client_golang/prometheus"
 	kube_api "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
@@ -56,9 +56,23 @@ type EsSinkPoint struct {
 }
 
 func eventToPoint(event *kube_api.Event, clusterName string) (*EsSinkPoint, error) {
+	var (
+		lastOccurrenceTimestamp  = event.LastTimestamp.Time.UTC()
+		firstOccurrenceTimestamp = event.FirstTimestamp.Time.UTC()
+	)
+
+	// Part of k8s resources FirstOccurrenceTimestamp/LastOccurrenceTimestamp is nil
+	if event.LastTimestamp.UTC().IsZero() {
+		lastOccurrenceTimestamp = event.CreationTimestamp.Time.UTC()
+	}
+
+	if event.FirstTimestamp.UTC().IsZero() {
+		firstOccurrenceTimestamp = event.CreationTimestamp.Time.UTC()
+	}
+
 	point := EsSinkPoint{
-		FirstOccurrenceTimestamp: event.FirstTimestamp.Time.UTC(),
-		LastOccurrenceTimestamp:  event.LastTimestamp.Time.UTC(),
+		FirstOccurrenceTimestamp: firstOccurrenceTimestamp,
+		LastOccurrenceTimestamp:  lastOccurrenceTimestamp,
 		Message:                  event.Message,
 		Reason:                   event.Reason,
 		Type:                     event.Type,
