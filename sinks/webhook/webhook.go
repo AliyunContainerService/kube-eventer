@@ -3,6 +3,7 @@ package webhook
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -95,8 +96,10 @@ func (ws *WebHookSink) Send(event *v1.Event) (err error) {
 	defer resp.Body.Close()
 
 	if resp != nil && resp.StatusCode != http.StatusOK {
-		klog.Errorf("failed to send msg to sink, because the response code is %d", resp.StatusCode)
-		return fmt.Errorf("failed to send msg to sink, because the response code is %d", resp.StatusCode)
+		body, _ := ioutil.ReadAll(resp.Body)
+		err = fmt.Errorf("failed to send msg to sink, because the response code is %d, body is : %v", resp.StatusCode, string(body))
+		klog.Errorln(err)
+		return err
 	}
 	return nil
 }
