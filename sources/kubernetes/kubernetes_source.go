@@ -165,6 +165,7 @@ func (this *KubernetesEventSource) watch() {
 				}
 
 			case <-this.stopChannel:
+				watcher.Stop()
 				klog.Infof("Event watching stopped")
 				return
 			}
