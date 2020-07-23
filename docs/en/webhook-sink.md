@@ -146,6 +146,29 @@ configmap Body
 "username": "Eventer",
 "text":"EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .LastTimestamp }}\nEventMessage:{{ .Message }}"}
 ```
+
+configmap example
+
+```yaml
+apiVersion: v1
+data:
+  content: '{
+    "channel": "testing",
+    "icon_emoji": ":k8s:",
+    "username": "eventer",
+    "attachments": [
+        {
+            "color": "warning",
+            "text": "*Type*: `{{.Type}}`\n*Namespace*: `{{.InvolvedObject.Namespace}}`\n*Object*: `{{ .InvolvedObject.Kind }}/{{ .InvolvedObject.Name }}`\n*Reason*: `{{ .Reason }}`\n*Meaasge*: `{{ .Message }}`\n*Time*: `{{ .LastTimestamp }}`"
+        }
+    ]
+  }'
+kind: ConfigMap
+metadata:
+  name: custom-body
+  namespace: kube-system
+```
+
 #### bear chat 
 Params 
 ```
