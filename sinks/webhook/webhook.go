@@ -96,7 +96,10 @@ func (ws *WebHookSink) Send(event *v1.Event) (err error) {
 	defer resp.Body.Close()
 
 	if resp != nil && resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
 		err = fmt.Errorf("failed to send msg to sink, because the response code is %d, body is : %v", resp.StatusCode, string(body))
 		klog.Errorln(err)
 		return err
