@@ -138,7 +138,7 @@ configmap Body
 #### slack 
 Params 
 ```
---sink=https://hooks.slack.com/services/d/B00000000/XXX?&level=Normal&kinds=Pod&header=Content-Type=application/json&custom_body_configmap=custom-body&custom_body_configmap_namespace=kube-system&method=POST
+--sink=webhook:https://hooks.slack.com/services/d/B00000000/XXX?&level=Normal&kinds=Pod&header=Content-Type=application/json&custom_body_configmap=custom-body&custom_body_configmap_namespace=kube-system&method=POST
 ```
 configmap Body 
 ```
