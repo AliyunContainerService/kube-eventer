@@ -16,8 +16,8 @@ use kube_event;
 create table kube_event
 (
     id               bigint(20)   not null auto_increment primary key comment 'event primary key',
-    name             varchar(64)  not null default '' comment 'evenet name',
-    namespace        varchar(64)  not null default '' comment 'evenet namespace',
+    name             varchar(64)  not null default '' comment 'event name',
+    namespace        varchar(64)  not null default '' comment 'event namespace',
     event_id         varchar(64)  not null default '' comment 'event_id',
     type             varchar(64)  not null default '' comment 'event type Warning or Normal',
     reason           varchar(64)  not null default '' comment 'event reason',

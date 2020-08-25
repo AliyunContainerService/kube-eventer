@@ -73,7 +73,7 @@ func (rm *realManager) Stop() {
 
 func (rm *realManager) Housekeep() {
 	for {
-		// Try to infovke housekeep at fixed time.
+		// Try to invoke housekeep at fixed time.
 		now := time.Now()
 		start := now.Truncate(rm.frequency)
 		end := start.Add(rm.frequency)
