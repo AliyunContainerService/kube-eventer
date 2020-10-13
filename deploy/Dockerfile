@@ -15,10 +15,10 @@ COPY --from=build-env /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 ENV TZ "Asia/Shanghai"
 RUN apk add --no-cache tzdata
 #COPY deploy/entrypoint.sh /
-RUN addgroup -S nrgroup
-RUN adduser -S -D nonroot nrgroup
-RUN chown -R nonroot:nrgroup /kube-eventer
-USER nonroot
+RUN addgroup -g 1000 nonroot && \
+    adduser -u 1000 -D -H -G nonroot nonroot && \
+    chown -R nonroot:nonroot /kube-eventer
+USER nonroot:nonroot
 
 ENTRYPOINT ["/kube-eventer"]
 
