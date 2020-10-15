@@ -113,8 +113,12 @@ func main() {
 }
 
 func startHTTPServer() {
-	klog.Info("Starting eventer http service")
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("ok"))
+	})
 
+	klog.Info("Starting eventer http service")
 	klog.Fatal(http.ListenAndServe(net.JoinHostPort(*argHealthzIP, strconv.Itoa(int(*argHealthzPort))), nil))
 }
 
