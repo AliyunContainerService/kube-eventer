@@ -142,6 +142,12 @@ func (d *DingTalkSink) Ding(event *v1.Event) {
 		}
 	}
 
+	// custom filter and ignore conf-map
+	if strings.Contains(event.Message, "-driver-conf-map") {
+		klog.Infof("Ignore driver conf map %s in namespace %s not found error.", event.Name, event.Namespace)
+		return
+	}
+
 	msg := createMsgFromEvent(d, event)
 	if msg == nil {
 		klog.Warningf("failed to create msg from event,because of %v", event)
