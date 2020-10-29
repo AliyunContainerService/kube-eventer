@@ -24,7 +24,7 @@ The default request body template is below.
 ```$xslt
 {
 	"EventType": "{{ .Type }}",
-	"EventKind": "{{ .InvolvedObject.Kind }}"
+	"EventKind": "{{ .InvolvedObject.Kind }}",
 	"EventReason": "{{ .Reason }}",
 	"EventTime": "{{ .LastTimestamp }}",
 	"EventMessage": "{{ .Message }}"
@@ -104,7 +104,7 @@ The configMap must have a field called `content` and then put custom body templa
 apiVersion: v1
 data:
   content: >-
-    {"EventType": "{{ .Type }}","EventKind": "{{ .InvolvedObject.Kind }}""EventReason": "{{
+    {"EventType": "{{ .Type }}","EventKind": "{{ .InvolvedObject.Kind }}","EventReason": "{{
     .Reason }}","EventTime": "{{ .LastTimestamp }}","EventMessage": "{{ .Message
     }}"}
 kind: ConfigMap
