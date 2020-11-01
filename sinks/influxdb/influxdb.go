@@ -17,6 +17,7 @@ package influxdb
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/AliyunContainerService/kube-eventer/util"
 	"net/url"
 	"strings"
 	"sync"
@@ -58,8 +59,12 @@ func (sink *influxdbSink) resetConnection() {
 
 // Generate point value for event
 func getEventValue(event *kube_api.Event) (string, error) {
+	deepCopy := event.DeepCopy()
+	eventMap := util.Struct2Map(*deepCopy)
+	eventMap["LastTimestamp"] = event.LastTimestamp.String()
+	eventMap["FirstTimestamp"] = event.FirstTimestamp.String()
 	// TODO: check whether indenting is required.
-	bytes, err := json.MarshalIndent(event, "", " ")
+	bytes, err := json.MarshalIndent(eventMap, "", " ")
 	if err != nil {
 		return "", err
 	}
