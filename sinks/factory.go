@@ -20,6 +20,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/core"
 	"github.com/AliyunContainerService/kube-eventer/sinks/dingtalk"
 	"github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch"
+	"github.com/AliyunContainerService/kube-eventer/sinks/eventbridge"
 	"github.com/AliyunContainerService/kube-eventer/sinks/honeycomb"
 	"github.com/AliyunContainerService/kube-eventer/sinks/influxdb"
 	"github.com/AliyunContainerService/kube-eventer/sinks/kafka"
@@ -59,6 +60,8 @@ func (this *SinkFactory) Build(uri flags.Uri) (core.EventSink, error) {
 		return wechat.NewWechatSink(&uri.Val)
 	case "webhook":
 		return webhook.NewWebHookSink(&uri.Val)
+	case "eventbridge":
+		return eventbridge.NewEventBridgeSink(&uri.Val)
 	default:
 		return nil, fmt.Errorf("Sink not recognized: %s", uri.Key)
 	}

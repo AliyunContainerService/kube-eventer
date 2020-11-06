@@ -4,11 +4,13 @@ go 1.12
 
 require (
 	github.com/Shopify/sarama v1.22.1
+	github.com/alibabacloud-go/eventbridge-sdk v1.2.3
 	github.com/aws/aws-sdk-go v1.19.6
 	github.com/denverdino/aliyungo v0.0.0-20190410085603-611ead8a6fed
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/golang/protobuf v1.3.2
 	github.com/google/cadvisor v0.33.1
+	github.com/google/uuid v1.1.1
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/influxdata/influxdb v1.7.7
 	github.com/mailru/easyjson v0.7.0 // indirect
@@ -19,8 +21,7 @@ require (
 	github.com/riemann/riemann-go-client v0.4.0
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9
 	github.com/smartystreets/gunit v1.0.0 // indirect
-	github.com/stretchr/testify v1.4.0
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
+	github.com/stretchr/testify v1.5.1
 	gopkg.in/olivere/elastic.v3 v3.0.75
 	gopkg.in/olivere/elastic.v5 v5.0.81
 	gopkg.in/olivere/elastic.v6 v6.2.23
