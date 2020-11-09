@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
+	"math"
 	"net/url"
 	"time"
 )
@@ -18,6 +19,7 @@ const (
 	defaultBusName               = "default"
 	eventBridgeEndpointSchema    = "%v.eventbridge.%v-vpc.aliyuncs.com"
 	aliyunContainerServiceSource = "acs.cs"
+	eventbridgeMaxBatchSize      = 16
 )
 
 type eventBridgeSink struct {
@@ -42,20 +44,22 @@ func (ebSink *eventBridgeSink) ExportEvents(batch *core.EventBatch) {
 		return
 	}
 
-	events := make([]*eventbridge.CloudEvent, len(batch.Events))
-
-	for _, event := range batch.Events {
-		cloudEvent, err := ebSink.toCloudEvent(event)
-		if err != nil {
-			klog.Errorf("failed to convert event %v to cloudevents, beacause of %v", event, err)
+	batchSize := int(math.Ceil(float64(len(batch.Events)) / eventbridgeMaxBatchSize))
+	for i := 0; i < batchSize; i++ {
+		events := make([]*eventbridge.CloudEvent, eventbridgeMaxBatchSize)
+		for j := i * batchSize; j < (i+1)*batchSize && j < len(batch.Events); j++ {
+			cloudEvent, err := ebSink.toCloudEvent(batch.Events[j])
+			if err != nil {
+				klog.Errorf("failed to convert event %v to cloudevents, beacause of %v", batch.Events[j], err)
+				continue
+			}
+			events = append(events, cloudEvent)
 		}
-		events = append(events, cloudEvent)
-	}
+		err := ebSink.putEvents(events)
 
-	err := ebSink.putEvents(events)
-
-	if err != nil {
-		klog.Errorf("failed to put events to eventbridge, beacause of %v", err)
+		if err != nil {
+			klog.Errorf("failed to put events to eventbridge, beacause of %v", err)
+		}
 	}
 }
 
