@@ -235,10 +235,14 @@ func newClient(c *Config) (*sls.Client, error) {
 	m := metadata.NewMetaData(nil)
 	region, err := GetRegionFromEnv()
 	if err != nil {
-		region, err = m.Region()
-		if err != nil {
-			klog.Errorf("failed to get Region,because of %v", err)
-			return nil, err
+		if c.regionId != "" {
+			region = c.regionId
+		} else {
+			region, err = m.Region()
+			if err != nil {
+				klog.Errorf("failed to get Region,because of %v", err)
+				return nil, err
+			}
 		}
 	}
 
@@ -281,20 +285,25 @@ func newClient(c *Config) (*sls.Client, error) {
 		akInfo.AccessKeySecret = string(sk)
 		akInfo.SecurityToken = string(token)
 	} else {
-		roleName, err := m.RoleName()
-		if err != nil {
-			klog.Errorf("failed to get RoleName,because of %v", err)
-			return nil, err
-		}
+		if c.accessKeyId != "" && c.accessKeySecret != "" {
+			akInfo.AccessKeyId = c.accessKeyId
+			akInfo.AccessKeySecret = c.accessKeySecret
+		} else {
+			roleName, err := m.RoleName()
+			if err != nil {
+				klog.Errorf("failed to get RoleName,because of %v", err)
+				return nil, err
+			}
 
-		auth, err := m.RamRoleToken(roleName)
-		if err != nil {
-			klog.Errorf("failed to get RamRoleToken,because of %v", err)
-			return nil, err
+			auth, err := m.RamRoleToken(roleName)
+			if err != nil {
+				klog.Errorf("failed to get RamRoleToken,because of %v", err)
+				return nil, err
+			}
+			akInfo.AccessKeyId = auth.AccessKeyId
+			akInfo.AccessKeySecret = auth.AccessKeySecret
+			akInfo.SecurityToken = auth.SecurityToken
 		}
-		akInfo.AccessKeyId = auth.AccessKeyId
-		akInfo.AccessKeySecret = auth.AccessKeySecret
-		akInfo.SecurityToken = auth.SecurityToken
 	}
 
 	client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
