@@ -178,3 +178,24 @@ configmap Body
 ```
 "text":"EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .LastTimestamp }}\nEventMessage:{{ .Message }}"
 ```
+
+#### feishu
+Params
+```
+--sink=webhook:https://open.feishu.cn/open-apis/bot/hook/xxxxxxxxxxxxxxxxxxxxxxxxxx?level=Warning&method=POST&header=Content-Type=application/json&custom_body_configmap=custom-body&custom_body_configmap_namespace=kube-system
+```
+configmap example
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-webhook
+  namespace: kube-system
+data:
+  content: '{
+   "title": "Kube-eventer",
+   "text":  "EventType:  {{ .Type }}\nEventKind:  {{ .InvolvedObject.Kind }}\nEventReason:  {{ .Reason }}\nEventTime:  {{ .LastTimestamp }}\nEventMessage:  {{ .Message }}"
+   }'
+
+```
