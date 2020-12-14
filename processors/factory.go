@@ -19,7 +19,7 @@ func (pf *ProcessorFactory) build(uri flags.Uri) (core.EventProcessor, error) {
 		processor, err := npd.NewProcessor(&uri.Val)
 		return processor, err
 	default:
-		return nil, fmt.Errorf("Source not recognized: %s", uri.Key)
+		return nil, fmt.Errorf("Processor not recognized: %s", uri.Key)
 	}
 }
 
