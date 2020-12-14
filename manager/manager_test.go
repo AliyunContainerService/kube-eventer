@@ -32,7 +32,7 @@ func TestFlow(t *testing.T) {
 	source := util.NewDummySource(batch)
 	sink := util.NewDummySink("sink", time.Millisecond)
 
-	manager, _ := NewManager(source, sink, time.Second)
+	manager, _ := NewManager(source, nil, sink, time.Second)
 	manager.Start()
 
 	// 4-5 cycles

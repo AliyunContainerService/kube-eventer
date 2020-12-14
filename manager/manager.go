@@ -46,18 +46,20 @@ type Manager interface {
 }
 
 type realManager struct {
-	source    core.EventSource
-	sink      core.EventSink
-	frequency time.Duration
-	stopChan  chan struct{}
+	source     core.EventSource
+	processors []core.EventProcessor
+	sink       core.EventSink
+	frequency  time.Duration
+	stopChan   chan struct{}
 }
 
-func NewManager(source core.EventSource, sink core.EventSink, frequency time.Duration) (Manager, error) {
+func NewManager(source core.EventSource, processors []core.EventProcessor, sink core.EventSink, frequency time.Duration) (Manager, error) {
 	manager := realManager{
-		source:    source,
-		sink:      sink,
-		frequency: frequency,
-		stopChan:  make(chan struct{}),
+		source:     source,
+		processors: processors,
+		sink:       sink,
+		frequency:  frequency,
+		stopChan:   make(chan struct{}),
 	}
 
 	return &manager, nil
@@ -99,6 +101,11 @@ func (rm *realManager) housekeep() {
 	// No parallelism. Assumes that the events are pushed to Heapster. Add parallelism
 	// when this stops to be true.
 	events := rm.source.GetNewEvents()
+
+	// process every events
+	for _, processor := range rm.processors {
+		events = processor.Process(events)
+	}
 	klog.V(0).Infof("Exporting %d events", len(events.Events))
 	rm.sink.ExportEvents(events)
 }

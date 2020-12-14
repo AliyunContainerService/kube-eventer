@@ -34,6 +34,11 @@ type EventSource interface {
 	GetNewEvents() *EventBatch
 }
 
+// EventProcessor is used to process every event, eg filter, transfer...
+type EventProcessor interface {
+	Process(*EventBatch) *EventBatch
+}
+
 type EventSink interface {
 	Name() string
 

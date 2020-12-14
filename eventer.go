@@ -30,6 +30,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/api"
 	"github.com/AliyunContainerService/kube-eventer/common/flags"
 	"github.com/AliyunContainerService/kube-eventer/manager"
+	"github.com/AliyunContainerService/kube-eventer/processors"
 	"github.com/AliyunContainerService/kube-eventer/sinks"
 	"github.com/AliyunContainerService/kube-eventer/sources"
 	"github.com/AliyunContainerService/kube-eventer/version"
@@ -40,6 +41,7 @@ var (
 	argFrequency   = flag.Duration("frequency", 30*time.Second, "The resolution at which Eventer pushes events to sinks")
 	argMaxProcs    = flag.Int("max_procs", 0, "max number of CPUs that can be used simultaneously. Less than 1 for default (number of cores)")
 	argSources     flags.Uris
+	argProcessors  flags.Uris
 	argSinks       flags.Uris
 	argVersion     bool
 	argHealthzIP   = flag.String("healthz-ip", "0.0.0.0", "ip eventer health check service uses")
@@ -53,6 +55,7 @@ func main() {
 	defer klog.Flush()
 
 	flag.Var(&argSources, "source", "source(s) to read events from")
+	flag.Var(&argProcessors, "processor", "processor(s) to process events")
 	flag.Var(&argSinks, "sink", "external sink(s) that receive events")
 	flag.BoolVar(&argVersion, "version", false, "print version info and exit")
 	flag.Parse()
@@ -83,6 +86,13 @@ func main() {
 		klog.Fatal("Requires exactly 1 source")
 	}
 
+	// processors
+	processorFactory := processors.NewProcessorFactory()
+	processors, err := processorFactory.BuildAll(argProcessors)
+	if err != nil {
+		klog.Fatalf("Failed to create processors: %v", err)
+	}
+
 	// sinks
 	sinksFactory := sinks.NewSinkFactory()
 	sinkList := sinksFactory.BuildAll(argSinks)
@@ -99,7 +109,7 @@ func main() {
 	}
 
 	// main manager
-	manager, err := manager.NewManager(sources[0], sinkManager, *argFrequency)
+	manager, err := manager.NewManager(sources[0], processors, sinkManager, *argFrequency)
 	if err != nil {
 		klog.Fatalf("Failed to create main manager: %v", err)
 	}
