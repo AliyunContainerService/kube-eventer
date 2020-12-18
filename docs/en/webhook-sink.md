@@ -199,3 +199,46 @@ data:
    }'
 
 ```
+
+#### feishu v2
+Params
+```
+--sink=webhook:https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxxxxxxxxxxxxxxxxxxxx?level=Warning&method=POST&header=Content-Type=application/json&custom_body_configmap=custom-body&custom_body_configmap_namespace=kube-system
+```
+
+configmap example
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-webhook
+  namespace: kube-system
+data:
+  content: '{
+   "msg_type": "interactive",
+   "card": {
+      "config": {
+         "wide_screen_mode": true,
+         "enable_forward": true
+      },
+      "header": {
+         "title": {
+            "tag": "plain_text",
+            "content": "Kube-eventer"
+         },
+         "template": "Red"
+      },
+      "elements": [
+         {
+            "tag": "div",
+            "text": {
+               "tag": "lark_md",
+               "content":  "**EventType:**  {{ .Type }}\n**EventKind:**  {{ .InvolvedObject.Kind }}\n**EventReason:**  {{ .Reason }}\n**EventTime:**  {{ .LastTimestamp }}\n**EventMessage:**  {{ .Message }}"
+            }
+        	}
+      	]
+   		}
+		}'
+
+```
