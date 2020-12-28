@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	ConfigPath  = "/var/addon/token-config"
+	ConfigPath = "/var/addon/token-config"
 )
+
 type AKInfo struct {
 	AccessKeyId     string `json:"access.key.id"`
 	AccessKeySecret string `json:"access.key.secret"`
@@ -82,6 +83,16 @@ func ParseRegion() (string, error) {
 	return region, nil
 }
 
+func ParseRegionFromMeta() (string, error) {
+	m := metadata.NewMetaData(nil)
+	region, err := m.Region()
+	if err != nil {
+		klog.Errorf("failed to get Region, because of %v", err)
+		return "", err
+	}
+	return region, nil
+}
+
 func ParseOwnerAccountId() (string, error) {
 	accountId, err := GetOwnerAccountFromEnv()
 	if err != nil {
@@ -95,10 +106,31 @@ func ParseOwnerAccountId() (string, error) {
 	return accountId, nil
 }
 
-func ParseAKInfo() (*AKInfo, error) {
-	m := metadata.NewMetaData(nil)
+func ParseAKInfoFromMeta() (*AKInfo, error) {
 	var akInfo AKInfo
-	if _, err := os.Stat(ConfigPath); err == nil {
+	m := metadata.NewMetaData(nil)
+	roleName, err := m.RoleName()
+	if err != nil {
+		klog.Errorf("failed to get RoleName,because of %v", err)
+		return nil, err
+	}
+
+	auth, err := m.RamRoleToken(roleName)
+	if err != nil {
+		klog.Errorf("failed to get RamRoleToken,because of %v", err)
+		return nil, err
+	}
+	akInfo.AccessKeyId = auth.AccessKeyId
+	akInfo.AccessKeySecret = auth.AccessKeySecret
+	akInfo.SecurityToken = auth.SecurityToken
+
+	return &akInfo, nil
+}
+
+func ParseAKInfoFromConfigPath() (*AKInfo, error) {
+	var akInfo AKInfo
+	var err error
+	if _, err = os.Stat(ConfigPath); err == nil {
 		//获取token config json
 		encodeTokenCfg, err := ioutil.ReadFile(ConfigPath)
 		if err != nil {
@@ -135,21 +167,9 @@ func ParseAKInfo() (*AKInfo, error) {
 		akInfo.AccessKeyId = string(ak)
 		akInfo.AccessKeySecret = string(sk)
 		akInfo.SecurityToken = string(token)
-	} else {
-		roleName, err := m.RoleName()
-		if err != nil {
-			klog.Errorf("failed to get RoleName,because of %v", err)
-			return nil, err
-		}
 
-		auth, err := m.RamRoleToken(roleName)
-		if err != nil {
-			klog.Errorf("failed to get RamRoleToken,because of %v", err)
-			return nil, err
-		}
-		akInfo.AccessKeyId = auth.AccessKeyId
-		akInfo.AccessKeySecret = auth.AccessKeySecret
-		akInfo.SecurityToken = auth.SecurityToken
+		return &akInfo, nil
 	}
-	return &akInfo, nil
+
+	return nil, err
 }

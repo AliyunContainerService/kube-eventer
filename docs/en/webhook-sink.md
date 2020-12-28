@@ -24,7 +24,7 @@ The default request body template is below.
 ```$xslt
 {
 	"EventType": "{{ .Type }}",
-	"EventKind": "{{ .InvolvedObject.Kind }}"
+	"EventKind": "{{ .InvolvedObject.Kind }}",
 	"EventReason": "{{ .Reason }}",
 	"EventTime": "{{ .LastTimestamp }}",
 	"EventMessage": "{{ .Message }}"
@@ -104,7 +104,7 @@ The configMap must have a field called `content` and then put custom body templa
 apiVersion: v1
 data:
   content: >-
-    {"EventType": "{{ .Type }}","EventKind": "{{ .InvolvedObject.Kind }}""EventReason": "{{
+    {"EventType": "{{ .Type }}","EventKind": "{{ .InvolvedObject.Kind }}","EventReason": "{{
     .Reason }}","EventTime": "{{ .LastTimestamp }}","EventMessage": "{{ .Message
     }}"}
 kind: ConfigMap
@@ -177,4 +177,68 @@ Params
 configmap Body 
 ```
 "text":"EventType:{{ .Type }}\nEventKind:{{ .InvolvedObject.Kind }}\nEventReason:{{ .Reason }}\nEventTime:{{ .LastTimestamp }}\nEventMessage:{{ .Message }}"
+```
+
+#### feishu
+Params
+```
+--sink=webhook:https://open.feishu.cn/open-apis/bot/hook/xxxxxxxxxxxxxxxxxxxxxxxxxx?level=Warning&method=POST&header=Content-Type=application/json&custom_body_configmap=custom-body&custom_body_configmap_namespace=kube-system
+```
+configmap example
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-webhook
+  namespace: kube-system
+data:
+  content: '{
+   "title": "Kube-eventer",
+   "text":  "EventType:  {{ .Type }}\nEventKind:  {{ .InvolvedObject.Kind }}\nEventReason:  {{ .Reason }}\nEventTime:  {{ .LastTimestamp }}\nEventMessage:  {{ .Message }}"
+   }'
+
+```
+
+#### feishu v2
+Params
+```
+--sink=webhook:https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxxxxxxxxxxxxxxxxxxxx?level=Warning&method=POST&header=Content-Type=application/json&custom_body_configmap=custom-body&custom_body_configmap_namespace=kube-system
+```
+
+configmap example
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-webhook
+  namespace: kube-system
+data:
+  content: '{
+   "msg_type": "interactive",
+   "card": {
+      "config": {
+         "wide_screen_mode": true,
+         "enable_forward": true
+      },
+      "header": {
+         "title": {
+            "tag": "plain_text",
+            "content": "Kube-eventer"
+         },
+         "template": "Red"
+      },
+      "elements": [
+         {
+            "tag": "div",
+            "text": {
+               "tag": "lark_md",
+               "content":  "**EventType:**  {{ .Type }}\n**EventKind:**  {{ .InvolvedObject.Kind }}\n**EventReason:**  {{ .Reason }}\n**EventTime:**  {{ .LastTimestamp }}\n**EventMessage:**  {{ .Message }}"
+            }
+        	}
+      	]
+   		}
+		}'
+
 ```

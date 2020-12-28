@@ -217,17 +217,39 @@ func parseConfig(uri *url.URL) (*Config, error) {
 
 // newClient creates client using AK or metadata
 func newClient(c *Config) (*sls.Client, error) {
-	region, err := utils.ParseRegion()
+	// region from env
+	region, err := utils.GetRegionFromEnv()
 	if err != nil {
-		return nil, err
+		if c.regionId != "" {
+			// region from client
+			region = c.regionId
+		} else {
+			// region from meta data
+			regionInMeta, err := utils.ParseRegionFromMeta()
+			if err != nil {
+				klog.Errorf("failed to get Region,because of %v", err)
+				return nil, err
+			}
+			region = regionInMeta
+		}
 	}
 
-	akInfo, err := utils.ParseAKInfo()
+	akInfo, err := utils.ParseAKInfoFromConfigPath()
 	if err != nil {
-		return nil, err
+		akInfo = &utils.AKInfo{}
+		if c.accessKeyId != "" && c.accessKeySecret != "" {
+			akInfo.AccessKeyId = c.accessKeyId
+			akInfo.AccessKeySecret = c.accessKeySecret
+		} else {
+			akInfoInMeta, err := utils.ParseAKInfoFromMeta()
+			if err != nil {
+				klog.Errorf("failed to get RamRoleToken,because of %v", err)
+				return nil, err
+			}
+			akInfo = akInfoInMeta
+		}
 	}
 
 	client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
 	return client, nil
 }
-
