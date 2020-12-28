@@ -155,8 +155,8 @@ func ParseAKInfoFromConfigPath() (*AKInfo, error) {
 		if err != nil {
 			klog.Fatalf("failed to decode token, err: %v", err)
 		}
-		layout := "2006-01-02T15:04:05Z"
-		t, err := time.Parse(layout, akInfo.Expiration)
+
+		t, err := time.Parse(time.RFC3339, akInfo.Expiration)
 		if err != nil {
 			klog.Errorf("failed to parse time layout, %v", err)
 		}

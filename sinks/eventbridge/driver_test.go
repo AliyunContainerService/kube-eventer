@@ -2,6 +2,7 @@ package eventbridge
 
 import (
 	"github.com/AliyunContainerService/kube-eventer/core"
+	"github.com/AliyunContainerService/kube-eventer/sinks/utils"
 	"github.com/alibabacloud-go/eventbridge-sdk/eventbridge"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -63,7 +64,7 @@ func TestExportEventsInBatch(t *testing.T) {
 	})
 
 	var twoBatchEvents []*v1.Event
-	for i := 0; i < eventbridgeMaxBatchSize + 2; i++ {
+	for i := 0; i < eventbridgeMaxBatchSize+2; i++ {
 		twoBatchEvents = append(twoBatchEvents, createTestEvent())
 	}
 	batchEvents.Events = twoBatchEvents
@@ -78,6 +79,27 @@ func TestExportEventsInBatch(t *testing.T) {
 		}
 		return nil
 	})
+}
+
+func TestIsAkValid(t *testing.T) {
+	ebSink := createEventBridgeSink(t)
+	layout := time.RFC3339
+	akInfo := utils.AKInfo{}
+
+	expTime := time.Now()
+	akInfo.Expiration = expTime.Add(time.Minute * time.Duration(15)).Format(layout)
+	ebSink.akInfo = &akInfo
+	assert.Equal(t, ebSink.isAkValid(), true)
+
+	expTime = time.Now()
+	akInfo.Expiration = expTime.Add(time.Minute * time.Duration(5)).Format(layout)
+	ebSink.akInfo = &akInfo
+	assert.Equal(t, ebSink.isAkValid(), false)
+
+	expTime = time.Now()
+	akInfo.Expiration = expTime.Add(time.Minute * time.Duration(-5)).Format(layout)
+	ebSink.akInfo = &akInfo
+	assert.Equal(t, ebSink.isAkValid(), false)
 }
 
 func createEventBridgeSink(t *testing.T) *eventBridgeSink {

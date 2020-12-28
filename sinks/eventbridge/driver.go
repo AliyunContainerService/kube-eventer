@@ -218,20 +218,20 @@ func (ebSink *eventBridgeSink) newClient() (*eventbridge.Client, error) {
 }
 
 func (ebSink *eventBridgeSink) isAkValid() bool {
-	layout := "2006-01-02T15:04:05Z"
-	t, err := time.Parse(layout, ebSink.akInfo.Expiration)
+	t, err := time.Parse(time.RFC3339, ebSink.akInfo.Expiration)
 	if err != nil {
 		klog.Errorf("failed to parse time layout, %v", err)
 		return false
 	}
+	nowT := time.Now()
 
-	if t.Before(time.Now()) {
+	if t.Before(nowT) {
 		klog.Error("invalid token which is expired")
 		return false
 	}
 
-	t.Add(time.Minute * time.Duration(-10))
-	if t.Before(time.Now()) {
+	t = t.Add(-time.Minute * time.Duration(10))
+	if t.Before(nowT) {
 		klog.Error("valid token which will be expired in ten minutes, should refresh it")
 		return false
 	}
