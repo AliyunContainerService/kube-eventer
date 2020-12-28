@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/AliyunContainerService/kube-eventer/sinks/sls"
 	"github.com/denverdino/aliyungo/metadata"
 	"io/ioutil"
 	"k8s.io/klog"
@@ -14,6 +13,9 @@ import (
 	"time"
 )
 
+const (
+	ConfigPath  = "/var/addon/token-config"
+)
 type AKInfo struct {
 	AccessKeyId     string `json:"access.key.id"`
 	AccessKeySecret string `json:"access.key.secret"`
@@ -96,9 +98,9 @@ func ParseOwnerAccountId() (string, error) {
 func ParseAKInfo() (*AKInfo, error) {
 	m := metadata.NewMetaData(nil)
 	var akInfo AKInfo
-	if _, err := os.Stat(sls.ConfigPath); err == nil {
+	if _, err := os.Stat(ConfigPath); err == nil {
 		//获取token config json
-		encodeTokenCfg, err := ioutil.ReadFile(sls.ConfigPath)
+		encodeTokenCfg, err := ioutil.ReadFile(ConfigPath)
 		if err != nil {
 			klog.Fatalf("failed to read token config, err: %v", err)
 		}

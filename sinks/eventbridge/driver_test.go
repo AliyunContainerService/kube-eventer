@@ -1,0 +1,119 @@
+package eventbridge
+
+import (
+	"github.com/AliyunContainerService/kube-eventer/core"
+	"github.com/alibabacloud-go/eventbridge-sdk/eventbridge"
+	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"net/url"
+	"os"
+	"testing"
+	"time"
+)
+
+func TestNewEventBridgeSink(t *testing.T) {
+	ebSink := createEventBridgeSink(t)
+	assert.Equal(t, ebSink.accountId, "15210987")
+	assert.Equal(t, ebSink.region, "cn-hangzhou")
+	assert.Equal(t, ebSink.clusterId, "123")
+}
+
+func TestCreateEventSubject(t *testing.T) {
+	ebSink := createEventBridgeSink(t)
+
+	subject := ebSink.createEventSubject(v1.ObjectReference{
+		APIVersion: "v120",
+		Kind:       "pod",
+		Name:       "my-pod",
+		Namespace:  "my-namespace",
+	})
+
+	assert.Equal(t, "acs:cs:cn-hangzhou:15210987:123/apis/v120/namespaces/my-namespace/pods/my-pod", subject)
+}
+
+func TestToCloudEvent(t *testing.T) {
+	ebSink := createEventBridgeSink(t)
+	cloudEvent, err := ebSink.toCloudEvent(createTestEvent())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, *cloudEvent.Datacontenttype, "application/json")
+	assert.Equal(t, cloudEvent.Extensions["aliyuneventbusname"], defaultBusName)
+	assert.Equal(t, *cloudEvent.Source, aliyunContainerServiceSource)
+	assert.Equal(t, *cloudEvent.Type, defaultEventType)
+	assert.Equal(t, *cloudEvent.Subject, "acs:cs:cn-hangzhou:15210987:123/apis/v1/namespaces/my-namespace/pods/my-pod")
+}
+
+func TestExportEventsInBatch(t *testing.T) {
+	ebSink := createEventBridgeSink(t)
+	batchEvents := &core.EventBatch{
+		Timestamp: time.Now(),
+	}
+	var oneBatchEvents []*v1.Event
+	for i := 0; i < 10; i++ {
+		oneBatchEvents = append(oneBatchEvents, createTestEvent())
+	}
+	batchEvents.Events = oneBatchEvents
+
+	ebSink.exportEventsInBatch(batchEvents, func(events []*eventbridge.CloudEvent) error {
+		assert.Equal(t, len(events), 10)
+		return nil
+	})
+
+	var twoBatchEvents []*v1.Event
+	for i := 0; i < eventbridgeMaxBatchSize + 2; i++ {
+		twoBatchEvents = append(twoBatchEvents, createTestEvent())
+	}
+	batchEvents.Events = twoBatchEvents
+
+	hitCnt := 0
+	ebSink.exportEventsInBatch(batchEvents, func(events []*eventbridge.CloudEvent) error {
+		if hitCnt == 0 {
+			assert.Equal(t, len(events), eventbridgeMaxBatchSize)
+			hitCnt++
+		} else {
+			assert.Equal(t, len(events), 2)
+		}
+		return nil
+	})
+}
+
+func createEventBridgeSink(t *testing.T) *eventBridgeSink {
+	os.Setenv("RegionId", "cn-hangzhou")
+	os.Setenv("OwnerAccountId", "15210987")
+
+	uri := url.URL{
+		RawQuery: "clusterId=123",
+	}
+	sink, err := NewEventBridgeSink(&uri)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ebSink := sink.(*eventBridgeSink)
+	return ebSink
+}
+
+func createTestEvent() *v1.Event {
+	now := time.Now()
+	event := &v1.Event{
+		Reason:         "A warning event occurs",
+		Message:        "some node emits the event without empty message",
+		Count:          251,
+		LastTimestamp:  metav1.NewTime(now),
+		FirstTimestamp: metav1.NewTime(now),
+		Type:           "Warning",
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-pod",
+			Namespace: "my-namespace",
+		},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "pod",
+		},
+	}
+	return event
+}

@@ -7,6 +7,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/core"
 	"github.com/AliyunContainerService/kube-eventer/sinks/utils"
 	"github.com/alibabacloud-go/eventbridge-sdk/eventbridge"
+	ebUtil "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/google/uuid"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -33,6 +34,8 @@ type eventBridgeSink struct {
 	region    string
 	accountId string
 }
+
+type putEventsImpl func(events []*eventbridge.CloudEvent) error
 
 func NewEventBridgeSink(uri *url.URL) (core.EventSink, error) {
 	ebSink := &eventBridgeSink{}
@@ -72,24 +75,7 @@ func (ebSink *eventBridgeSink) ExportEvents(batch *core.EventBatch) {
 	if len(batch.Events) == 0 {
 		return
 	}
-
-	batchSize := int(math.Ceil(float64(len(batch.Events)) / eventbridgeMaxBatchSize))
-	for i := 0; i < batchSize; i++ {
-		events := make([]*eventbridge.CloudEvent, eventbridgeMaxBatchSize)
-		for j := i * batchSize; j < (i+1)*batchSize && j < len(batch.Events); j++ {
-			cloudEvent, err := ebSink.toCloudEvent(batch.Events[j])
-			if err != nil {
-				klog.Errorf("failed to convert event %v to cloudevents, beacause of %v", batch.Events[j], err)
-				continue
-			}
-			events = append(events, cloudEvent)
-		}
-		err := ebSink.putEvents(events)
-
-		if err != nil {
-			klog.Errorf("failed to put events to eventbridge, beacause of %v", err)
-		}
-	}
+	ebSink.exportEventsInBatch(batch, ebSink.putEvents)
 }
 
 func (ebSink *eventBridgeSink) Stop() {
@@ -117,7 +103,7 @@ func (ebSink *eventBridgeSink) toCloudEvent(event *v1.Event) (*eventbridge.Cloud
 		SetData(dataBytes).
 		SetId(uuid.New().String()).
 		SetSource(aliyunContainerServiceSource).
-		SetTime(time.Now().String()).
+		SetTime(time.Now().Format(time.RFC3339)).
 		SetSubject(subject).
 		SetType(defaultEventType).
 		SetExtensions(map[string]interface{}{
@@ -131,8 +117,30 @@ func (ebSink *eventBridgeSink) putEvents(events []*eventbridge.CloudEvent) error
 	if err != nil {
 		return err
 	}
-	_, err = ebClient.PutEvents(events)
+	runtime := &ebUtil.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	_, err = ebClient.PutEventsWithOptions(events, runtime)
 	return err
+}
+
+func (ebSink *eventBridgeSink) exportEventsInBatch(batch *core.EventBatch, putEvents putEventsImpl) {
+	batchSize := int(math.Ceil(float64(len(batch.Events)) / eventbridgeMaxBatchSize))
+	for i := 0; i < batchSize; i++ {
+		events := make([]*eventbridge.CloudEvent, 0, eventbridgeMaxBatchSize)
+		for j := i * eventbridgeMaxBatchSize; j < (i+1)*eventbridgeMaxBatchSize && j < len(batch.Events); j++ {
+			cloudEvent, err := ebSink.toCloudEvent(batch.Events[j])
+			if err != nil {
+				klog.Errorf("failed to convert event %v to cloudevents, beacause of %v", batch.Events[j], err)
+				continue
+			}
+			events = append(events, cloudEvent)
+		}
+		err := putEvents(events)
+
+		if err != nil {
+			klog.Errorf("failed to put events to eventbridge, beacause of %v", err)
+		}
+	}
 }
 
 func (ebSink *eventBridgeSink) getClient() (*eventbridge.Client, error) {

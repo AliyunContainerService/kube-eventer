@@ -34,7 +34,6 @@ const (
 	eventId     = "eventId"
 	podEvent    = "Pod"
 	eventLevel  = "level"
-	ConfigPath  = "/var/addon/token-config"
 )
 
 /*
