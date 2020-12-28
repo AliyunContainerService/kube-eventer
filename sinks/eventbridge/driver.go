@@ -2,15 +2,18 @@ package eventbridge
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/AliyunContainerService/kube-eventer/core"
 	"github.com/AliyunContainerService/kube-eventer/sinks/utils"
 	"github.com/alibabacloud-go/eventbridge-sdk/eventbridge"
 	"github.com/google/uuid"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/klog"
 	"math"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -20,15 +23,41 @@ const (
 	eventBridgeEndpointSchema    = "%v.eventbridge.%v-vpc.aliyuncs.com"
 	aliyunContainerServiceSource = "acs.cs"
 	eventbridgeMaxBatchSize      = 16
+	defaultEventType             = "cs:k8s:K8s-event-via-npd"
 )
 
 type eventBridgeSink struct {
-	client *eventbridge.Client
-	akInfo *utils.AKInfo
+	client    *eventbridge.Client
+	akInfo    *utils.AKInfo
+	clusterId string
+	region    string
+	accountId string
 }
 
 func NewEventBridgeSink(uri *url.URL) (core.EventSink, error) {
 	ebSink := &eventBridgeSink{}
+
+	opts := uri.Query()
+
+	if len(opts["clusterId"]) >= 1 {
+		ebSink.clusterId = opts["clusterId"][0]
+	} else {
+		return nil, errors.New("please provide kubernetes cluster id for EventBridge")
+	}
+
+	region, err := utils.ParseRegion()
+	if err != nil {
+		return nil, err
+	}
+
+	accountId, err := utils.ParseOwnerAccountId()
+	if err != nil {
+		return nil, err
+	}
+
+	ebSink.region = region
+	ebSink.accountId = accountId
+
 	return ebSink, nil
 }
 
@@ -71,7 +100,7 @@ func (ebSink *eventBridgeSink) toCloudEvent(event *v1.Event) (*eventbridge.Cloud
 	resourceName := event.Name
 	kind := event.Kind
 	namespace := event.Namespace
-	subject := utils.CreateSelfLink(v1.ObjectReference{
+	subject := ebSink.createEventSubject(v1.ObjectReference{
 		APIVersion: event.APIVersion,
 		Kind:       kind,
 		Name:       resourceName,
@@ -90,7 +119,7 @@ func (ebSink *eventBridgeSink) toCloudEvent(event *v1.Event) (*eventbridge.Cloud
 		SetSource(aliyunContainerServiceSource).
 		SetTime(time.Now().String()).
 		SetSubject(subject).
-		SetType("type"). // TODO: Determine the appropriate event type
+		SetType(defaultEventType).
 		SetExtensions(map[string]interface{}{
 			"aliyuneventbusname": defaultBusName,
 		})
@@ -114,17 +143,7 @@ func (ebSink *eventBridgeSink) getClient() (*eventbridge.Client, error) {
 }
 
 func (ebSink *eventBridgeSink) newClient() (*eventbridge.Client, error) {
-	region, err := utils.ParseRegion()
-	if err != nil {
-		return nil, err
-	}
-
-	accountId, err := utils.ParseOwnerAccountId()
-	if err != nil {
-		return nil, err
-	}
-
-	endpoint := fmt.Sprintf(eventBridgeEndpointSchema, accountId, region)
+	endpoint := fmt.Sprintf(eventBridgeEndpointSchema, ebSink.accountId, ebSink.region)
 
 	akInfo, err := utils.ParseAKInfo()
 	if err != nil {
@@ -168,4 +187,19 @@ func (ebSink *eventBridgeSink) isAkValid() bool {
 	}
 
 	return true
+}
+
+// Creates a cloudevents subject of the form found in object metadata selfLinks
+// like: acs:cs:${Region}:${Account}:${ClusterId}/${selfLink}
+func (ebSink *eventBridgeSink) createEventSubject(o v1.ObjectReference) string {
+	gvr, _ := meta.UnsafeGuessKindToResource(o.GroupVersionKind())
+	versionNameHack := o.APIVersion
+
+	// Core API types don't have a separate package name and only have a version string (e.g. /apis/v1/namespaces/default/pods/myPod)
+	// To avoid weird looking strings like "v1/versionUnknown" we'll sniff for a "." in the version
+	if strings.Contains(versionNameHack, ".") && !strings.Contains(versionNameHack, "/") {
+		versionNameHack = versionNameHack + "/versionUnknown"
+	}
+	return fmt.Sprintf("acs:cs:%s:%s:%s/apis/%s/namespaces/%s/%s/%s", ebSink.region, ebSink.accountId,
+		ebSink.clusterId, versionNameHack, o.Namespace, gvr.Resource, o.Name)
 }

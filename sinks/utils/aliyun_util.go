@@ -6,15 +6,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/AliyunContainerService/kube-eventer/sinks/sls"
 	"github.com/denverdino/aliyungo/metadata"
 	"io/ioutil"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/klog"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -154,25 +150,4 @@ func ParseAKInfo() (*AKInfo, error) {
 		akInfo.SecurityToken = auth.SecurityToken
 	}
 	return &akInfo, nil
-}
-
-// Forked this method from knative eventing to support the same format of cloudevents subject in k8s world
-// Creates a URI of the form found in object metadata selfLinks
-// Format looks like: /apis/feeds.knative.dev/v1alpha1/namespaces/default/feeds/k8s-events-example
-// KNOWN ISSUES:
-// * ObjectReference.APIVersion has no version information (e.g. serving.knative.dev rather than serving.knative.dev/v1alpha1)
-// * ObjectReference does not have enough information to create the pluaralized list type (e.g. "revisions" from kind: Revision)
-//
-// Track these issues at https://github.com/kubernetes/kubernetes/issues/66313
-// We could possibly work around this by adding a lister for the resources referenced by these events.
-func CreateSelfLink(o v1.ObjectReference) string {
-	gvr, _ := meta.UnsafeGuessKindToResource(o.GroupVersionKind())
-	versionNameHack := o.APIVersion
-
-	// Core API types don't have a separate package name and only have a version string (e.g. /apis/v1/namespaces/default/pods/myPod)
-	// To avoid weird looking strings like "v1/versionUnknown" we'll sniff for a "." in the version
-	if strings.Contains(versionNameHack, ".") && !strings.Contains(versionNameHack, "/") {
-		versionNameHack = versionNameHack + "/versionUnknown"
-	}
-	return fmt.Sprintf("/apis/%s/namespaces/%s/%s/%s", versionNameHack, o.Namespace, gvr.Resource, o.Name)
 }
