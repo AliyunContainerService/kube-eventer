@@ -14,6 +14,7 @@ import (
 	"k8s.io/klog"
 	"math"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -28,11 +29,13 @@ const (
 )
 
 type eventBridgeSink struct {
-	client    *eventbridge.Client
-	akInfo    *utils.AKInfo
-	clusterId string
-	region    string
-	accountId string
+	client          *eventbridge.Client
+	akInfo          *utils.AKInfo
+	clusterId       string
+	regionId        string
+	accountId       string
+	accessKeyId     string
+	accessKeySecret string
 }
 
 type putEventsImpl func(events []*eventbridge.CloudEvent) error
@@ -48,17 +51,28 @@ func NewEventBridgeSink(uri *url.URL) (core.EventSink, error) {
 		return nil, errors.New("please provide kubernetes cluster id for EventBridge")
 	}
 
-	region, err := utils.ParseRegion()
-	if err != nil {
-		return nil, err
+	if len(opts["regionId"]) >= 1 {
+		ebSink.regionId = opts["regionId"][0]
+	} else {
+		ebSink.regionId = os.Getenv("RegionId")
+	}
+
+	if len(opts["accessKeyId"]) >= 1 {
+		ebSink.accessKeyId = opts["accessKeyId"][0]
+	} else {
+		ebSink.accessKeyId = os.Getenv("AccessKeyId")
+	}
+
+	if len(opts["accessKeySecret"]) >= 1 {
+		ebSink.accessKeySecret = opts["accessKeySecret"][0]
+	} else {
+		ebSink.accessKeySecret = os.Getenv("AccessKeySecret")
 	}
 
 	accountId, err := utils.ParseOwnerAccountId()
 	if err != nil {
 		return nil, err
 	}
-
-	ebSink.region = region
 	ebSink.accountId = accountId
 
 	return ebSink, nil
@@ -151,11 +165,39 @@ func (ebSink *eventBridgeSink) getClient() (*eventbridge.Client, error) {
 }
 
 func (ebSink *eventBridgeSink) newClient() (*eventbridge.Client, error) {
-	endpoint := fmt.Sprintf(eventBridgeEndpointSchema, ebSink.accountId, ebSink.region)
-
-	akInfo, err := utils.ParseAKInfo()
+	// region from env
+	region, err := utils.GetRegionFromEnv()
 	if err != nil {
-		return nil, err
+		if ebSink.regionId != "" {
+			// region from client
+			region = ebSink.regionId
+		} else {
+			// region from meta data
+			regionInMeta, err := utils.ParseRegionFromMeta()
+			if err != nil {
+				klog.Errorf("failed to get Region, because of %v", err)
+				return nil, err
+			}
+			region = regionInMeta
+		}
+	}
+
+	endpoint := fmt.Sprintf(eventBridgeEndpointSchema, ebSink.accountId, region)
+
+	akInfo, err := utils.ParseAKInfoFromConfigPath()
+	if err != nil {
+		akInfo = &utils.AKInfo{}
+		if ebSink.accessKeyId != "" && ebSink.accessKeySecret != "" {
+			akInfo.AccessKeyId = ebSink.accessKeyId
+			akInfo.AccessKeySecret = ebSink.accessKeySecret
+		} else {
+			akInfoInMeta, err := utils.ParseAKInfoFromMeta()
+			if err != nil {
+				klog.Errorf("failed to get RamRoleToken,because of %v", err)
+				return nil, err
+			}
+			akInfo = akInfoInMeta
+		}
 	}
 
 	config := &eventbridge.Config{}
@@ -208,6 +250,6 @@ func (ebSink *eventBridgeSink) createEventSubject(o v1.ObjectReference) string {
 	if strings.Contains(versionNameHack, ".") && !strings.Contains(versionNameHack, "/") {
 		versionNameHack = versionNameHack + "/versionUnknown"
 	}
-	return fmt.Sprintf("acs:cs:%s:%s:%s/apis/%s/namespaces/%s/%s/%s", ebSink.region, ebSink.accountId,
+	return fmt.Sprintf("acs:cs:%s:%s:%s/apis/%s/namespaces/%s/%s/%s", ebSink.regionId, ebSink.accountId,
 		ebSink.clusterId, versionNameHack, o.Namespace, gvr.Resource, o.Name)
 }

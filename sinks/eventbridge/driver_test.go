@@ -15,7 +15,7 @@ import (
 func TestNewEventBridgeSink(t *testing.T) {
 	ebSink := createEventBridgeSink(t)
 	assert.Equal(t, ebSink.accountId, "15210987")
-	assert.Equal(t, ebSink.region, "cn-hangzhou")
+	assert.Equal(t, ebSink.regionId, "cn-hangzhou")
 	assert.Equal(t, ebSink.clusterId, "123")
 }
 
