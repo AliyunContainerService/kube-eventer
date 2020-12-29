@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	ConfigPath = "/var/addon/token-config"
+	ConfigPath         = "/var/addon/token-config"
 	StsTokenTimeLayout = "2006-01-02T15:04:05Z"
 )
 
