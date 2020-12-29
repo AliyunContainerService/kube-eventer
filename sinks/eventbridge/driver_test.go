@@ -86,6 +86,9 @@ func TestIsAkValid(t *testing.T) {
 	layout := time.RFC3339
 	akInfo := utils.AKInfo{}
 
+	ebSink.akInfo = &akInfo
+	assert.Equal(t, ebSink.isAkValid(), true)
+
 	expTime := time.Now()
 	akInfo.Expiration = expTime.Add(time.Minute * time.Duration(15)).Format(layout)
 	ebSink.akInfo = &akInfo

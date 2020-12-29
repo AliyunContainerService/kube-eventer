@@ -218,6 +218,10 @@ func (ebSink *eventBridgeSink) newClient() (*eventbridge.Client, error) {
 }
 
 func (ebSink *eventBridgeSink) isAkValid() bool {
+	if len(ebSink.akInfo.Expiration) == 0 {
+		return true
+	}
+
 	t, err := time.Parse(time.RFC3339, ebSink.akInfo.Expiration)
 	if err != nil {
 		klog.Errorf("failed to parse time layout, %v", err)
