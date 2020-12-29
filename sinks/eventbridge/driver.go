@@ -25,7 +25,8 @@ const (
 	eventBridgeEndpointSchema    = "%v.eventbridge.%v-vpc.aliyuncs.com"
 	aliyunContainerServiceSource = "acs.cs"
 	eventbridgeMaxBatchSize      = 16
-	defaultEventType             = "cs:k8s:K8s-event-via-npd"
+	eventTypeSchema              = "cs:k8s:%vRelatedEvent"
+	unknownEventType             = "cs:k8s:UnknownTypeEvent"
 )
 
 type eventBridgeSink struct {
@@ -36,6 +37,7 @@ type eventBridgeSink struct {
 	accountId       string
 	accessKeyId     string
 	accessKeySecret string
+	eventBusName    string
 }
 
 type putEventsImpl func(events []*eventbridge.CloudEvent) error
@@ -48,7 +50,11 @@ func NewEventBridgeSink(uri *url.URL) (core.EventSink, error) {
 	if len(opts["clusterId"]) >= 1 {
 		ebSink.clusterId = opts["clusterId"][0]
 	} else {
-		return nil, errors.New("please provide kubernetes cluster id for EventBridge")
+		ebSink.clusterId =  os.Getenv("ClusterId")
+	}
+
+	if len(ebSink.clusterId) == 0 {
+		return nil, errors.New("please provide kubernetes cluster id via uri or env")
 	}
 
 	if len(opts["regionId"]) >= 1 {
@@ -67,6 +73,16 @@ func NewEventBridgeSink(uri *url.URL) (core.EventSink, error) {
 		ebSink.accessKeySecret = opts["accessKeySecret"][0]
 	} else {
 		ebSink.accessKeySecret = os.Getenv("AccessKeySecret")
+	}
+
+	if len(opts["eventBusName"]) >= 1 {
+		ebSink.eventBusName = opts["eventBusName"][0]
+	} else {
+		ebSink.eventBusName = os.Getenv("EventBusName")
+	}
+
+	if len(ebSink.eventBusName) == 0 {
+		ebSink.eventBusName = defaultBusName
 	}
 
 	accountId, err := utils.ParseOwnerAccountId()
@@ -97,19 +113,16 @@ func (ebSink *eventBridgeSink) Stop() {
 }
 
 func (ebSink *eventBridgeSink) toCloudEvent(event *v1.Event) (*eventbridge.CloudEvent, error) {
-	resourceName := event.Name
-	kind := event.Kind
-	namespace := event.Namespace
-	subject := ebSink.createEventSubject(v1.ObjectReference{
-		APIVersion: event.APIVersion,
-		Kind:       kind,
-		Name:       resourceName,
-		Namespace:  namespace,
-	})
+	subject := ebSink.createEventSubject(event.InvolvedObject)
 
 	dataBytes, err := json.Marshal(event)
 	if err != nil {
 		return nil, err
+	}
+
+	eType := unknownEventType
+	if len(event.InvolvedObject.Kind) != 0 {
+		eType = fmt.Sprintf(eventTypeSchema, event.InvolvedObject.Kind)
 	}
 
 	cloudEvent := new(eventbridge.CloudEvent).
@@ -119,7 +132,7 @@ func (ebSink *eventBridgeSink) toCloudEvent(event *v1.Event) (*eventbridge.Cloud
 		SetSource(aliyunContainerServiceSource).
 		SetTime(time.Now().Format(time.RFC3339)).
 		SetSubject(subject).
-		SetType(defaultEventType).
+		SetType(eType).
 		SetExtensions(map[string]interface{}{
 			"aliyuneventbusname": defaultBusName,
 		})

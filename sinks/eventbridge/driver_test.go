@@ -43,7 +43,7 @@ func TestToCloudEvent(t *testing.T) {
 	assert.Equal(t, *cloudEvent.Datacontenttype, "application/json")
 	assert.Equal(t, cloudEvent.Extensions["aliyuneventbusname"], defaultBusName)
 	assert.Equal(t, *cloudEvent.Source, aliyunContainerServiceSource)
-	assert.Equal(t, *cloudEvent.Type, defaultEventType)
+	assert.Equal(t, *cloudEvent.Type, "cs:k8s:PodRelatedEvent")
 	assert.Equal(t, *cloudEvent.Subject, "acs:cs:cn-hangzhou:15210987:123/apis/v1/namespaces/my-namespace/pods/my-pod")
 }
 
@@ -132,12 +132,18 @@ func createTestEvent() *v1.Event {
 		FirstTimestamp: metav1.NewTime(now),
 		Type:           "Warning",
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-pod",
+			Name:      "my-event",
 			Namespace: "my-namespace",
 		},
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
-			Kind:       "pod",
+			Kind:       "Event",
+		},
+		InvolvedObject: v1.ObjectReference{
+			APIVersion: "v1",
+			Kind:       "Pod",
+			Name:       "my-pod",
+			Namespace:  "my-namespace",
 		},
 	}
 	return event
