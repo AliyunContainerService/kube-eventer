@@ -15,6 +15,7 @@ import (
 
 const (
 	ConfigPath = "/var/addon/token-config"
+	StsTokenTimeLayout = "2006-01-02T15:04:05Z"
 )
 
 type AKInfo struct {
@@ -156,7 +157,7 @@ func ParseAKInfoFromConfigPath() (*AKInfo, error) {
 			klog.Fatalf("failed to decode token, err: %v", err)
 		}
 
-		t, err := time.Parse(time.RFC3339, akInfo.Expiration)
+		t, err := time.Parse(StsTokenTimeLayout, akInfo.Expiration)
 		if err != nil {
 			klog.Errorf("failed to parse time layout, %v", err)
 		}

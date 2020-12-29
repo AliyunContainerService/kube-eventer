@@ -222,7 +222,7 @@ func (ebSink *eventBridgeSink) isAkValid() bool {
 		return true
 	}
 
-	t, err := time.Parse(time.RFC3339, ebSink.akInfo.Expiration)
+	t, err := time.Parse(utils.StsTokenTimeLayout, ebSink.akInfo.Expiration)
 	if err != nil {
 		klog.Errorf("failed to parse time layout, %v", err)
 		return false

@@ -83,25 +83,25 @@ func TestExportEventsInBatch(t *testing.T) {
 
 func TestIsAkValid(t *testing.T) {
 	ebSink := createEventBridgeSink(t)
-	layout := time.RFC3339
 	akInfo := utils.AKInfo{}
-
 	ebSink.akInfo = &akInfo
 	assert.Equal(t, ebSink.isAkValid(), true)
 
 	expTime := time.Now()
-	akInfo.Expiration = expTime.Add(time.Minute * time.Duration(15)).Format(layout)
+	akInfo.Expiration = expTime.Add(time.Minute * time.Duration(15)).UTC().Format(utils.StsTokenTimeLayout)
 	ebSink.akInfo = &akInfo
 	assert.Equal(t, ebSink.isAkValid(), true)
 
 	expTime = time.Now()
-	akInfo.Expiration = expTime.Add(time.Minute * time.Duration(5)).Format(layout)
+	akInfo.Expiration = expTime.Add(time.Minute * time.Duration(5)).UTC().Format(utils.StsTokenTimeLayout)
 	ebSink.akInfo = &akInfo
+
 	assert.Equal(t, ebSink.isAkValid(), false)
 
 	expTime = time.Now()
-	akInfo.Expiration = expTime.Add(time.Minute * time.Duration(-5)).Format(layout)
+	akInfo.Expiration = expTime.Add(time.Minute * time.Duration(-5)).UTC().Format(utils.StsTokenTimeLayout)
 	ebSink.akInfo = &akInfo
+
 	assert.Equal(t, ebSink.isAkValid(), false)
 }
 
