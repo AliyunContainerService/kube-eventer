@@ -50,7 +50,7 @@ func NewEventBridgeSink(uri *url.URL) (core.EventSink, error) {
 	if len(opts["clusterId"]) >= 1 {
 		ebSink.clusterId = opts["clusterId"][0]
 	} else {
-		ebSink.clusterId =  os.Getenv("ClusterId")
+		ebSink.clusterId = os.Getenv("ClusterId")
 	}
 
 	if len(ebSink.clusterId) == 0 {
