@@ -134,7 +134,7 @@ func (ebSink *eventBridgeSink) toCloudEvent(event *v1.Event) (*eventbridge.Cloud
 		SetSubject(subject).
 		SetType(eType).
 		SetExtensions(map[string]interface{}{
-			"aliyuneventbusname": defaultBusName,
+			"aliyuneventbusname": ebSink.eventBusName,
 		})
 	return cloudEvent, nil
 }
