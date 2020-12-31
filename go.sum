@@ -23,8 +23,8 @@ github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuy
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68 h1:NqugFkGxx1TXSh/pBcU00Y6bljgDPaFdh5MUSeJ7e50=
 github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68/go.mod h1:6pb/Qy8c+lqua8cFpEy7g39NRRqOWc3rOwAy8m5Y2BY=
-github.com/alibabacloud-go/eventbridge-sdk v1.2.3 h1:TQGzatd+rNXuPE38KOcEKC17JY70DBkeG/yINndCxcg=
-github.com/alibabacloud-go/eventbridge-sdk v1.2.3/go.mod h1:+CrYSCTKOsZzlIVrdzd0JxsGZgbMaNbYbkdD1VQWnpM=
+github.com/alibabacloud-go/eventbridge-sdk v1.2.6 h1:CeST/48v6uWCli7SbtOWiWSE9RqXKqiym0Td8TDaaaI=
+github.com/alibabacloud-go/eventbridge-sdk v1.2.6/go.mod h1:+CrYSCTKOsZzlIVrdzd0JxsGZgbMaNbYbkdD1VQWnpM=
 github.com/alibabacloud-go/eventbridge-util v1.0.4 h1:xwfL22VooFy70VjKQ+3MEXRZ9U2uld50R0g8M7zORFg=
 github.com/alibabacloud-go/eventbridge-util v1.0.4/go.mod h1:ntmFrlgMKkYSJwxzJKQSAUH+4WZP7rsBuFN4YJNPf/s=
 github.com/alibabacloud-go/tea v1.1.0/go.mod h1:IkGyUSX4Ba1V+k4pCtJUc6jDpZLFph9QMy2VUPTwukg=

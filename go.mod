@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/Shopify/sarama v1.22.1
-	github.com/alibabacloud-go/eventbridge-sdk v1.2.3
+	github.com/alibabacloud-go/eventbridge-sdk v1.2.6
 	github.com/alibabacloud-go/tea-utils v1.3.7
 	github.com/aws/aws-sdk-go v1.19.6
 	github.com/denverdino/aliyungo v0.0.0-20190410085603-611ead8a6fed
