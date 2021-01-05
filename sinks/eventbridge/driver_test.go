@@ -53,13 +53,13 @@ func TestExportEventsInBatch(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 	var oneBatchEvents []*v1.Event
-	for i := 0; i < 10; i++ {
+	for i := 0; i < eventbridgeMaxBatchSize; i++ {
 		oneBatchEvents = append(oneBatchEvents, createTestEvent())
 	}
 	batchEvents.Events = oneBatchEvents
 
 	ebSink.exportEventsInBatch(batchEvents, func(events []*eventbridge.CloudEvent) error {
-		assert.Equal(t, len(events), 10)
+		assert.Equal(t, len(events), eventbridgeMaxBatchSize)
 		return nil
 	})
 

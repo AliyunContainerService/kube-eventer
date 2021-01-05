@@ -24,7 +24,7 @@ const (
 	defaultBusName               = "default"
 	eventBridgeEndpointSchema    = "%v.eventbridge.%v-vpc.aliyuncs.com"
 	aliyunContainerServiceSource = "acs.cs"
-	eventbridgeMaxBatchSize      = 16
+	eventbridgeMaxBatchSize      = 4
 	eventTypeSchema              = "cs:k8s:%vRelatedEvent"
 	unknownEventType             = "cs:k8s:UnknownTypeEvent"
 )
