@@ -15,18 +15,20 @@ import (
 	"math"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	eventBridgeSinkName          = "EventBridgeSink"
-	defaultBusName               = "default"
-	eventBridgeEndpointSchema    = "%v.eventbridge.%v-vpc.aliyuncs.com"
-	aliyunContainerServiceSource = "acs.cs"
-	eventbridgeMaxBatchSize      = 4
-	eventTypeSchema              = "cs:k8s:%vRelatedEvent"
-	unknownEventType             = "cs:k8s:UnknownTypeEvent"
+	eventBridgeSinkName               = "EventBridgeSink"
+	defaultBusName                    = "default"
+	eventBridgeEndpointSchema         = "%v.eventbridge.%v.aliyuncs.com"
+	eventBridgeInternalEndpointSchema = "%v.eventbridge.%v-vpc.aliyuncs.com"
+	aliyunContainerServiceSource      = "acs.cs"
+	eventbridgeMaxBatchSize           = 4
+	eventTypeSchema                   = "cs:k8s:%vRelatedEvent"
+	unknownEventType                  = "cs:k8s:UnknownTypeEvent"
 )
 
 type eventBridgeSink struct {
@@ -38,6 +40,7 @@ type eventBridgeSink struct {
 	accessKeyId     string
 	accessKeySecret string
 	eventBusName    string
+	internal        bool
 }
 
 type putEventsImpl func(events []*eventbridge.CloudEvent) error
@@ -90,6 +93,14 @@ func NewEventBridgeSink(uri *url.URL) (core.EventSink, error) {
 		return nil, err
 	}
 	ebSink.accountId = accountId
+
+	ebSink.internal = true
+	if len(opts["internal"]) >= 1 {
+		internal, err := strconv.ParseBool(opts["internal"][0])
+		if err == nil {
+			ebSink.internal = internal
+		}
+	}
 
 	return ebSink, nil
 }
@@ -195,7 +206,7 @@ func (ebSink *eventBridgeSink) newClient() (*eventbridge.Client, error) {
 		}
 	}
 
-	endpoint := fmt.Sprintf(eventBridgeEndpointSchema, ebSink.accountId, region)
+	endpoint := ebSink.parseEventBridgeEndpoint(region)
 
 	akInfo, err := utils.ParseAKInfoFromConfigPath()
 	if err != nil {
@@ -269,4 +280,11 @@ func (ebSink *eventBridgeSink) createEventSubject(o v1.ObjectReference) string {
 	}
 	return fmt.Sprintf("acs:cs:%s:%s:%s/apis/%s/namespaces/%s/%s/%s", ebSink.regionId, ebSink.accountId,
 		ebSink.clusterId, versionNameHack, o.Namespace, gvr.Resource, o.Name)
+}
+
+func (ebSink *eventBridgeSink) parseEventBridgeEndpoint(region string) string {
+	if ebSink.internal {
+		return fmt.Sprintf(eventBridgeInternalEndpointSchema, ebSink.accountId, region)
+	}
+	return fmt.Sprintf(eventBridgeEndpointSchema, ebSink.accountId, region)
 }
