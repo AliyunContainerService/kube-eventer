@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"net/url"
 	"os"
@@ -84,7 +85,7 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 	for _, event := range batch.Events {
 		log := &sls.Log{}
 
-		time := uint32(event.LastTimestamp.Unix())
+		time := getEventTime(event)
 
 		log.Time = &time
 
@@ -109,6 +110,19 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 	if err != nil {
 		klog.Errorf("failed to put events to sls,because of %v", err)
 	}
+}
+
+func getEventTime(event *v1.Event) uint32 {
+
+	if !event.LastTimestamp.IsZero() {
+		return uint32(event.LastTimestamp.Unix())
+	}
+
+	if !event.EventTime.IsZero() {
+		return uint32(event.EventTime.Unix())
+	}
+
+	return uint32(metav1.Now().Unix())
 }
 
 func (s *SLSSink) Stop() {
