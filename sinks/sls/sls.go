@@ -114,7 +114,7 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 
 func getEventTime(event *v1.Event) uint32 {
 
-	if !event.LastTimestamp.IsZero(){
+	if !event.LastTimestamp.IsZero() {
 		return uint32(event.LastTimestamp.Unix())
 	}
 
