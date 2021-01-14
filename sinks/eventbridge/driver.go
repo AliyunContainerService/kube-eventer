@@ -141,7 +141,7 @@ func (ebSink *eventBridgeSink) toCloudEvent(event *v1.Event) (*eventbridge.Cloud
 		SetData(dataBytes).
 		SetId(uuid.New().String()).
 		SetSource(aliyunContainerServiceSource).
-		SetTime(time.Now().Format(time.RFC3339)).
+		SetTime(time.Now().UTC().Format(time.RFC3339)).
 		SetSubject(subject).
 		SetType(eType).
 		SetExtensions(map[string]interface{}{
