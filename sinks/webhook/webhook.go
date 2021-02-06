@@ -74,7 +74,8 @@ func (ws *WebHookSink) Send(event *v1.Event) (err error) {
 		return err
 	}
 
-	req, err := http.NewRequest(ws.method, ws.endpoint, strings.NewReader(body))
+	bodyBuffer := bytes.NewBuffer([]byte(body))
+	req, err := http.NewRequest(ws.method, ws.endpoint, bodyBuffer)
 
 	// append header to http request
 	if ws.headerMap != nil && len(ws.headerMap) != 0 {
