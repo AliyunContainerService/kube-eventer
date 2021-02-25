@@ -2,7 +2,9 @@ package dingtalk
 
 import (
 	"fmt"
+	"k8s.io/klog"
 	"strings"
+
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -86,6 +88,7 @@ func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event,msgs ...str
 		m.OutputText = fmt.Sprintf(MARKDOWN_TEMPLATE, level, kind, namespace, name, reason, timestamp, message)
 	}else{
 		m.OutputText = fmt.Sprintf(MARKDOWN_TEMPLATE, level, kind, namespace, name, reason, timestamp, msgs[0])
+		klog.V(2).Info(m.OutputText)
 	}
 	return &m
 

@@ -135,6 +135,7 @@ func (this *sinkManager) Stop() {
 	}
 }
 
+// export to Eventsink ,for example dingding
 func export(s core.EventSink, data *core.EventBatch) {
 	startTime := time.Now()
 	defer func() {
@@ -142,5 +143,9 @@ func export(s core.EventSink, data *core.EventBatch) {
 			WithLabelValues(s.Name()).
 			Observe(float64(time.Since(startTime)) / float64(time.Millisecond))
 	}()
+
+	data.DistinctSameResourceEvent()
 	s.ExportEvents(data)
 }
+
+

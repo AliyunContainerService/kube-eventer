@@ -89,6 +89,8 @@ func (rm *realManager) Housekeep() {
 	}
 }
 
+
+
 func (rm *realManager) housekeep() {
 	defer func() {
 		lastHousekeepTimestamp.Set(float64(time.Now().Unix()))
@@ -100,5 +102,6 @@ func (rm *realManager) housekeep() {
 	// when this stops to be true.
 	events := rm.source.GetNewEvents()
 	klog.V(0).Infof("Exporting %d events", len(events.Events))
+
 	rm.sink.ExportEvents(events)
 }
