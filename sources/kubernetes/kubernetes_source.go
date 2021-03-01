@@ -77,7 +77,7 @@ type KubernetesEventSource struct {
 	// Large local buffer, periodically read.
 	localEventsBuffer chan *kubeapi.Event
 
-	stopChannel chan struct{}
+	stopChannel <-chan struct{}
 
 	kubeClient kuber.Interface
 
@@ -101,6 +101,7 @@ event_loop:
 	for {
 		select {
 		case event := <-this.localEventsBuffer:
+			fmt.Printf("read event from buffer, %v", event.ResourceVersion)
 			result.Events = append(result.Events, event)
 		default:
 			break event_loop
@@ -114,7 +115,6 @@ event_loop:
 
 func (this *KubernetesEventSource) addEvent(obj interface{}) {
 	e := obj.(*kubeapi.Event)
-
 	select {
 	case this.localEventsBuffer <- e:
 		//
@@ -123,7 +123,17 @@ func (this *KubernetesEventSource) addEvent(obj interface{}) {
 	}
 }
 
-func (this *KubernetesEventSource) deletEvent(obj interface{}) {
+func (this *KubernetesEventSource) updateEvent(oldObj, newObj interface{}) {
+	e := newObj.(*kubeapi.Event)
+	select {
+	case this.localEventsBuffer <- e:
+		//
+	default:
+		klog.Errorf("Event buffer full, dropping event")
+	}
+}
+
+func (this *KubernetesEventSource) deleteEvent(obj interface{}) {
 	//
 }
 
@@ -155,13 +165,14 @@ func NewKubernetesSource(uri *url.URL) (*KubernetesEventSource, error) {
 		lister:            eventsInformer.Lister(),
 		listerSynced:      eventsInformer.Informer().HasSynced,
 		localEventsBuffer: make(chan *kubeapi.Event, LocalEventsBufferSize),
-		stopChannel:       make(chan struct{}),
+		stopChannel:       stop,
 		kubeClient:        kubeClient,
 	}
 
 	eventsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    k8sEventSource.addEvent,
-		DeleteFunc: k8sEventSource.deletEvent,
+		DeleteFunc: k8sEventSource.deleteEvent,
+		UpdateFunc: k8sEventSource.updateEvent,
 	})
 
 	go k8sEventSource.watch()
