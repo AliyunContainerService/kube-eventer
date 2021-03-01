@@ -22,6 +22,7 @@ require (
 	github.com/riemann/riemann-go-client v0.4.0
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9
 	github.com/smartystreets/gunit v1.0.0 // indirect
+	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.5.1
 	gopkg.in/olivere/elastic.v3 v3.0.75
 	gopkg.in/olivere/elastic.v5 v5.0.81

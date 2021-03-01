@@ -15,7 +15,11 @@
 package kubernetes
 
 import (
+	"fmt"
 	"net/url"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -23,10 +27,12 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/common/kubernetes"
 	"github.com/AliyunContainerService/kube-eventer/core"
 	kubeapi "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubewatch "k8s.io/apimachinery/pkg/watch"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	kuber "k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 
-	kubev1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/informers"
 	"k8s.io/klog"
 )
 
@@ -73,7 +79,11 @@ type KubernetesEventSource struct {
 
 	stopChannel chan struct{}
 
-	eventClient kubev1core.EventInterface
+	kubeClient kuber.Interface
+
+	lister corev1.EventLister
+
+	listerSynced cache.InformerSynced
 }
 
 func (this *KubernetesEventSource) GetNewEvents() *core.EventBatch {
@@ -102,89 +112,79 @@ event_loop:
 	return &result
 }
 
-func (this *KubernetesEventSource) watch() {
-	// Outer loop, for reconnections.
-	for {
-		events, err := this.eventClient.List(metav1.ListOptions{})
-		if err != nil {
-			klog.Errorf("Failed to load events: %v", err)
-			time.Sleep(time.Second)
-			continue
-		}
-		// Do not write old events.
+func (this *KubernetesEventSource) addEvent(obj interface{}) {
+	e := obj.(*kubeapi.Event)
 
-		resourceVersion := events.ResourceVersion
-
-		watcher, err := this.eventClient.Watch(
-			metav1.ListOptions{
-				Watch:           true,
-				ResourceVersion: resourceVersion})
-		if err != nil {
-			klog.Errorf("Failed to start watch for new events: %v", err)
-			time.Sleep(time.Second)
-			continue
-		}
-
-		watchChannel := watcher.ResultChan()
-		// Inner loop, for update processing.
-	inner_loop:
-		for {
-			select {
-			case watchUpdate, ok := <-watchChannel:
-				if !ok {
-					klog.Errorf("Event watch channel closed")
-					break inner_loop
-				}
-
-				if watchUpdate.Type == kubewatch.Error {
-					if status, ok := watchUpdate.Object.(*metav1.Status); ok {
-						klog.Errorf("Error during watch: %#v", status)
-						break inner_loop
-					}
-					klog.Errorf("Received unexpected error: %#v", watchUpdate.Object)
-					break inner_loop
-				}
-
-				if event, ok := watchUpdate.Object.(*kubeapi.Event); ok {
-					switch watchUpdate.Type {
-					case kubewatch.Added, kubewatch.Modified:
-						select {
-						case this.localEventsBuffer <- event:
-							// Ok, buffer not full.
-						default:
-							// Buffer full, need to drop the event.
-							klog.Errorf("Event buffer full, dropping event")
-						}
-					case kubewatch.Deleted:
-						// Deleted events are silently ignored.
-					default:
-						klog.Warningf("Unknown watchUpdate.Type: %#v", watchUpdate.Type)
-					}
-				} else {
-					klog.Errorf("Wrong object received: %v", watchUpdate)
-				}
-
-			case <-this.stopChannel:
-				watcher.Stop()
-				klog.Infof("Event watching stopped")
-				return
-			}
-		}
+	select {
+	case this.localEventsBuffer <- e:
+		//
+	default:
+		klog.Errorf("Event buffer full, dropping event")
 	}
 }
 
+func (this *KubernetesEventSource) deletEvent(obj interface{}) {
+	//
+}
+
+func (this *KubernetesEventSource) watch() {
+	defer utilruntime.HandleCrash()
+	defer klog.Infof("Shutting down.")
+
+	// here is where we kick the caches into gear
+	if !cache.WaitForCacheSync(this.stopChannel, this.listerSynced) {
+		utilruntime.HandleError(fmt.Errorf("timed out waiting for caches to sync"))
+		return
+	}
+	<-this.stopChannel
+}
+
 func NewKubernetesSource(uri *url.URL) (*KubernetesEventSource, error) {
+	stop := sigHandler()
+
 	kubeClient, err := kubernetes.GetKubernetesClient(uri)
 	if err != nil {
 		klog.Errorf("Failed to create kubernetes client,because of %v", err)
 		return nil, err
 	}
-	eventClient := kubeClient.CoreV1().Events(kubeapi.NamespaceAll)
-	result := KubernetesEventSource{
+
+	sharedInformers := informers.NewSharedInformerFactory(kubeClient, time.Minute*30)
+	eventsInformer := sharedInformers.Core().V1().Events()
+
+	k8sEventSource := KubernetesEventSource{
+		lister:            eventsInformer.Lister(),
+		listerSynced:      eventsInformer.Informer().HasSynced,
 		localEventsBuffer: make(chan *kubeapi.Event, LocalEventsBufferSize),
 		stopChannel:       make(chan struct{}),
-		eventClient:       eventClient,
+		kubeClient:        kubeClient,
 	}
-	go result.watch()
-	return &result, nil
+
+	eventsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    k8sEventSource.addEvent,
+		DeleteFunc: k8sEventSource.deletEvent,
+	})
+
+	go k8sEventSource.watch()
+
+	go sharedInformers.Start(stop)
+	return &k8sEventSource, nil
+}
+
+// setup a signal hander to gracefully exit
+func sigHandler() <-chan struct{} {
+	stop := make(chan struct{})
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c,
+			syscall.SIGINT,  // Ctrl+C
+			syscall.SIGTERM, // Termination Request
+			syscall.SIGSEGV, // FullDerp
+			syscall.SIGABRT, // Abnormal termination
+			syscall.SIGILL,  // illegal instruction
+			syscall.SIGFPE)  // floating point - this is why we can't have nice things
+		sig := <-c
+		klog.Warningf("Signal (%v) Detected, Shutting Down", sig)
+		close(stop)
+	}()
+	return stop
 }
