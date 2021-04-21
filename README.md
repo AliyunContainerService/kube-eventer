@@ -94,6 +94,7 @@ rules:
   - apiGroups:
       - ""
     resources:
+      - configmaps
       - events
     verbs:
       - get
