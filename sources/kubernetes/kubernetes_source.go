@@ -105,13 +105,14 @@ event_loop:
 func (this *KubernetesEventSource) watch() {
 	// Outer loop, for reconnections.
 	for {
-		events, err := this.eventClient.List(metav1.ListOptions{})
+		events, err := this.eventClient.List(metav1.ListOptions{Limit: 1})
 		if err != nil {
 			klog.Errorf("Failed to load events: %v", err)
 			time.Sleep(time.Second)
 			continue
 		}
 		// Do not write old events.
+		klog.V(9).Infof("kubernetes source watch event. list event first. raw events: %v", events)
 
 		resourceVersion := events.ResourceVersion
 
@@ -131,6 +132,9 @@ func (this *KubernetesEventSource) watch() {
 		for {
 			select {
 			case watchUpdate, ok := <-watchChannel:
+
+				klog.V(10).Infof("kubernetes source watch channel update. watch channel update. watchChanObject: %v", watchUpdate)
+
 				if !ok {
 					klog.Errorf("Event watch channel closed")
 					break inner_loop
@@ -146,6 +150,9 @@ func (this *KubernetesEventSource) watch() {
 				}
 
 				if event, ok := watchUpdate.Object.(*kubeapi.Event); ok {
+
+					klog.V(9).Infof("kubernetes source watch event. watch channel update. event: %v", event)
+
 					switch watchUpdate.Type {
 					case kubewatch.Added, kubewatch.Modified:
 						select {
