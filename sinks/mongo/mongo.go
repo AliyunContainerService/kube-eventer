@@ -98,6 +98,7 @@ func (m *mongoSink) ExportEvents(eventBatch *core.EventBatch) {
 		point, err := eventToPoint(event)
 		if err != nil {
 			klog.Warningf("Failed to convert event to point: %v", err)
+			continue
 		}
 
 		err = m.saveData(point)

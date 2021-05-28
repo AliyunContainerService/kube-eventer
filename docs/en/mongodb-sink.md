@@ -1,5 +1,6 @@
 ### MongoDB
 
+*This sink supports MongoDB 2.6 and higher*.
 To use the MongoDB sink add the following flag:
 ```
     --sink=mongo:?<MONGO_URI>
