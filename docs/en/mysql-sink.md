@@ -8,12 +8,11 @@ To use the Mysql sink add the following flag:
 *First build table*
 
 ```
-drop database if exists kube_event ;
-create database kube_event;
-use kube_event;
+create database kube_eventer;
+use kube_eventer;
 
 
-create table kube_event
+create table k8s_event
 (
     id               bigint(20)   not null auto_increment primary key comment 'event primary key',
     name             varchar(64)  not null default '' comment 'event name',
@@ -31,4 +30,4 @@ create table kube_event
 
 For example:
 
-    --sink=mysql:?root:transwarp@tcp(172.16.180.132:3306)/kube_event?charset=utf8
+    --sink=mysql:?root:transwarp@tcp(172.16.180.132:3306)/kube_eventer?charset=utf8

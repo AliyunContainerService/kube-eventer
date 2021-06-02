@@ -17,15 +17,20 @@ package mysql
 import (
 	"database/sql"
 	"fmt"
-	"net/url"
-
-	"github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"k8s.io/klog"
+	"net/url"
+	"strings"
+)
+
+const (
+	DEFAULT_TABLE = "k8s-event"
 )
 
 type MysqlService struct {
-	db  *sql.DB
-	dsn string
+	db    *sql.DB
+	table string
+	dsn   string
 }
 
 type MysqlKubeEventPoint struct {
@@ -47,20 +52,7 @@ func (mySvc MysqlService) SaveData(sinkData []interface{}) error {
 		return nil
 	}
 
-	cfg, err := mysql.ParseDSN(mySvc.dsn)
-	if err != nil {
-		klog.Errorf("failed to Parse DSN")
-		return err
-	}
-
-	var statementDBName string
-	if len(cfg.DBName) == 0 {
-		statementDBName = "kube_event"
-	} else {
-		statementDBName = cfg.DBName
-	}
-
-	prepareStatement := fmt.Sprintf("INSERT INTO %s (namespace,kind,name,type,reason,message,event_id,first_occurrence_time,last_occurrence_time) VALUES(?,?,?,?,?,?,?,?,?)", statementDBName)
+	prepareStatement := fmt.Sprintf("INSERT INTO %s (namespace,kind,name,type,reason,message,event_id,first_occurrence_time,last_occurrence_time) VALUES(?,?,?,?,?,?,?,?,?)", mySvc.table)
 
 	// Prepare statement for inserting data
 	stmtIns, err := mySvc.db.Prepare(prepareStatement)
@@ -101,9 +93,15 @@ func (mySvc MysqlService) CloseDB() error {
 }
 
 func NewMysqlClient(uri *url.URL) (*MysqlService, error) {
+	mysqlSvc := &MysqlService{}
 
-	mysqlSvc := MysqlService{
-		dsn: uri.RawQuery,
+	if uri.Query().Get("table") != "" {
+		mysqlSvc.table = uri.Query().Get("table")
+		slice := strings.Split(uri.RawQuery, "&")
+		mysqlSvc.dsn = slice[0]
+	} else {
+		mysqlSvc.table = DEFAULT_TABLE
+		mysqlSvc.dsn = uri.RawQuery
 	}
 
 	klog.Infof("mysql jdbc url: %s", mysqlSvc.dsn)
@@ -124,5 +122,5 @@ func NewMysqlClient(uri *url.URL) (*MysqlService, error) {
 
 	mysqlSvc.db = db
 
-	return &mysqlSvc, nil
+	return mysqlSvc, nil
 }
