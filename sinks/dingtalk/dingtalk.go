@@ -16,6 +16,9 @@ package dingtalk
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -86,6 +89,7 @@ type DingTalkSink struct {
 	Labels     []string
 	MsgType    string
 	ClusterID  string
+	Secret     string
 	Region     string
 }
 
@@ -116,6 +120,8 @@ func (d *DingTalkSink) isEventLevelDangerous(level string) bool {
 }
 
 func (d *DingTalkSink) Ding(event *v1.Event) {
+	value := url.Values{}
+
 	if d.Namespaces != nil {
 		skip := true
 		for _, namespace := range d.Namespaces {
@@ -154,9 +160,22 @@ func (d *DingTalkSink) Ding(event *v1.Event) {
 		return
 	}
 
-	b := bytes.NewBuffer(msg_bytes)
+	value.Set("access_token", d.Token)
+	if d.Secret != "" {
+		t := time.Now().UnixNano() / 1e6
+		value.Set("timestamp", fmt.Sprintf("%d", t))
+		value.Set("sign", sign(t, d.Secret))
+	}
 
-	resp, err := http.Post(fmt.Sprintf("https://%s?access_token=%s", d.Endpoint, d.Token), CONTENT_TYPE_JSON, b)
+	b := bytes.NewBuffer(msg_bytes)
+	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://%s", d.Endpoint), b)
+	if err != nil {
+		klog.Errorf("failed to create http request")
+		return
+	}
+	request.URL.RawQuery = value.Encode()
+	request.Header.Add("Content-Type", "application/json;charset=utf-8")
+	resp, err := (&http.Client{}).Do(request)
 	if err != nil {
 		klog.Errorf("failed to send msg to dingtalk. error: %s", err.Error())
 		return
@@ -233,7 +252,10 @@ func NewDingTalkSink(uri *url.URL) (*DingTalkSink, error) {
 	if len(opts["level"]) >= 1 {
 		d.Level = getLevel(opts["level"][0])
 	}
-
+	// get ding talk sign
+	if len(opts["sign"]) >= 1 {
+		d.Secret = opts["sign"][0]
+	}
 	//add extra labels
 	if len(opts["label"]) >= 1 {
 		d.Labels = opts["label"]
@@ -270,4 +292,12 @@ func getValues(o []string) []string {
 		return strings.Split(o[0], ",")
 	}
 	return nil
+}
+
+func sign(t int64, secret string) string {
+	strToHash := fmt.Sprintf("%d\n%s", t, secret)
+	hmac256 := hmac.New(sha256.New, []byte(secret))
+	hmac256.Write([]byte(strToHash))
+	data := hmac256.Sum(nil)
+	return base64.StdEncoding.EncodeToString(data)
 }
