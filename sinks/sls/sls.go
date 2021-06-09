@@ -261,9 +261,11 @@ func newClient(c *Config) (*sls.Client, error) {
 				return nil, err
 			}
 			akInfo = akInfoInMeta
+			client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
+			return client, nil
 		}
 	}
 
-	client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
+	client := sls.NewClient(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret)
 	return client, nil
 }
