@@ -34,7 +34,7 @@ const (
 	NORMAL            int = 1
 	DEFAULT_MSG_TYPE      = "text"
 	CONTENT_TYPE_JSON     = "application/json"
-	LABE_TEMPLATE         = "%s\n"
+	LABEL_TEMPLATE        = "%s\n"
 	TIME_FORMAT           = "2006-01-02 15:04:05"
 )
 
@@ -203,7 +203,7 @@ func createMsgFromEvent(d *DingTalkSink, event *v1.Event) *DingTalkMsg {
 		template := MSG_TEMPLATE
 		if len(d.Labels) > 0 {
 			for _, label := range d.Labels {
-				template = fmt.Sprintf(LABE_TEMPLATE, label) + template
+				template = fmt.Sprintf(LABEL_TEMPLATE, label) + template
 			}
 		}
 		msg.Text = DingTalkText{

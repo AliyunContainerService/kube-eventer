@@ -80,7 +80,7 @@ type Token struct {
 }
 
 /**
-dingtalk sink usage
+wechat sink usage
 --sink:wechat:https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=[access_token]&level=Warning&label=[label]
 
 level: Normal or Warning. The event level greater than global level will emit.
