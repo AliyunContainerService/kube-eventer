@@ -54,6 +54,24 @@ func TestNewWebhookFilter(t *testing.T) {
 	assert.True(t, w.MockSend(newEvent), "newEvent should be matched.")
 }
 
+func TestRenderMessageWithDoubleQuote(t *testing.T) {
+	uri, err := url.Parse(webhookSink)
+	if err != nil {
+		t.Fatalf("Failed to prase webhookSinkFilter,err: %v", err)
+	}
+	w, err := NewWebHookSink(uri)
+	if err != nil {
+		t.Fatalf("Failed to create NewWebhookSink,err: %v", err)
+	}
+	event := &v1.Event{
+		Type:    Warning,
+		Message: "pod \"demo-1rare3\" OOMKilled",
+	}
+	w.bodyTemplate = `{"EventMessage": "{{ .Message }}"}`
+	template, _ := w.RenderBodyTemplate(event)
+	assert.Equal(t, `{"EventMessage": "pod demo-1rare3 OOMKilled"}`, template)
+}
+
 func (ws *WebHookSink) MockSend(event *v1.Event) (matched bool) {
 	for _, v := range ws.filters {
 		if !v.Filter(event) {
