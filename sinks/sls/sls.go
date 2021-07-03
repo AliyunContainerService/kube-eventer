@@ -231,7 +231,7 @@ func parseConfig(uri *url.URL) (*Config, error) {
 
 // newClient creates client using AK or metadata
 func newClient(c *Config) (*sls.Client, error) {
-	// region from env
+	// get region from env
 	region, err := utils.GetRegionFromEnv()
 	if err != nil {
 		if c.regionId != "" {
@@ -254,6 +254,8 @@ func newClient(c *Config) (*sls.Client, error) {
 		if c.accessKeyId != "" && c.accessKeySecret != "" {
 			akInfo.AccessKeyId = c.accessKeyId
 			akInfo.AccessKeySecret = c.accessKeySecret
+			client := sls.NewClient(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret)
+			return client, nil
 		} else {
 			akInfoInMeta, err := utils.ParseAKInfoFromMeta()
 			if err != nil {
@@ -266,6 +268,6 @@ func newClient(c *Config) (*sls.Client, error) {
 		}
 	}
 
-	client := sls.NewClient(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret)
+	client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
 	return client, nil
 }
