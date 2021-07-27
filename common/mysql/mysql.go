@@ -28,12 +28,14 @@ const (
 )
 
 type MysqlService struct {
-	db    *sql.DB
-	table string
-	dsn   string
+	Db      *sql.DB
+	Table   string
+	Dsn     string
+	Cluster string
 }
 
 type MysqlKubeEventPoint struct {
+	Cluster                  string
 	Namespace                string
 	Kind                     string
 	Name                     string
@@ -41,6 +43,7 @@ type MysqlKubeEventPoint struct {
 	Reason                   string
 	Message                  string
 	EventID                  string
+	Source                   string
 	FirstOccurrenceTimestamp string
 	LastOccurrenceTimestamp  string
 }
@@ -52,10 +55,10 @@ func (mySvc MysqlService) SaveData(sinkData []interface{}) error {
 		return nil
 	}
 
-	prepareStatement := fmt.Sprintf("INSERT INTO %s (namespace,kind,name,type,reason,message,event_id,first_occurrence_time,last_occurrence_time) VALUES(?,?,?,?,?,?,?,?,?)", mySvc.table)
+	prepareStatement := fmt.Sprintf("INSERT INTO %s (cluster,namespace,kind,name,type,reason,message,event_id,source,first_occurrence_time,last_occurrence_time) VALUES(?,?,?,?,?,?,?,?,?,?,?)", mySvc.Table)
 
 	// Prepare statement for inserting data
-	stmtIns, err := mySvc.db.Prepare(prepareStatement)
+	stmtIns, err := mySvc.Db.Prepare(prepareStatement)
 	if err != nil {
 		klog.Errorf("failed to Prepare statement for inserting data ")
 		return err
@@ -67,8 +70,8 @@ func (mySvc MysqlService) SaveData(sinkData []interface{}) error {
 
 		ked := data.(MysqlKubeEventPoint)
 		klog.Infof("Begin Insert Mysql Data ...")
-		klog.Infof("Namespace: %s, Kind: %s, Name: %s, Type: %s, Reason: %s, Message: %s, EventID: %s, FirstOccurrenceTimestamp: %s, LastOccurrenceTimestamp: %s ", ked.Namespace, ked.Kind, ked.Name, ked.Type, ked.Reason, ked.Message, ked.EventID, ked.FirstOccurrenceTimestamp, ked.LastOccurrenceTimestamp)
-		_, err = stmtIns.Exec(ked.Namespace, ked.Kind, ked.Name, ked.Type, ked.Reason, ked.Message, ked.EventID, ked.FirstOccurrenceTimestamp, ked.LastOccurrenceTimestamp)
+		klog.Infof("Cluster: %s, Namespace: %s, Kind: %s, Name: %s, Type: %s, Reason: %s, Message: %s, EventID: %s, Source: %s, FirstOccurrenceTimestamp: %s, LastOccurrenceTimestamp: %s ", ked.Cluster, ked.Namespace, ked.Kind, ked.Name, ked.Type, ked.Reason, ked.Message, ked.EventID, ked.Source, ked.FirstOccurrenceTimestamp, ked.LastOccurrenceTimestamp)
+		_, err = stmtIns.Exec(ked.Cluster, ked.Namespace, ked.Kind, ked.Name, ked.Type, ked.Reason, ked.Message, ked.EventID, ked.Source, ked.FirstOccurrenceTimestamp, ked.LastOccurrenceTimestamp)
 		if err != nil {
 			klog.Errorf("failed to Prepare statement for inserting data ")
 			return err
@@ -89,24 +92,25 @@ func (mySvc MysqlService) CreateDatabase(name string) error {
 }
 
 func (mySvc MysqlService) CloseDB() error {
-	return mySvc.db.Close()
+	return mySvc.Db.Close()
 }
 
 func NewMysqlClient(uri *url.URL) (*MysqlService, error) {
 	mysqlSvc := &MysqlService{}
 
 	if uri.Query().Get("table") != "" {
-		mysqlSvc.table = uri.Query().Get("table")
+		mysqlSvc.Table = uri.Query().Get("table")
+		mysqlSvc.Cluster = uri.Query().Get("cluster")
 		slice := strings.Split(uri.RawQuery, "&")
-		mysqlSvc.dsn = slice[0]
+		mysqlSvc.Dsn = slice[0]
 	} else {
-		mysqlSvc.table = DEFAULT_TABLE
-		mysqlSvc.dsn = uri.RawQuery
+		mysqlSvc.Table = DEFAULT_TABLE
+		mysqlSvc.Dsn = uri.RawQuery
 	}
 
-	klog.Infof("mysql jdbc url: %s", mysqlSvc.dsn)
+	klog.Infof("mysql jdbc url: %s", mysqlSvc.Dsn)
 
-	db, err := sql.Open("mysql", mysqlSvc.dsn)
+	db, err := sql.Open("mysql", mysqlSvc.Dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect mysql according jdbc url string: %s", err)
 	}
@@ -120,7 +124,7 @@ func NewMysqlClient(uri *url.URL) (*MysqlService, error) {
 		return nil, fmt.Errorf("cannot open a connection for mysql according jdbc url string: %s", err)
 	}
 
-	mysqlSvc.db = db
+	mysqlSvc.Db = db
 
 	return mysqlSvc, nil
 }
