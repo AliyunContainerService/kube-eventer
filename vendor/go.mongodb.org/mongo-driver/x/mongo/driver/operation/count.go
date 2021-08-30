@@ -14,11 +14,11 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/event"
+	"go.mongodb.org/mongo-driver/mongo/description"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/x/bsonx/bsoncore"
 	"go.mongodb.org/mongo-driver/x/mongo/driver"
-	"go.mongodb.org/mongo-driver/x/mongo/driver/description"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/session"
 )
 
@@ -72,7 +72,7 @@ func NewCount() *Count {
 // Result returns the result of executing this operation.
 func (c *Count) Result() CountResult { return c.result }
 
-func (c *Count) processResponse(response bsoncore.Document, srvr driver.Server, desc description.Server) error {
+func (c *Count) processResponse(response bsoncore.Document, srvr driver.Server, desc description.Server, _ int) error {
 	var err error
 	c.result, err = buildCountResult(response, srvr)
 	return err

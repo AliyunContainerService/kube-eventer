@@ -188,14 +188,14 @@ func transformDocument(registry *bsoncodec.Registry, val interface{}) (bsonx.Doc
 	if doc, ok := val.(bsonx.Doc); ok {
 		return doc.Copy(), nil
 	}
-	b, err := transformBsoncoreDocument(registry, val)
+	b, err := transformBsoncoreDocument(registry, val, true, "document")
 	if err != nil {
 		return nil, err
 	}
 	return bsonx.ReadDoc(b)
 }
 
-func transformBsoncoreDocument(registry *bsoncodec.Registry, val interface{}) (bsoncore.Document, error) {
+func transformBsoncoreDocument(registry *bsoncodec.Registry, val interface{}, mapAllowed bool, paramName string) (bsoncore.Document, error) {
 	if registry == nil {
 		registry = bson.DefaultRegistry
 	}
@@ -205,6 +205,12 @@ func transformBsoncoreDocument(registry *bsoncodec.Registry, val interface{}) (b
 	if bs, ok := val.([]byte); ok {
 		// Slight optimization so we'll just use MarshalBSON and not go through the codec machinery.
 		val = bson.Raw(bs)
+	}
+	if !mapAllowed {
+		refValue := reflect.ValueOf(val)
+		if refValue.Kind() == reflect.Map && refValue.Len() > 1 {
+			return nil, ErrMapForOrderedArgument{paramName}
+		}
 	}
 
 	// TODO(skriptble): Use a pool of these instead.
@@ -253,6 +259,14 @@ func ensureDollarKeyv2(doc bsoncore.Document) error {
 	return nil
 }
 
+func ensureNoDollarKey(doc bsoncore.Document) error {
+	if elem, err := doc.IndexErr(0); err == nil && strings.HasPrefix(elem.Key(), "$") {
+		return errors.New("replacement document cannot contains keys beginning with '$")
+	}
+
+	return nil
+}
+
 func transformAggregatePipeline(registry *bsoncodec.Registry, pipeline interface{}) (bsonx.Arr, error) {
 	pipelineArr := bsonx.Arr{}
 	switch t := pipeline.(type) {
@@ -298,11 +312,13 @@ func transformAggregatePipelinev2(registry *bsoncodec.Registry, pipeline interfa
 
 		var hasOutputStage bool
 		pipelineDoc := bsoncore.Document(val)
-		if _, err := pipelineDoc.LookupErr("$out"); err == nil {
-			hasOutputStage = true
-		}
-		if _, err := pipelineDoc.LookupErr("$merge"); err == nil {
-			hasOutputStage = true
+		values, _ := pipelineDoc.Values()
+		if pipelineLen := len(values); pipelineLen > 0 {
+			if finalDoc, ok := values[pipelineLen-1].DocumentOK(); ok {
+				if elem, err := finalDoc.IndexErr(0); err == nil && (elem.Key() == "$out" || elem.Key() == "$merge") {
+					hasOutputStage = true
+				}
+			}
 		}
 
 		return pipelineDoc, hasOutputStage, nil
@@ -316,7 +332,7 @@ func transformAggregatePipelinev2(registry *bsoncodec.Registry, pipeline interfa
 		var hasOutputStage bool
 		valLen := val.Len()
 		for idx := 0; idx < valLen; idx++ {
-			doc, err := transformBsoncoreDocument(registry, val.Index(idx).Interface())
+			doc, err := transformBsoncoreDocument(registry, val.Index(idx).Interface(), true, fmt.Sprintf("pipeline stage :%v", idx))
 			if err != nil {
 				return nil, false, err
 			}
@@ -333,7 +349,12 @@ func transformAggregatePipelinev2(registry *bsoncodec.Registry, pipeline interfa
 	}
 }
 
-func transformUpdateValue(registry *bsoncodec.Registry, update interface{}, checkDocDollarKey bool) (bsoncore.Value, error) {
+func transformUpdateValue(registry *bsoncodec.Registry, update interface{}, dollarKeysAllowed bool) (bsoncore.Value, error) {
+	documentCheckerFunc := ensureDollarKeyv2
+	if !dollarKeysAllowed {
+		documentCheckerFunc = ensureNoDollarKey
+	}
+
 	var u bsoncore.Value
 	var err error
 	switch t := update.(type) {
@@ -341,36 +362,24 @@ func transformUpdateValue(registry *bsoncodec.Registry, update interface{}, chec
 		return u, ErrNilDocument
 	case primitive.D, bsonx.Doc:
 		u.Type = bsontype.EmbeddedDocument
-		u.Data, err = transformBsoncoreDocument(registry, update)
+		u.Data, err = transformBsoncoreDocument(registry, update, true, "update")
 		if err != nil {
 			return u, err
 		}
 
-		if checkDocDollarKey {
-			err = ensureDollarKeyv2(u.Data)
-		}
-		return u, err
+		return u, documentCheckerFunc(u.Data)
 	case bson.Raw:
 		u.Type = bsontype.EmbeddedDocument
 		u.Data = t
-		if checkDocDollarKey {
-			err = ensureDollarKeyv2(u.Data)
-		}
-		return u, err
+		return u, documentCheckerFunc(u.Data)
 	case bsoncore.Document:
 		u.Type = bsontype.EmbeddedDocument
 		u.Data = t
-		if checkDocDollarKey {
-			err = ensureDollarKeyv2(u.Data)
-		}
-		return u, err
+		return u, documentCheckerFunc(u.Data)
 	case []byte:
 		u.Type = bsontype.EmbeddedDocument
 		u.Data = t
-		if checkDocDollarKey {
-			err = ensureDollarKeyv2(u.Data)
-		}
-		return u, err
+		return u, documentCheckerFunc(u.Data)
 	case bsoncodec.Marshaler:
 		u.Type = bsontype.EmbeddedDocument
 		u.Data, err = t.MarshalBSON()
@@ -378,10 +387,7 @@ func transformUpdateValue(registry *bsoncodec.Registry, update interface{}, chec
 			return u, err
 		}
 
-		if checkDocDollarKey {
-			err = ensureDollarKeyv2(u.Data)
-		}
-		return u, err
+		return u, documentCheckerFunc(u.Data)
 	case bsoncodec.ValueMarshaler:
 		u.Type, u.Data, err = t.MarshalBSONValue()
 		if err != nil {
@@ -398,27 +404,24 @@ func transformUpdateValue(registry *bsoncodec.Registry, update interface{}, chec
 		}
 		if val.Kind() != reflect.Slice && val.Kind() != reflect.Array {
 			u.Type = bsontype.EmbeddedDocument
-			u.Data, err = transformBsoncoreDocument(registry, update)
+			u.Data, err = transformBsoncoreDocument(registry, update, true, "update")
 			if err != nil {
 				return u, err
 			}
 
-			if checkDocDollarKey {
-				err = ensureDollarKeyv2(u.Data)
-			}
-			return u, err
+			return u, documentCheckerFunc(u.Data)
 		}
 
 		u.Type = bsontype.Array
 		aidx, arr := bsoncore.AppendArrayStart(nil)
 		valLen := val.Len()
 		for idx := 0; idx < valLen; idx++ {
-			doc, err := transformBsoncoreDocument(registry, val.Index(idx).Interface())
+			doc, err := transformBsoncoreDocument(registry, val.Index(idx).Interface(), true, "update")
 			if err != nil {
 				return u, err
 			}
 
-			if err := ensureDollarKeyv2(doc); err != nil {
+			if err := documentCheckerFunc(doc); err != nil {
 				return u, err
 			}
 
@@ -429,23 +432,33 @@ func transformUpdateValue(registry *bsoncodec.Registry, update interface{}, chec
 	}
 }
 
-func transformValue(registry *bsoncodec.Registry, val interface{}) (bsoncore.Value, error) {
-	switch conv := val.(type) {
-	case string:
-		return bsoncore.Value{Type: bsontype.String, Data: bsoncore.AppendString(nil, conv)}, nil
-	default:
-		doc, err := transformBsoncoreDocument(registry, val)
-		if err != nil {
-			return bsoncore.Value{}, err
-		}
-
-		return bsoncore.Value{Type: bsontype.EmbeddedDocument, Data: doc}, nil
+func transformValue(registry *bsoncodec.Registry, val interface{}, mapAllowed bool, paramName string) (bsoncore.Value, error) {
+	if registry == nil {
+		registry = bson.DefaultRegistry
 	}
+	if val == nil {
+		return bsoncore.Value{}, ErrNilValue
+	}
+
+	if !mapAllowed {
+		refValue := reflect.ValueOf(val)
+		if refValue.Kind() == reflect.Map && refValue.Len() > 1 {
+			return bsoncore.Value{}, ErrMapForOrderedArgument{paramName}
+		}
+	}
+
+	buf := make([]byte, 0, 256)
+	bsonType, bsonValue, err := bson.MarshalValueAppendWithRegistry(registry, buf[:0], val)
+	if err != nil {
+		return bsoncore.Value{}, MarshalError{Value: val, Err: err}
+	}
+
+	return bsoncore.Value{Type: bsonType, Data: bsonValue}, nil
 }
 
 // Build the aggregation pipeline for the CountDocument command.
 func countDocumentsAggregatePipeline(registry *bsoncodec.Registry, filter interface{}, opts *options.CountOptions) (bsoncore.Document, error) {
-	filterDoc, err := transformBsoncoreDocument(registry, filter)
+	filterDoc, err := transformBsoncoreDocument(registry, filter, true, "filter")
 	if err != nil {
 		return nil, err
 	}
