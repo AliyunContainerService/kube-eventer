@@ -25,6 +25,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/sinks/influxdb"
 	"github.com/AliyunContainerService/kube-eventer/sinks/kafka"
 	"github.com/AliyunContainerService/kube-eventer/sinks/log"
+	"github.com/AliyunContainerService/kube-eventer/sinks/mongo"
 	"github.com/AliyunContainerService/kube-eventer/sinks/mysql"
 	"github.com/AliyunContainerService/kube-eventer/sinks/riemann"
 	"github.com/AliyunContainerService/kube-eventer/sinks/sls"
@@ -62,6 +63,8 @@ func (this *SinkFactory) Build(uri flags.Uri) (core.EventSink, error) {
 		return webhook.NewWebHookSink(&uri.Val)
 	case "eventbridge":
 		return eventbridge.NewEventBridgeSink(&uri.Val)
+	case "mongo":
+		return mongo.CreateMongoSink(&uri.Val)
 	default:
 		return nil, fmt.Errorf("Sink not recognized: %s", uri.Key)
 	}
