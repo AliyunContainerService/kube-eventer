@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/event"
-	"go.mongodb.org/mongo-driver/x/mongo/driver/address"
+	"go.mongodb.org/mongo-driver/mongo/address"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -30,9 +30,6 @@ var ErrConnectionClosed = ConnectionError{ConnectionID: "<closed>", message: "co
 
 // ErrWrongPool is return when a connection is returned to a pool it doesn't belong to.
 var ErrWrongPool = PoolError("connection does not belong to this pool")
-
-// ErrWaitQueueTimeout is returned when the request to get a connection from the pool timesout when on the wait queue
-var ErrWaitQueueTimeout = PoolError("timed out while checking out a connection from connection pool")
 
 // PoolError is an error returned from a Pool method.
 type PoolError string
@@ -124,7 +121,7 @@ func connectionCloseFunc(v interface{}) {
 
 // connectionInitFunc returns an init function for the resource pool that will make new connections for this pool
 func (p *pool) connectionInitFunc() interface{} {
-	c, _, err := p.makeNewConnection(context.Background())
+	c, _, err := p.makeNewConnection()
 	if err != nil {
 		return nil
 	}
@@ -140,6 +137,9 @@ func newPool(config poolConfig, connOpts ...ConnectionOption) (*pool, error) {
 	opts := connOpts
 	if config.MaxIdleTime != time.Duration(0) {
 		opts = append(opts, WithIdleTimeout(func(_ time.Duration) time.Duration { return config.MaxIdleTime }))
+	}
+	if config.PoolMonitor != nil {
+		opts = append(opts, withPoolMonitor(func(_ *event.PoolMonitor) *event.PoolMonitor { return config.PoolMonitor }))
 	}
 
 	var maxConns = config.MaxPoolSize
@@ -269,8 +269,8 @@ func (p *pool) disconnect(ctx context.Context) error {
 // connection.connect on the returned instance before using it for operations. This function ensures that a
 // ConnectionClosed event is published if there is an error after the ConnectionCreated event has been published. The
 // caller must not hold the pool lock when calling this function.
-func (p *pool) makeNewConnection(ctx context.Context) (*connection, string, error) {
-	c, err := newConnection(ctx, p.address, p.opts...)
+func (p *pool) makeNewConnection() (*connection, string, error) {
+	c, err := newConnection(p.address, p.opts...)
 	if err != nil {
 		return nil, event.ReasonConnectionErrored, err
 	}
@@ -310,6 +310,10 @@ func (p *pool) makeNewConnection(ctx context.Context) (*connection, string, erro
 
 }
 
+func (p *pool) getGeneration() uint64 {
+	return atomic.LoadUint64(&p.generation)
+}
+
 // Checkout returns a connection from the pool
 func (p *pool) get(ctx context.Context) (*connection, error) {
 	if ctx == nil {
@@ -336,7 +340,10 @@ func (p *pool) get(ctx context.Context) (*connection, error) {
 				Reason:  event.ReasonTimedOut,
 			})
 		}
-		return nil, ErrWaitQueueTimeout
+		errWaitQueueTimeout := WaitQueueTimeoutError{
+			Wrapped: ctx.Err(),
+		}
+		return nil, errWaitQueueTimeout
 	}
 
 	// This loop is so that we don't end up with more than maxPoolSize connections if p.conns.Maintain runs between
@@ -406,7 +413,7 @@ func (p *pool) get(ctx context.Context) (*connection, error) {
 			if !made {
 				continue
 			}
-			c, reason, err := p.makeNewConnection(ctx)
+			c, reason, err := p.makeNewConnection()
 
 			if err != nil {
 				if p.monitor != nil {

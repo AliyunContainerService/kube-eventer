@@ -14,10 +14,10 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/event"
+	"go.mongodb.org/mongo-driver/mongo/description"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"go.mongodb.org/mongo-driver/x/bsonx/bsoncore"
 	"go.mongodb.org/mongo-driver/x/mongo/driver"
-	"go.mongodb.org/mongo-driver/x/mongo/driver/description"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/session"
 )
 
@@ -66,7 +66,7 @@ func NewDropDatabase() *DropDatabase {
 // Result returns the result of executing this operation.
 func (dd *DropDatabase) Result() DropDatabaseResult { return dd.result }
 
-func (dd *DropDatabase) processResponse(response bsoncore.Document, srvr driver.Server, desc description.Server) error {
+func (dd *DropDatabase) processResponse(response bsoncore.Document, srvr driver.Server, desc description.Server, _ int) error {
 	var err error
 	dd.result, err = buildDropDatabaseResult(response, srvr)
 	return err

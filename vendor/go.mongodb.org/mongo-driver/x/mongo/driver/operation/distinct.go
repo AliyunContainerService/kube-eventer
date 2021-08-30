@@ -13,11 +13,11 @@ import (
 	"errors"
 
 	"go.mongodb.org/mongo-driver/event"
+	"go.mongodb.org/mongo-driver/mongo/description"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/x/bsonx/bsoncore"
 	"go.mongodb.org/mongo-driver/x/mongo/driver"
-	"go.mongodb.org/mongo-driver/x/mongo/driver/description"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/session"
 )
 
@@ -72,7 +72,7 @@ func NewDistinct(key string, query bsoncore.Document) *Distinct {
 // Result returns the result of executing this operation.
 func (d *Distinct) Result() DistinctResult { return d.result }
 
-func (d *Distinct) processResponse(response bsoncore.Document, srvr driver.Server, desc description.Server) error {
+func (d *Distinct) processResponse(response bsoncore.Document, srvr driver.Server, desc description.Server, _ int) error {
 	var err error
 	d.result, err = buildDistinctResult(response, srvr)
 	return err

@@ -14,10 +14,10 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/event"
+	"go.mongodb.org/mongo-driver/mongo/description"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"go.mongodb.org/mongo-driver/x/bsonx/bsoncore"
 	"go.mongodb.org/mongo-driver/x/mongo/driver"
-	"go.mongodb.org/mongo-driver/x/mongo/driver/description"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/session"
 )
 
@@ -73,9 +73,9 @@ func NewInsert(documents ...bsoncore.Document) *Insert {
 // Result returns the result of executing this operation.
 func (i *Insert) Result() InsertResult { return i.result }
 
-func (i *Insert) processResponse(response bsoncore.Document, srvr driver.Server, desc description.Server) error {
-	var err error
-	i.result, err = buildInsertResult(response, srvr)
+func (i *Insert) processResponse(response bsoncore.Document, srvr driver.Server, desc description.Server, insert int) error {
+	ir, err := buildInsertResult(response, srvr)
+	i.result.N += ir.N
 	return err
 }
 

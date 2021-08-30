@@ -13,9 +13,9 @@ import (
 	"errors"
 
 	"go.mongodb.org/mongo-driver/event"
+	"go.mongodb.org/mongo-driver/mongo/description"
 	"go.mongodb.org/mongo-driver/x/bsonx/bsoncore"
 	"go.mongodb.org/mongo-driver/x/mongo/driver"
-	"go.mongodb.org/mongo-driver/x/mongo/driver/description"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/session"
 )
 
@@ -38,7 +38,7 @@ func NewEndSessions(sessionIDs bsoncore.Document) *EndSessions {
 	}
 }
 
-func (es *EndSessions) processResponse(response bsoncore.Document, srvr driver.Server, desc description.Server) error {
+func (es *EndSessions) processResponse(response bsoncore.Document, srvr driver.Server, desc description.Server, _ int) error {
 	var err error
 	return err
 }

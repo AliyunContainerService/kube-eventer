@@ -14,12 +14,12 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/event"
+	"go.mongodb.org/mongo-driver/mongo/description"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"go.mongodb.org/mongo-driver/x/bsonx/bsoncore"
 	"go.mongodb.org/mongo-driver/x/mongo/driver"
-	"go.mongodb.org/mongo-driver/x/mongo/driver/description"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/session"
 )
 
@@ -69,7 +69,7 @@ func (a *Aggregate) ResultCursorResponse() driver.CursorResponse {
 	return a.result
 }
 
-func (a *Aggregate) processResponse(response bsoncore.Document, srvr driver.Server, desc description.Server) error {
+func (a *Aggregate) processResponse(response bsoncore.Document, srvr driver.Server, desc description.Server, currIndex int) error {
 	var err error
 
 	a.result, err = driver.NewCursorResponse(response, srvr, desc)

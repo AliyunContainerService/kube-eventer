@@ -27,8 +27,10 @@ type serverConfig struct {
 	maxConns                  uint64
 	minConns                  uint64
 	poolMonitor               *event.PoolMonitor
+	serverMonitor             *event.ServerMonitor
 	connectionPoolMaxIdleTime time.Duration
 	registry                  *bsoncodec.Registry
+	monitoringDisabled        bool
 }
 
 func newServerConfig(opts ...ServerOption) (*serverConfig, error) {
@@ -51,6 +53,13 @@ func newServerConfig(opts ...ServerOption) (*serverConfig, error) {
 
 // ServerOption configures a server.
 type ServerOption func(*serverConfig) error
+
+func withMonitoringDisabled(fn func(bool) bool) ServerOption {
+	return func(cfg *serverConfig) error {
+		cfg.monitoringDisabled = fn(cfg.monitoringDisabled)
+		return nil
+	}
+}
 
 // WithConnectionOptions configures the server's connections.
 func WithConnectionOptions(fn func(...ConnectionOption) []ConnectionOption) ServerOption {
@@ -126,6 +135,14 @@ func WithConnectionPoolMaxIdleTime(fn func(time.Duration) time.Duration) ServerO
 func WithConnectionPoolMonitor(fn func(*event.PoolMonitor) *event.PoolMonitor) ServerOption {
 	return func(cfg *serverConfig) error {
 		cfg.poolMonitor = fn(cfg.poolMonitor)
+		return nil
+	}
+}
+
+// WithServerMonitor configures the monitor for all SDAM events for a server
+func WithServerMonitor(fn func(*event.ServerMonitor) *event.ServerMonitor) ServerOption {
+	return func(cfg *serverConfig) error {
+		cfg.serverMonitor = fn(cfg.serverMonitor)
 		return nil
 	}
 }
