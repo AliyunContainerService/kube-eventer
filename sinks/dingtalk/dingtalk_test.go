@@ -60,22 +60,3 @@ func TestCreateMsgFromEvent_Markdown(t *testing.T) {
 	// t.Log(msg.Text)
 	assert.True(t, msg != nil)
 }
-
-//
-//func TestTableWriter(t *testing.T) {
-//
-//	data := [][]string{
-//		[]string{"A", "The Good", "500"},
-//		[]string{"B", "The Very very Bad Man", "288"},
-//		[]string{"C", "The Ugly", "120"},
-//		[]string{"D", "The Gopher", "800"},
-//	}
-//
-//	table := tablewriter.NewWriter(os.Stdout)
-//	table.SetHeader([]string{"Sign"})
-//
-//	for _, v := range data {
-//		table.Append(v)
-//	}
-//	table.Render() // Send output
-//}

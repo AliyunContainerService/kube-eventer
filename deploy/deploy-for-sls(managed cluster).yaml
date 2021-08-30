@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: eventer
+    task: monitoring
+  name: kube-eventer
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: eventer
+      task: monitoring
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+      labels:
+        k8s-app: eventer
+        task: monitoring
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: k8s.aliyun.com
+                    operator: NotIn
+                    values:
+                      - 'true'
+      containers:
+        - command:
+            - /kube-eventer
+            - '--source=kubernetes:https://kubernetes.default'
+            - >-
+              --sink=sls:https://sls.aliyuncs.com?project=<sls_project>&logStore=<sls_logstore>>&topic=<topic_name>
+          image: >-
+            registry-vpc.cn-shanghai.aliyuncs.com/acs/kube-eventer-amd64:v1.2.4-0f5aaee-aliyun
+          imagePullPolicy: IfNotPresent
+          name: eventer
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/addon
+              name: eventer-token
+              readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      serviceAccount: ack-node-problem-detector
+      serviceAccountName: ack-node-problem-detector
+      volumes:
+        - name: eventer-token
+          secret:
+            defaultMode: 420
+            items:
+              - key: addon.token.config
+                path: token-config
+            secretName: addon.log.token
