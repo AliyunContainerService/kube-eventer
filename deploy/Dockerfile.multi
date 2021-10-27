@@ -1,12 +1,19 @@
 FROM --platform=$BUILDPLATFORM golang:1.14 AS build-env
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG BUILDARCH
+ARG TARGETARCH
+
 ADD . /src/github.com/AliyunContainerService/kube-eventer
 ENV GOPATH /:/src/github.com/AliyunContainerService/kube-eventer/vendor
 ENV GO111MODULE on
 ENV GOPROXY=https://goproxy.cn,direct
 WORKDIR /src/github.com/AliyunContainerService/kube-eventer
 RUN apt-get update -y && apt-get install gcc ca-certificates
-RUN export ARCH=$(echo $TARGETPLATFORM | cut -f2 -d '/')
-RUN make
+
+RUN echo "I am running on $BUILDPLATFORM $BUILDARCH, building for $TARGETPLATFORM $TARGETARCH"
+
+RUN make ARCH=$TARGETARCH
 
 
 FROM alpine:3.11.6
