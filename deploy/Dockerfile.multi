@@ -8,6 +8,9 @@ ENV GO111MODULE on
 ENV GOPROXY=https://goproxy.cn,direct
 WORKDIR /src/github.com/AliyunContainerService/kube-eventer
 RUN apt-get update -y && apt-get install gcc ca-certificates
+
+RUN echo "I am running on $BUILDPLATFORM, building for $TARGETPLATFORM"
+
 RUN make ARCH=$BUILDARCH
 
 
