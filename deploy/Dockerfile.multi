@@ -9,9 +9,9 @@ ENV GOPROXY=https://goproxy.cn,direct
 WORKDIR /src/github.com/AliyunContainerService/kube-eventer
 RUN apt-get update -y && apt-get install gcc ca-certificates
 
-RUN echo "I am running on $BUILDPLATFORM, building for $TARGETPLATFORM"
+RUN echo "I am running on $BUILDPLATFORM $BUILDARCH, building for $TARGETPLATFORM $TARGETARCH"
 
-RUN make ARCH=$BUILDARCH
+RUN make ARCH=$TARGETARCH
 
 
 FROM alpine:3.11.6
