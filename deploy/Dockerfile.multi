@@ -16,7 +16,7 @@ RUN echo "I am running on $BUILDPLATFORM $BUILDARCH, building for $TARGETPLATFOR
 RUN make ARCH=$TARGETARCH
 
 
-FROM alpine:3.11.6
+FROM registry.cn-hangzhou.aliyuncs.com/acs/alpine:3.13-base
 LABEL maintainer="KeyOfSpectator <shichun.fsc@alibaba-inc.com>"
 
 COPY --from=build-env /src/github.com/AliyunContainerService/kube-eventer/kube-eventer /
