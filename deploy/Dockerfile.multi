@@ -16,8 +16,10 @@ RUN echo "I am running on $BUILDPLATFORM $BUILDARCH, building for $TARGETPLATFOR
 RUN make ARCH=$TARGETARCH
 
 
-FROM registry.cn-hangzhou.aliyuncs.com/acs/alpine:3.13-base
+FROM alpine:3.11.6
 LABEL maintainer="KeyOfSpectator <shichun.fsc@alibaba-inc.com>"
+
+RUN apk --no-cache --update upgrade
 
 COPY --from=build-env /src/github.com/AliyunContainerService/kube-eventer/kube-eventer /
 COPY --from=build-env /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
