@@ -137,7 +137,7 @@ Supported Sinks:
 | <a href="docs/en/mysql-sink.md">mysql</a>               | sink to mysql database           |
 | <a href="docs/en/wechat-sink.md">wechat</a>               | sink to wechat           |
 | <a href="docs/en/webhook-sink.md">webhook</a>               | sink to webhook           |
-| <a href="docs/en/mongodb-sink.md">webhook</a>               | sink to mongodb           |
+| <a href="docs/en/mongodb-sink.md">mongodb</a>               | sink to mongodb           |
 
 ### Contributing 
 Please check <a href="docs/en/CONTRIBUTING.md" target="_blank">CONTRIBUTING.md</a>
