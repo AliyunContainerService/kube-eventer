@@ -16,7 +16,7 @@ RUN echo "I am running on $BUILDPLATFORM $BUILDARCH, building for $TARGETPLATFOR
 RUN make ARCH=$TARGETARCH
 
 
-FROM alpine:3.11.6
+FROM alpine:3.13
 LABEL maintainer="KeyOfSpectator <shichun.fsc@alibaba-inc.com>"
 
 RUN apk --no-cache --update upgrade
