@@ -10,6 +10,8 @@ RUN make
 
 FROM alpine:3.11.6
 
+RUN apk --no-cache --update upgrade
+
 COPY --from=build-env /src/github.com/AliyunContainerService/kube-eventer/kube-eventer /
 COPY --from=build-env /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
