@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	ConfigPath         = "/var/addon/token-config"
+	SLSConfigPath      = "/var/sls-addon/token-config"
+	CMSConfigPath      = "/var/cms-addon/token-config"
 	StsTokenTimeLayout = "2006-01-02T15:04:05Z"
 )
 
@@ -107,70 +108,115 @@ func ParseOwnerAccountId() (string, error) {
 	return accountId, nil
 }
 
-func ParseAKInfoFromMeta() (*AKInfo, error) {
-	var akInfo AKInfo
+// GetAkInfo aliyun akInfo parse logic.
+// include: 1. parse akInfo from configmap, 2. parse akInfo from metadata
+func GetAkInfo(configPath string) *AKInfo {
 	m := metadata.NewMetaData(nil)
-	roleName, err := m.RoleName()
-	if err != nil {
-		klog.Errorf("failed to get RoleName,because of %v", err)
-		return nil, err
-	}
 
-	auth, err := m.RamRoleToken(roleName)
-	if err != nil {
-		klog.Errorf("failed to get RamRoleToken,because of %v", err)
-		return nil, err
-	}
-	akInfo.AccessKeyId = auth.AccessKeyId
-	akInfo.AccessKeySecret = auth.AccessKeySecret
-	akInfo.SecurityToken = auth.SecurityToken
-
-	return &akInfo, nil
-}
-
-func ParseAKInfoFromConfigPath() (*AKInfo, error) {
 	var akInfo AKInfo
-	var err error
-	if _, err = os.Stat(ConfigPath); err == nil {
+	if _, err := os.Stat(configPath); err == nil {
 		//获取token config json
-		encodeTokenCfg, err := ioutil.ReadFile(ConfigPath)
+		encodeTokenCfg, err := ioutil.ReadFile(configPath)
 		if err != nil {
-			klog.Fatalf("failed to read token config, err: %v", err)
+			klog.Fatalf("failed to read token config, configPath: %v,  err: %v", configPath, err)
 		}
 		err = json.Unmarshal(encodeTokenCfg, &akInfo)
 		if err != nil {
-			klog.Fatalf("error unmarshal token config: %v", err)
+			klog.Fatalf("error unmarshal token config, , configPath: %v,  err: %v", configPath, err)
 		}
 		keyring := akInfo.Keyring
 		ak, err := Decrypt(akInfo.AccessKeyId, []byte(keyring))
 		if err != nil {
-			klog.Fatalf("failed to decode ak, err: %v", err)
+			klog.Fatalf("failed to decode ak, configPath: %v,  err: %v", configPath, err)
 		}
 
 		sk, err := Decrypt(akInfo.AccessKeySecret, []byte(keyring))
 		if err != nil {
-			klog.Fatalf("failed to decode sk, err: %v", err)
+			klog.Fatalf("failed to decode sk, configPath: %v,  err: %v", configPath, err)
 		}
 
 		token, err := Decrypt(akInfo.SecurityToken, []byte(keyring))
 		if err != nil {
-			klog.Fatalf("failed to decode token, err: %v", err)
+			klog.Fatalf("failed to decode token, configPath: %v,  err: %v", configPath, err)
 		}
-
-		t, err := time.Parse(StsTokenTimeLayout, akInfo.Expiration)
+		layout := "2006-01-02T15:04:05Z"
+		t, err := time.Parse(layout, akInfo.Expiration)
 		if err != nil {
-			klog.Errorf("failed to parse time layout, %v", err)
+			klog.Errorf(err.Error())
 		}
 		if t.Before(time.Now()) {
-			klog.Error("invalid token which is expired")
+			klog.Errorf("invalid token which is expired")
 		}
-		klog.Info("get token by ram role.")
 		akInfo.AccessKeyId = string(ak)
 		akInfo.AccessKeySecret = string(sk)
 		akInfo.SecurityToken = string(token)
+	} else {
+		klog.Info("get token from metadata.")
+		var (
+			rolename string
+			err      error
+		)
+		if rolename, err = m.RoleName(); err != nil {
+			klog.Errorf("Failed to refresh sts rolename, configPath: %v, because of %s\n", configPath, err.Error())
+			return nil
+		}
 
-		return &akInfo, nil
+		role, err := m.RamRoleToken(rolename)
+
+		if err != nil {
+			klog.Errorf("Failed to refresh sts token, configPath: %v, because of %s\n", configPath, err.Error())
+			return nil
+		}
+		akInfo.AccessKeyId = role.AccessKeyId
+		akInfo.AccessKeySecret = role.AccessKeySecret
+		akInfo.SecurityToken = role.SecurityToken
 	}
-
-	return nil, err
+	return &akInfo
 }
+
+//func ParseAKInfoFromConfigPath() (*AKInfo, error) {
+//	var akInfo AKInfo
+//	var err error
+//	if _, err = os.Stat(ConfigPath); err == nil {
+//		//获取token config json
+//		encodeTokenCfg, err := ioutil.ReadFile(ConfigPath)
+//		if err != nil {
+//			klog.Fatalf("failed to read token config, err: %v", err)
+//		}
+//		err = json.Unmarshal(encodeTokenCfg, &akInfo)
+//		if err != nil {
+//			klog.Fatalf("error unmarshal token config: %v", err)
+//		}
+//		keyring := akInfo.Keyring
+//		ak, err := Decrypt(akInfo.AccessKeyId, []byte(keyring))
+//		if err != nil {
+//			klog.Fatalf("failed to decode ak, err: %v", err)
+//		}
+//
+//		sk, err := Decrypt(akInfo.AccessKeySecret, []byte(keyring))
+//		if err != nil {
+//			klog.Fatalf("failed to decode sk, err: %v", err)
+//		}
+//
+//		token, err := Decrypt(akInfo.SecurityToken, []byte(keyring))
+//		if err != nil {
+//			klog.Fatalf("failed to decode token, err: %v", err)
+//		}
+//
+//		t, err := time.Parse(StsTokenTimeLayout, akInfo.Expiration)
+//		if err != nil {
+//			klog.Errorf("failed to parse time layout, %v", err)
+//		}
+//		if t.Before(time.Now()) {
+//			klog.Error("invalid token which is expired")
+//		}
+//		klog.Info("get token by ram role.")
+//		akInfo.AccessKeyId = string(ak)
+//		akInfo.AccessKeySecret = string(sk)
+//		akInfo.SecurityToken = string(token)
+//
+//		return &akInfo, nil
+//	}
+//
+//	return nil, err
+//}
