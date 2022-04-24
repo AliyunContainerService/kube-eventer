@@ -190,7 +190,7 @@ configmap example
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: custom-webhook
+  name: custom-body
   namespace: kube-system
 data:
   content: '{
@@ -212,7 +212,7 @@ configmap example
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: custom-webhook
+  name: custom-body
   namespace: kube-system
 data:
   content: '{

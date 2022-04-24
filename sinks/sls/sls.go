@@ -28,6 +28,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -56,6 +57,7 @@ type Config struct {
 	internal        bool
 	accessKeyId     string
 	accessKeySecret string
+	ackEnvMap       map[string]string
 }
 
 func (s *SLSSink) Name() string {
@@ -90,7 +92,7 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 	if len(s.Config.topic) > 0 {
 		request.LogItems.Topic = &s.Config.topic
 	}
-
+	klog.Infof("send event.....%s", request)
 	err := s.client().PutLogs(request)
 	if err != nil {
 		klog.Errorf("failed to put events to sls,because of %v", err)
@@ -138,6 +140,15 @@ func (s *SLSSink) eventToContents(event *v1.Event) []*sls.Log_Content {
 		Key:   &level,
 		Value: &event.Type,
 	})
+
+	if len(s.Config.ackEnvMap) >= 1 {
+		for key, value := range s.Config.ackEnvMap {
+			contents = append(contents, &sls.Log_Content{
+				Key:   &key,
+				Value: &value,
+			})
+		}
+	}
 
 	if event.InvolvedObject.Kind == podEvent {
 		podId := string(event.InvolvedObject.UID)
@@ -226,6 +237,18 @@ func parseConfig(uri *url.URL) (*Config, error) {
 			c.internal = internal
 		}
 	}
+
+	var ackEnvMap map[string]string
+	ackEnvMap = make(map[string]string)
+	for _, value := range os.Environ() {
+		if strings.HasPrefix(value, "ACK_CUSTOM") && strings.Contains(value, "=") {
+			envParam := strings.SplitN(value, "=", 2)
+			if len(envParam) >= 2 && len(envParam[1]) > 0  {
+				ackEnvMap[envParam[0]] = envParam[1]
+			}
+		}
+	}
+	c.ackEnvMap = ackEnvMap
 	return c, nil
 }
 
