@@ -128,6 +128,16 @@ func (ws *WebHookSink) Stop() {
 	return
 }
 
+func getLevels(level string) []string {
+	switch level {
+	case Normal:
+		return []string{Normal, Warning}
+	case Warning:
+		return []string{Warning}
+	}
+	return []string{Warning}
+}
+
 // init WebHookSink with url params
 func NewWebHookSink(uri *url.URL) (*WebHookSink, error) {
 	s := &WebHookSink{
@@ -156,7 +166,7 @@ func NewWebHookSink(uri *url.URL) (*WebHookSink, error) {
 	level := Warning
 	if len(opts["level"]) >= 1 {
 		level = opts["level"][0]
-		s.filters["LevelFilter"] = filters.NewGenericFilter("Type", []string{level}, false)
+		s.filters["LevelFilter"] = filters.NewGenericFilter("Type", getLevels(level), false)
 	}
 
 	if len(opts["namespaces"]) >= 1 {
