@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/AliyunContainerService/kube-eventer/common/flags"
 	"github.com/AliyunContainerService/kube-eventer/core"
+	"github.com/AliyunContainerService/kube-eventer/sinks/cms"
 	"github.com/AliyunContainerService/kube-eventer/sinks/dingtalk"
 	"github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch"
 	"github.com/AliyunContainerService/kube-eventer/sinks/eventbridge"
@@ -65,6 +66,8 @@ func (this *SinkFactory) Build(uri flags.Uri) (core.EventSink, error) {
 		return eventbridge.NewEventBridgeSink(&uri.Val)
 	case "mongo":
 		return mongo.CreateMongoSink(&uri.Val)
+	case "cms":
+		return cms.NewCmsSink(&uri.Val, nil)
 	default:
 		return nil, fmt.Errorf("Sink not recognized: %s", uri.Key)
 	}
