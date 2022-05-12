@@ -81,16 +81,17 @@ level: Normal or Warning. The event level greater than global level will emit.
 label: some thing unique when you want to distinguish different k8s clusters.
 */
 type DingTalkSink struct {
-	Endpoint   string
-	Namespaces []string
-	Kinds      []string
-	Token      string
-	Level      int
-	Labels     []string
-	MsgType    string
-	ClusterID  string
-	Secret     string
-	Region     string
+	Endpoint       string
+	Namespaces     []string
+	Kinds          []string
+	Token          string
+	Level          int
+	Labels         []string
+	MsgType        string
+	ClusterID      string
+	Secret         string
+	Region         string
+	ExcludeReasons []string
 }
 
 func (d *DingTalkSink) Name() string {
@@ -140,6 +141,19 @@ func (d *DingTalkSink) Ding(event *v1.Event) {
 		for _, kind := range d.Kinds {
 			if kind == event.InvolvedObject.Kind {
 				skip = false
+				break
+			}
+		}
+		if skip {
+			return
+		}
+	}
+
+	if d.ExcludeReasons != nil {
+		skip := false
+		for _, reason := range d.ExcludeReasons {
+			if reason == event.Reason {
+				skip = true
 				break
 			}
 		}
@@ -280,6 +294,7 @@ func NewDingTalkSink(uri *url.URL) (*DingTalkSink, error) {
 	// kinds:https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#lists-and-simple-kinds
 	// such as node,pod,component and so on
 	d.Kinds = getValues(opts["kinds"])
+	d.ExcludeReasons = getValues(opts["exclude_reasons"])
 
 	return d, nil
 }
