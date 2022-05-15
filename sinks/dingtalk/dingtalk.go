@@ -152,12 +152,18 @@ func (d *DingTalkSink) Ding(event *v1.Event) {
 	if d.ExcludeReasons != nil {
 		skip := false
 		for _, reason := range d.ExcludeReasons {
-			if reason == event.Reason {
+			nr := strings.Split(reason, "/")
+			if len(nr) > 1 && nr[0] == event.Namespace && nr[1] == event.Reason {
+				skip = true
+				break
+			}
+			if len(nr) == 1 && nr[0] == event.Reason {
 				skip = true
 				break
 			}
 		}
 		if skip {
+			klog.Infof("skip event: kind=%v, namespace=%v, name=%v, reason=%v\n", event.InvolvedObject.Kind, event.Namespace, event.Name, event.Reason)
 			return
 		}
 	}
@@ -295,6 +301,7 @@ func NewDingTalkSink(uri *url.URL) (*DingTalkSink, error) {
 	// such as node,pod,component and so on
 	d.Kinds = getValues(opts["kinds"])
 	d.ExcludeReasons = getValues(opts["exclude_reasons"])
+	klog.Infof("exclude_reasons=%#v\n", d.ExcludeReasons)
 
 	return d, nil
 }

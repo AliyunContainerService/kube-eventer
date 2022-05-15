@@ -13,7 +13,7 @@ The following options are available:
 * `kinds` - Kinds to filter (default: all kinds,use commas to separate multi kinds. Options: Node,Pod and so on.)
 * `msg_type` - Type of message (default: text. Options: text and markdown)
 * `sign` - Signature Key(If DingTalk uses the security mechanism of signature, the key can be passed in through this field.)[Optional]
-* `exclude_reasons` - Ignore events for a specific reason(default empty,use commas to separate multi items)[Optional]
+* `exclude_reasons` - Ignore events for a specific reason of a specific namespace, format: [NAMESPACE/]REASON, NAMESPACE can be empty for all namespaces. (default empty,use commas to separate multi items, e.g., SystemOOM,test/Unhealthy)[Optional]
 
 For example:
 
