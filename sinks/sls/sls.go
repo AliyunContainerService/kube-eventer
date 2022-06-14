@@ -16,18 +16,20 @@ package sls
 import (
 	"encoding/json"
 	"errors"
+	"log"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/AliyunContainerService/kube-eventer/core"
 	metrics_core "github.com/AliyunContainerService/kube-eventer/metrics/core"
 	"github.com/AliyunContainerService/kube-eventer/sinks/utils"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/sls"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
-	"log"
-	"net/url"
-	"os"
-	"strconv"
 )
 
 const (
@@ -56,6 +58,7 @@ type Config struct {
 	internal        bool
 	accessKeyId     string
 	accessKeySecret string
+	ackEnvMap       map[string]string
 }
 
 func (s *SLSSink) Name() string {
@@ -116,6 +119,16 @@ func (s *SLSSink) Stop() {
 
 func (s *SLSSink) eventToContents(event *v1.Event) []*sls.Log_Content {
 	contents := make([]*sls.Log_Content, 0)
+
+	if len(s.Config.ackEnvMap) >= 1 {
+		for key, value := range s.Config.ackEnvMap {
+			if len(event.ObjectMeta.Annotations) == 0 {
+				event.ObjectMeta.Annotations = make(map[string]string)
+			}
+			event.ObjectMeta.Annotations[key] = value
+		}
+	}
+
 	bytes, err := json.MarshalIndent(event, "", " ")
 	if err != nil {
 		return nil
@@ -226,6 +239,18 @@ func parseConfig(uri *url.URL) (*Config, error) {
 			c.internal = internal
 		}
 	}
+
+	var ackEnvMap map[string]string
+	ackEnvMap = make(map[string]string)
+	for _, value := range os.Environ() {
+		if strings.HasPrefix(value, "ACK_CUSTOM") && strings.Contains(value, "=") {
+			envParam := strings.SplitN(value, "=", 2)
+			if len(envParam) >= 2 && len(envParam[1]) > 0 {
+				ackEnvMap[envParam[0]] = envParam[1]
+			}
+		}
+	}
+	c.ackEnvMap = ackEnvMap
 	return c, nil
 }
 
