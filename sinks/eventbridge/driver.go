@@ -208,20 +208,16 @@ func (ebSink *eventBridgeSink) newClient() (*eventbridge.Client, error) {
 
 	endpoint := ebSink.parseEventBridgeEndpoint(region)
 
-	akInfo, err := utils.ParseAKInfoFromConfigPath()
-	if err != nil {
-		akInfo = &utils.AKInfo{}
-		if ebSink.accessKeyId != "" && ebSink.accessKeySecret != "" {
-			akInfo.AccessKeyId = ebSink.accessKeyId
-			akInfo.AccessKeySecret = ebSink.accessKeySecret
-		} else {
-			akInfoInMeta, err := utils.ParseAKInfoFromMeta()
-			if err != nil {
-				klog.Errorf("failed to get RamRoleToken,because of %v", err)
-				return nil, err
-			}
-			akInfo = akInfoInMeta
-		}
+	akInfo := &utils.AKInfo{}
+	if ebSink.accessKeyId != "" && ebSink.accessKeySecret != "" {
+		akInfo.AccessKeyId = ebSink.accessKeyId
+		akInfo.AccessKeySecret = ebSink.accessKeySecret
+	} else {
+		akInfo = utils.GetAkInfo(utils.SLSConfigPath)
+	}
+	if akInfo == nil {
+		klog.Errorf("get eb akInfo error.")
+		return nil, errors.New("get eb akInfo error")
 	}
 
 	config := &eventbridge.Config{}
