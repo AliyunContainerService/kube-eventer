@@ -276,15 +276,15 @@ func getEventTime(event *k8s.Event, now func() time.Time) string {
 
 func (d *tagCmsSink) ConvertToSysEvent(event *k8s.Event) (r *SystemEvent) {
 	r = &SystemEvent{
-		Product:   Product,
-		EventType: event.Reason,
-		Name:      event.GetName(),
-		EventTime: getEventTime(event, time.Now),
-		GroupId:   "0", // 跟昱杰沟通，此处先填0，以后如果需要groupId，再升级插件。
-		Resource:  string(event.InvolvedObject.UID),
-		// ResourceId: "acs:" + Product + ":" + d.regionId + "::uuid/" + string(event.InvolvedObject.UID),
-		Level:  d.level,
-		Status: event.Type,
+		Product:    Product,
+		EventType:  event.Reason,
+		Name:       event.GetName(),
+		EventTime:  getEventTime(event, time.Now),
+		GroupId:    "0", // 跟昱杰沟通，此处先填0，以后如果需要groupId，再升级插件。
+		Resource:   string(event.InvolvedObject.UID),
+		ResourceId: "acs:" + Product + ":" + d.regionId + "::uuid/" + string(event.InvolvedObject.UID),
+		Level:      d.level,
+		Status:     event.Type,
 		// UserId:     "",
 		// Tags:       "",
 		RegionId: d.regionId,
