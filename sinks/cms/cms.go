@@ -151,9 +151,8 @@ type tagCmsSink struct {
 	// 环式缓存
 	SysEventRing
 
-	regionId string
-	level    string
-	client   IClient
+	config Config
+	client IClient
 }
 
 func (*tagCmsSink) Name() string {
@@ -282,13 +281,13 @@ func (d *tagCmsSink) ConvertToSysEvent(event *k8s.Event) (r *SystemEvent) {
 		EventTime:  getEventTime(event, time.Now),
 		GroupId:    "0", // 跟昱杰沟通，此处先填0，以后如果需要groupId，再升级插件。
 		Resource:   string(event.InvolvedObject.UID),
-		ResourceId: "acs:" + Product + ":" + d.regionId + "::uuid/" + string(event.InvolvedObject.UID),
-		Level:      d.level,
+		ResourceId: "acs:" + Product + ":" + d.config.regionId + "::uuid/" + string(event.InvolvedObject.UID),
+		Level:      d.config.level,
 		Status:     event.Type,
-		// UserId:     "",
+		UserId:     d.config.userId,
+		RegionId:   d.config.regionId,
+		Time:       time.Now().Format(EventTimeLayout),
 		// Tags:       "",
-		RegionId: d.regionId,
-		Time:     time.Now().Format(EventTimeLayout),
 	}
 
 	if jsonBytes, err := json.Marshal(event); err == nil {
@@ -302,12 +301,15 @@ type Config struct {
 	endPoint        string
 	accessKeyId     string
 	accessKeySecret string
-	regionId        string
 	level           string
+
+	regionId  string
+	clusterId string
+	userId    string
 }
 
 // ParseConfig create config from uri
-func ParseConfig(uri *url.URL) *Config {
+func ParseConfig(uri *url.URL) (*Config, error) {
 	c := &Config{}
 
 	opts := uri.Query()
@@ -325,7 +327,25 @@ func ParseConfig(uri *url.URL) *Config {
 		return def
 	}
 
+	c.clusterId = doGet("clusterId", "ClusterId", "")
 	c.regionId = doGet("regionId", "RegionId", "")
+	if c.regionId == "" {
+		metaRegionId, err := utils.ParseRegionFromMeta()
+		if err != nil {
+			// region from meta data
+			klog.Errorf("cms init. failed to get Region from metadata, use the default regionId, because of %v", err)
+			c.regionId = DefaultRegionId
+		} else {
+			c.regionId = metaRegionId
+		}
+	}
+	c.userId = doGet("userId", "UserId", "")
+	if c.userId == "" {
+		// no userId. exist process.
+		klog.Errorf("cms init. failed to get UserId.")
+		return nil, errors.New("failed to get userId when cms init")
+	}
+
 	c.accessKeyId = doGet("accessKeyId", "AccessKeyId", "")
 	c.accessKeySecret = doGet("accessKeySecret", "AccessKeySecret", "")
 	c.level = doGet("level", "", "INFO")
@@ -337,11 +357,10 @@ func ParseConfig(uri *url.URL) *Config {
 			c.regionId = endPoint.RegionId
 		}
 	}
-	if c.regionId == "" {
-		c.regionId = DefaultRegionId
-	}
 
-	return c
+	klog.Infof("init cms sink. config: %v", *c)
+
+	return c, nil
 }
 
 func GetRegion(c *Config, fnParseRegionFromMeta func() (string, error)) (regionId string, err error) {
@@ -410,10 +429,8 @@ type tagCmsSinkOpt struct {
 // NewCmsSink Usage:
 // --sink=cms:http://metrichub-[your_region_id].aliyun-inc.com?regionId=[your_region_id]&accessKeyId=[your_access_key]&accessKeySecret=[you_access_secret]&level=[alert_level]
 func NewCmsSink(uri *url.URL, opt *tagCmsSinkOpt) (r core.EventSink, err error) {
-	c := ParseConfig(uri)
-
-	sink := &tagCmsSink{level: c.level}
-	sink.regionId, err = GetRegion(c, utils.ParseRegionFromMeta)
+	c, err := ParseConfig(uri)
+	sink := &tagCmsSink{config: *c}
 	if err == nil {
 		var client *Client
 		if client, err = newClient(c); err == nil {

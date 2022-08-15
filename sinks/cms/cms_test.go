@@ -130,7 +130,7 @@ func TestNewCmsSing(t *testing.T) {
 	assert.Equal(t, "CmsSink", sink.Name())
 	cmsSink := sink.(*tagCmsSink)
 	assert.NotNil(t, cmsSink.buf)
-	assert.Equal(t, "cn-beijing", cmsSink.regionId)
+	assert.Equal(t, "cn-beijing", cmsSink.config.regionId)
 }
 
 func TestGetEnvTime(t *testing.T) {
@@ -243,26 +243,26 @@ func TestNewClient_Error(t *testing.T) {
 }
 
 func TestParseConfig(t *testing.T) {
-	params, err := url.Parse(`https://unknown?accessKeyId=1&accessKeySecret=2`)
+	params, err := url.Parse(`https://unknown?regionId=cn-hangzhou&userId=123&accessKeyId=1&accessKeySecret=2`)
 	assert.NoError(t, err)
-	c := ParseConfig(params)
+	c, _ := ParseConfig(params)
 	assert.Contains(t, c.endPoint, "://")
 	assert.Contains(t, c.endPoint, "cn-hangzhou")
 	assert.Equal(t, "cn-hangzhou", c.regionId)
 }
 
 func TestParseConfig2(t *testing.T) {
-	params, err := url.Parse(`https://host.com/?accessKeyId=1&accessKeySecret=2`)
+	params, err := url.Parse(`https://host.com/?regionId=cn-hangzhou&userId=123accessKeyId=1&accessKeySecret=2`)
 	assert.NoError(t, err)
-	c := ParseConfig(params)
+	c, _ := ParseConfig(params)
 	assert.Equal(t, c.endPoint, `https://host.com`)
 	assert.Equal(t, "cn-hangzhou", c.regionId)
 }
 
 func TestParseConfig3(t *testing.T) {
-	params, err := url.Parse(`?accessKeyId=1&accessKeySecret=2`)
+	params, err := url.Parse(`?regionId=cn-hangzhou&userId=123accessKeyId=1&accessKeySecret=2`)
 	assert.NoError(t, err)
-	c := ParseConfig(params)
+	c, _ := ParseConfig(params)
 	assert.Contains(t, c.endPoint, "cn-hangzhou")
 	assert.Equal(t, DefaultRegionId, c.regionId)
 }
