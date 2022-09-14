@@ -17,7 +17,9 @@ package kubernetes
 import (
 	"fmt"
 	"io/ioutil"
+	"k8s.io/klog"
 	"net/url"
+	"os"
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -46,6 +48,15 @@ func getConfigOverrides(uri *url.URL) (*kubeClientCmd.ConfigOverrides, error) {
 	}
 	if len(uri.Scheme) != 0 && len(uri.Host) != 0 {
 		kubeConfigOverride.ClusterInfo.Server = fmt.Sprintf("%s://%s", uri.Scheme, uri.Host)
+		// if use kubernetes.default, use KUBERNETES_SERVICE_HOST as apiserver ip.
+		// this will decouple kube-eventer with coreDNS.
+		if uri.Host == "kubernetes.default" {
+			k8sServiceHost := os.Getenv("KUBERNETES_SERVICE_HOST")
+			if k8sServiceHost != "" {
+				klog.Warning("using KUBERNETES_SERVICE_HOST (%s) as ApiServer IP.", k8sServiceHost)
+				kubeConfigOverride.ClusterInfo.Server = fmt.Sprintf("%s://%s", uri.Scheme, k8sServiceHost)
+			}
+		}
 	}
 
 	opts := uri.Query()
