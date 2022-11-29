@@ -15,6 +15,7 @@
 package kubernetes
 
 import (
+	metrics "github.com/AliyunContainerService/kube-eventer/metrics/prometheus"
 	"net/url"
 	"time"
 
@@ -139,7 +140,6 @@ func (this *KubernetesEventSource) watch() {
 					klog.Errorf("Event watch channel closed")
 					break inner_loop
 				}
-
 				if watchUpdate.Type == kubewatch.Error {
 					if status, ok := watchUpdate.Object.(*metav1.Status); ok {
 						klog.Errorf("Error during watch: %#v", status)
@@ -155,6 +155,7 @@ func (this *KubernetesEventSource) watch() {
 
 					switch watchUpdate.Type {
 					case kubewatch.Added, kubewatch.Modified:
+						metrics.RecordEvent(event)
 						select {
 						case this.localEventsBuffer <- event:
 							// Ok, buffer not full.
@@ -163,7 +164,7 @@ func (this *KubernetesEventSource) watch() {
 							klog.Errorf("Event buffer full, dropping event")
 						}
 					case kubewatch.Deleted:
-						// Deleted events are silently ignored.
+						metrics.CleanEvent(event)
 					default:
 						klog.Warningf("Unknown watchUpdate.Type: %#v", watchUpdate.Type)
 					}

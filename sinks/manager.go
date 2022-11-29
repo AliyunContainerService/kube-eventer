@@ -92,7 +92,7 @@ func NewEventSinkManager(sinks []core.EventSink, exportEventsTimeout, stopTimeou
 	}, nil
 }
 
-// Guarantees that the export will complete in exportEventsTimeout.
+// ExportEvents Guarantees that the export will complete in exportEventsTimeout.
 func (this *sinkManager) ExportEvents(data *core.EventBatch) {
 	var wg sync.WaitGroup
 	for _, sh := range this.sinkHolders {
