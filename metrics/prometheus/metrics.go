@@ -230,7 +230,7 @@ func triageEvent(event *v1.Event) (AbnormalEventKind, RecordFunc, CleanFunc, boo
 				if clean == nil {
 					clean = DefaultCleanFunc
 				}
-				return j.kind, j.record, j.clean, true
+				return j.kind, record, clean, true
 			}
 		}
 	}
