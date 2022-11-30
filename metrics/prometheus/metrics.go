@@ -70,10 +70,8 @@ type JudgeEvent struct {
 }
 
 var (
-	eventCounter         *prometheus.CounterVec
+	normalEventCounter   *prometheus.CounterVec
 	abnormalEventCounter *prometheus.CounterVec
-	abnormalEventTime    *prometheus.GaugeVec
-	abnormalEventLastTS  *prometheus.GaugeVec
 
 	reasonToEventKind = map[string]AbnormalEventKind{
 		// Namespace level
@@ -139,85 +137,45 @@ var (
 )
 
 func init() {
-	eventCounter = prometheus.NewCounterVec(
+	normalEventCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "eventer",
 			Subsystem: "events",
-			Name:      "total",
+			Name:      "normal_total",
 		},
-		[]string{"reason", "type"},
+		[]string{"reason", "namespace"},
 	)
 	errorEventLabels := []string{
 		"event_kind",
-		"reason",
-		"type",
-		"involved_object_kind",
-		"involved_object_api_version",
-		"involved_object_name",
-		"involved_object_namespace",
-		"involved_object_resource_version",
-		"involved_object_field_path",
-		"related_kind",
-		"related_api_version",
-		"related_name",
-		"related_namespace",
-		"related_resource_version",
-		"related_field_path",
+		"kind",
+		"name",
+		"namespace",
 	}
 	abnormalEventCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "eventer",
 		Subsystem: "events",
-		Name:      "abnormal_count",
+		Name:      "warning_total",
 	}, errorEventLabels)
-	abnormalEventTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "eventer",
-		Subsystem: "events",
-		Name:      "abnormal_time_seconds",
-	}, errorEventLabels)
-	abnormalEventLastTS = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "eventer",
-		Subsystem: "events",
-		Name:      "abnormal_last_ts_seconds",
-	}, errorEventLabels)
-	prometheus.MustRegister(eventCounter)
+	prometheus.MustRegister(normalEventCounter)
 	prometheus.MustRegister(abnormalEventCounter)
-	prometheus.MustRegister(abnormalEventTime)
-	prometheus.MustRegister(abnormalEventLastTS)
 }
 
 func event2Labels(kind AbnormalEventKind, event *v1.Event) []string {
-	related := event.Related
-	if related == nil {
-		related = &v1.ObjectReference{}
-	}
 	return []string{
 		string(kind),
-		event.Reason,
-		event.Type,
 		event.InvolvedObject.Kind,
-		event.InvolvedObject.APIVersion,
 		event.InvolvedObject.Name,
 		event.InvolvedObject.Namespace,
-		event.InvolvedObject.ResourceVersion,
-		event.InvolvedObject.FieldPath,
-		related.Kind,
-		related.APIVersion,
-		related.Name,
-		related.Namespace,
-		related.ResourceVersion,
-		related.FieldPath,
 	}
 }
 
-func eventCounterInc(reason, eventType string) {
-	eventCounter.WithLabelValues(reason, eventType).Inc()
+func eventCounterInc(reason, namespace string) {
+	normalEventCounter.WithLabelValues(reason, namespace).Inc()
 }
 
 func cleanAbnormalEvent(kind AbnormalEventKind, event *v1.Event) {
 	labels := event2Labels(kind, event)
 	abnormalEventCounter.DeleteLabelValues(labels...)
-	abnormalEventTime.DeleteLabelValues(labels...)
-	abnormalEventLastTS.DeleteLabelValues(labels...)
 }
 
 func triageEvent(event *v1.Event) (AbnormalEventKind, RecordFunc, CleanFunc, bool) {
@@ -243,7 +201,7 @@ func triageEvent(event *v1.Event) (AbnormalEventKind, RecordFunc, CleanFunc, boo
 
 // RecordEvent records event to prometheus metrics
 func RecordEvent(event *v1.Event) {
-	eventCounterInc(event.Reason, event.Type)
+	eventCounterInc(event.Reason, event.Namespace)
 	if kind, record, _, ok := triageEvent(event); ok {
 		record(kind, event)
 	}
