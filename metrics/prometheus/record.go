@@ -10,13 +10,13 @@ var (
 )
 
 func init() {
-
+	pendingTimers = make(map[string]*time.Timer)
 }
 
 func recordAbnormalEvent(kind AbnormalEventKind, event *v1.Event) {
 	labels := event2Labels(kind, event)
 	abnormalEventCounter.WithLabelValues(labels...).Inc()
-	abnormalEventTime.WithLabelValues(labels...).Set(float64(event.LastTimestamp.Unix()))
+	abnormalEventTime.WithLabelValues(labels...).Set(float64(event.EventTime.Unix()))
 	abnormalEventLastTS.WithLabelValues(labels...).Set(float64(event.LastTimestamp.Unix()))
 }
 
@@ -25,7 +25,7 @@ func recordPodPending(kind AbnormalEventKind, event *v1.Event) {
 	labels := event2Labels(kind, event)
 	timer := time.AfterFunc(5*time.Minute, func() {
 		abnormalEventCounter.WithLabelValues(labels...).Inc()
-		abnormalEventTime.WithLabelValues(labels...).Set(float64(event.LastTimestamp.Unix()))
+		abnormalEventTime.WithLabelValues(labels...).Set(float64(event.EventTime.Unix()))
 		abnormalEventLastTS.WithLabelValues(labels...).Set(float64(event.LastTimestamp.Unix()))
 		delete(pendingTimers, key)
 	})

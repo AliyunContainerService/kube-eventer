@@ -143,7 +143,7 @@ func init() {
 		prometheus.CounterOpts{
 			Namespace: "eventer",
 			Subsystem: "events",
-			Name:      "event_total",
+			Name:      "total",
 		},
 		[]string{"reason", "type"},
 	)
@@ -167,17 +167,17 @@ func init() {
 	abnormalEventCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "eventer",
 		Subsystem: "events",
-		Name:      "event_count",
+		Name:      "abnormal_count",
 	}, errorEventLabels)
 	abnormalEventTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "eventer",
 		Subsystem: "events",
-		Name:      "event_time_seconds",
+		Name:      "abnormal_time_seconds",
 	}, errorEventLabels)
 	abnormalEventLastTS = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "eventer",
 		Subsystem: "events",
-		Name:      "event_last_ts_seconds",
+		Name:      "abnormal_last_ts_seconds",
 	}, errorEventLabels)
 	prometheus.MustRegister(eventCounter)
 	prometheus.MustRegister(abnormalEventCounter)
@@ -186,6 +186,10 @@ func init() {
 }
 
 func event2Labels(kind AbnormalEventKind, event *v1.Event) []string {
+	related := event.Related
+	if related == nil {
+		related = &v1.ObjectReference{}
+	}
 	return []string{
 		string(kind),
 		event.Reason,
@@ -196,12 +200,12 @@ func event2Labels(kind AbnormalEventKind, event *v1.Event) []string {
 		event.InvolvedObject.Namespace,
 		event.InvolvedObject.ResourceVersion,
 		event.InvolvedObject.FieldPath,
-		event.Related.Kind,
-		event.Related.APIVersion,
-		event.Related.Name,
-		event.Related.Namespace,
-		event.Related.ResourceVersion,
-		event.Related.FieldPath,
+		related.Kind,
+		related.APIVersion,
+		related.Name,
+		related.Namespace,
+		related.ResourceVersion,
+		related.FieldPath,
 	}
 }
 
