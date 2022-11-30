@@ -50,7 +50,6 @@ func (gf *GenericFilter) Filter(event *v1.Event) (matched bool) {
 				if err != nil {
 					log.Errorf("Failed to match pattern %s with %s,because of %v", k, field.String(), err)
 				}
-				return false
 			}
 		} else {
 			if field.String() == k {

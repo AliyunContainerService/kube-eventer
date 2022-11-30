@@ -30,4 +30,10 @@ func TestEvents(t *testing.T) {
 
 	reasonFilter := NewGenericFilter("Reason", []string{"BackOff"}, false)
 	assert.True(t, reasonFilter.Filter(TestEvent), "")
+
+	regexReasonFilter := NewGenericFilter("Reason", []string{"BackOff"}, true)
+	assert.True(t, regexReasonFilter.Filter(TestEvent), "")
+
+	regexReasonsFilter := NewGenericFilter("Reason", []string{"Unhealthy", "BackOff"}, true)
+	assert.True(t, regexReasonsFilter.Filter(TestEvent), "")
 }
