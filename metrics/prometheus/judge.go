@@ -13,14 +13,6 @@ func isResourceInsufficient(event *v1.Event) bool {
 	return event.Reason == "FailedScheduling" && strings.Contains(event.Message, "Insufficient")
 }
 
-func isPodPending(event *v1.Event) bool {
-	return event.Reason == "Scheduled"
-}
-
-func isPodPendingClear(event *v1.Event) bool {
-	return event.Reason == "Pulling" || event.Reason == "Created"
-}
-
 func isPodFailStart(event *v1.Event) bool {
 	return event.Reason == "Failed" &&
 		event.InvolvedObject.Kind == "Pod" &&

@@ -12,7 +12,6 @@ var (
 	PodEvict              AbnormalEventKind = "pod_evict"
 	PodImagePullBackOff   AbnormalEventKind = "pod_image_pull_back_off"
 	PodOOM                AbnormalEventKind = "pod_oom"
-	PodPending            AbnormalEventKind = "pod_pending"
 	ResourceInsufficient  AbnormalEventKind = "resource_insufficient"
 	PodFailStart          AbnormalEventKind = "pod_fail_start"
 	PodCrash              AbnormalEventKind = "pod_crash"
@@ -56,17 +55,10 @@ var (
 )
 
 type JudgeEventFunc func(event *v1.Event) bool
-type RecordFunc func(kind AbnormalEventKind, event *v1.Event)
-type CleanFunc func(kind AbnormalEventKind, event *v1.Event)
-
-var DefaultRecordFunc RecordFunc = recordAbnormalEvent
-var DefaultCleanFunc CleanFunc = cleanAbnormalEvent
 
 type JudgeEvent struct {
-	kind   AbnormalEventKind
-	judge  JudgeEventFunc
-	record RecordFunc
-	clean  CleanFunc
+	kind  AbnormalEventKind
+	judge JudgeEventFunc
 }
 
 var (
@@ -117,9 +109,6 @@ var (
 
 	reasonToEventKindFunc = map[string][]JudgeEvent{
 		"ImagePullBackOff": {{kind: PodImagePullBackOff, judge: isPodImagePullBackOff}},
-		"Scheduled":        {{kind: PodPending, judge: isPodPending, record: recordPodPending, clean: Noop}},
-		"Pulling":          {{kind: PodPending, judge: isPodPendingClear, record: recordPodPendingClear, clean: Noop}},
-		"Created":          {{kind: PodPending, judge: isPodPendingClear, record: recordPodPendingClear, clean: Noop}},
 		"Failed":           {{kind: PodFailStart, judge: isPodFailStart}},
 		"BackOff":          {{kind: PodCrash, judge: isPodCrash}},
 		"FailedScheduling": {{kind: ResourceInsufficient, judge: isResourceInsufficient}},
@@ -178,38 +167,36 @@ func cleanAbnormalEvent(kind AbnormalEventKind, event *v1.Event) {
 	abnormalEventCounter.DeleteLabelValues(labels...)
 }
 
-func triageEvent(event *v1.Event) (AbnormalEventKind, RecordFunc, CleanFunc, bool) {
+func recordAbnormalEvent(kind AbnormalEventKind, event *v1.Event) {
+	labels := event2Labels(kind, event)
+	abnormalEventCounter.WithLabelValues(labels...).Inc()
+}
+
+func triageEvent(event *v1.Event) (AbnormalEventKind, bool) {
 	if kind, ok := reasonToEventKind[event.Reason]; ok {
-		return kind, DefaultRecordFunc, DefaultCleanFunc, true
+		return kind, true
 	}
 	if judgements, ok := reasonToEventKindFunc[event.Reason]; ok {
 		for _, j := range judgements {
 			if j.judge(event) {
-				record, clean := j.record, j.clean
-				if record == nil {
-					record = DefaultRecordFunc
-				}
-				if clean == nil {
-					clean = DefaultCleanFunc
-				}
-				return j.kind, record, clean, true
+				return j.kind, true
 			}
 		}
 	}
-	return "", nil, nil, false
+	return "", false
 }
 
 // RecordEvent records event to prometheus metrics
 func RecordEvent(event *v1.Event) {
 	eventCounterInc(event.Reason, event.Namespace)
-	if kind, record, _, ok := triageEvent(event); ok {
-		record(kind, event)
+	if kind, ok := triageEvent(event); ok {
+		recordAbnormalEvent(kind, event)
 	}
 }
 
 // CleanEvent cleans event from prometheus metrics
 func CleanEvent(event *v1.Event) {
-	if kind, _, clean, ok := triageEvent(event); ok {
-		clean(kind, event)
+	if kind, ok := triageEvent(event); ok {
+		cleanAbnormalEvent(kind, event)
 	}
 }
