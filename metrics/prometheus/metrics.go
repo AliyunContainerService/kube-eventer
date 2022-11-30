@@ -188,9 +188,10 @@ func triageEvent(event *v1.Event) (AbnormalEventKind, bool) {
 
 // RecordEvent records event to prometheus metrics
 func RecordEvent(event *v1.Event) {
-	eventCounterInc(event.Reason, event.Namespace)
 	if kind, ok := triageEvent(event); ok {
 		recordAbnormalEvent(kind, event)
+	} else {
+		eventCounterInc(event.Reason, event.Namespace)
 	}
 }
 
