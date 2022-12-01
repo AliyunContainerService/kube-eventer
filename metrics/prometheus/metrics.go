@@ -5,67 +5,70 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type AbnormalEventKind string
+type AbnormalEventReason string
 
 var (
 	// Namespace Lavel Event
-	PodEvict              AbnormalEventKind = "pod_evict"
-	PodImagePullBackOff   AbnormalEventKind = "pod_image_pull_back_off"
-	PodOOM                AbnormalEventKind = "pod_oom"
-	ResourceInsufficient  AbnormalEventKind = "resource_insufficient"
-	PodFailStart          AbnormalEventKind = "pod_fail_start"
-	PodCrash              AbnormalEventKind = "pod_crash"
-	PodFailScheduling     AbnormalEventKind = "pod_fail_scheduling"
-	DiskProvisionFailSize AbnormalEventKind = "disk_provision_fail_size"
-	DiskProvisionFail     AbnormalEventKind = "disk_provision_fail"
-	VolumeFailMount       AbnormalEventKind = "volume_fail_mount"
+	PodEvict                         AbnormalEventReason = "PodEvict"
+	PodImagePullBackOff              AbnormalEventReason = "PodImagePullBackOff"
+	PodOOM                           AbnormalEventReason = "PodOOM"
+	ResourceInsufficient             AbnormalEventReason = "ResourceInsufficient"
+	PodFailStart                     AbnormalEventReason = "PodFailStart"
+	PodCrash                         AbnormalEventReason = "PodCrash"
+	PodFailScheduling                AbnormalEventReason = "PodFailScheduling"
+	DiskProvisionFailSize            AbnormalEventReason = "DiskProvisionFailSize"
+	DiskProvisionFail                AbnormalEventReason = "DiskProvisionFail"
+	VolumeFailMount                  AbnormalEventReason = "VolumeFailMount"
+	ExceedQuota                      AbnormalEventReason = "ExceedQuota"
+	FailCreateContainerDiskNotEnough AbnormalEventReason = "FailCreateContainerDiskNotEnough"
 
 	// Node Level Event
-	NodeOOM           AbnormalEventKind = "node_oom"
-	NodeRebooted      AbnormalEventKind = "node_rebooted"
-	NodeDiskPressure  AbnormalEventKind = "node_disk_pressure"
-	NodeDockerHung    AbnormalEventKind = "node_docker_hung"
-	NodePSHung        AbnormalEventKind = "node_ps_hung"
-	NodeGPUXIPError   AbnormalEventKind = "node_gpu_xip_error"
-	NodeFDPressure    AbnormalEventKind = "node_fd_pressure"
-	NodePLEGUnhealthy AbnormalEventKind = "node_pleg_unhealthy"
-	NodeNPTDown       AbnormalEventKind = "node_npt_down"
-	NodeNotReady      AbnormalEventKind = "node_not_ready"
-	ConnTrackFull     AbnormalEventKind = "conntrack_full"
+	NodeOOM           AbnormalEventReason = "NodeOOM"
+	NodeRebooted      AbnormalEventReason = "NodeRebooted"
+	NodeDiskPressure  AbnormalEventReason = "NodeDiskPressure"
+	NodeDockerHung    AbnormalEventReason = "NodeDockerHung"
+	NodePSHung        AbnormalEventReason = "NodePSHung"
+	NodeGPUXIPError   AbnormalEventReason = "NodeGPUXIPError"
+	NodeFDPressure    AbnormalEventReason = "NodeFDPressure"
+	NodePLEGUnhealthy AbnormalEventReason = "NodePLEGUnhealthy"
+	NodeNPTDown       AbnormalEventReason = "NodeNPTDown"
+	NodeNotReady      AbnormalEventReason = "NodeNotReady"
+	ConnTrackFull     AbnormalEventReason = "ConnTrackFull"
 
 	// Core Component Event
-	CcmSLBSyncFail          AbnormalEventKind = "ccm_slb_sync_fail"
-	CcmSLBUnavailable       AbnormalEventKind = "ccm_slb_unavailable"
-	CcmSLBDeleteFail        AbnormalEventKind = "ccm_slb_delete_fail"
-	CcmCreateRouteFail      AbnormalEventKind = "ccm_create_route_fail"
-	CcmSyncRouteFail        AbnormalEventKind = "ccm_sync_route_fail"
-	CcmAddNodeFail          AbnormalEventKind = "ccm_add_node_fail"
-	CcmDeleteNodeFail       AbnormalEventKind = "ccm_delete_node_fail"
-	CcmSLBAnnotationChanged AbnormalEventKind = "ccm_slb_annotation_changed"
-	CcmSLBSpecChanged       AbnormalEventKind = "ccm_slb_spec_changed"
-	CSISlowIO               AbnormalEventKind = "csi_slow_io"
-	CSIDeviceBusy           AbnormalEventKind = "csi_device_busy"
-	CSIIOHang               AbnormalEventKind = "csi_io_hang"
-	CNIAllocIPFail          AbnormalEventKind = "cni_alloc_ip_fail"
-	CNIAllocResourceFail    AbnormalEventKind = "cni_alloc_resource_fail"
-	CNIResourceInvalid      AbnormalEventKind = "cni_resource_invalid"
-	CNIParseFail            AbnormalEventKind = "cni_parse_fail"
-	CNIDisposeResourceFail  AbnormalEventKind = "cni_dispose_resource_fail"
-	ClusterIPNotEnough      AbnormalEventKind = "cluster_ip_not_enough"
+	CcmSLBSyncFail          AbnormalEventReason = "CcmSLBSyncFail"
+	CcmSLBUnavailable       AbnormalEventReason = "CcmSLBUnavailable"
+	CcmSLBDeleteFail        AbnormalEventReason = "CcmSLBDeleteFail"
+	CcmCreateRouteFail      AbnormalEventReason = "CcmCreateRouteFail"
+	CcmSyncRouteFail        AbnormalEventReason = "CcmSyncRouteFail"
+	CcmAddNodeFail          AbnormalEventReason = "CcmAddNodeFail"
+	CcmDeleteNodeFail       AbnormalEventReason = "CcmDeleteNodeFail"
+	CcmSLBAnnotationChanged AbnormalEventReason = "CcmSLBAnnotationChanged"
+	CcmSLBSpecChanged       AbnormalEventReason = "CcmSLBSpecChanged"
+	CSISlowIO               AbnormalEventReason = "CSISlowIO"
+	CSIDeviceBusy           AbnormalEventReason = "CSIDeviceBusy"
+	CSIIOHang               AbnormalEventReason = "CSIIOHang"
+	CNIAllocIPFail          AbnormalEventReason = "CNIAllocIPFail"
+	CNIAllocResourceFail    AbnormalEventReason = "CNIAllocResourceFail"
+	CNIResourceInvalid      AbnormalEventReason = "CNIResourceInvalid"
+	CNIParseFail            AbnormalEventReason = "CNIParseFail"
+	CNIDisposeResourceFail  AbnormalEventReason = "CNIDisposeResourceFail"
+	ClusterIPNotEnough      AbnormalEventReason = "ClusterIPNotEnough"
 )
 
 type JudgeEventFunc func(event *v1.Event) bool
 
 type JudgeEvent struct {
-	kind  AbnormalEventKind
+	kind  AbnormalEventReason
 	judge JudgeEventFunc
 }
 
 var (
-	normalEventCounter   *prometheus.CounterVec
-	abnormalEventCounter *prometheus.CounterVec
+	normalEventCounter  *prometheus.CounterVec
+	errorEventCounter   *prometheus.CounterVec
+	warningEventCounter *prometheus.CounterVec
 
-	reasonToEventKind = map[string]AbnormalEventKind{
+	reasonToEventKind = map[string]AbnormalEventReason{
 		// Namespace level
 		"Evicted":            PodEvict,
 		"OOMKilling":         PodOOM,
@@ -112,7 +115,11 @@ var (
 			{kind: PodFailStart, judge: isPodFailStart},
 			{kind: PodImagePullBackOff, judge: isPodImagePullBackOff},
 		},
-		"BackOff":          {{kind: PodCrash, judge: isPodCrash}},
+		"BackOff":      {{kind: PodCrash, judge: isPodCrash}},
+		"FailedCreate": {{kind: ExceedQuota, judge: isExceedQuota}},
+		"FailedCreatePodSandBox": {
+			{kind: FailCreateContainerDiskNotEnough, judge: isFailCreateContainerDiskNotEnough},
+		},
 		"FailedScheduling": {{kind: ResourceInsufficient, judge: isResourceInsufficient}},
 		"ProvisioningFailed": {
 			{kind: DiskProvisionFailSize, judge: isDiskProvisionFailSize},
@@ -134,7 +141,7 @@ func init() {
 			Subsystem: "events",
 			Name:      "normal_total",
 		},
-		[]string{"reason", "namespace"},
+		[]string{"reason", "namespace", "kind"},
 	)
 	errorEventLabels := []string{
 		"event_kind",
@@ -142,16 +149,23 @@ func init() {
 		"name",
 		"namespace",
 	}
-	abnormalEventCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
+	errorEventCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "eventer",
+		Subsystem: "events",
+		Name:      "error_total",
+	}, errorEventLabels)
+	warningEventCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "eventer",
 		Subsystem: "events",
 		Name:      "warning_total",
 	}, errorEventLabels)
+
 	prometheus.MustRegister(normalEventCounter)
-	prometheus.MustRegister(abnormalEventCounter)
+	prometheus.MustRegister(warningEventCounter)
+	prometheus.MustRegister(errorEventCounter)
 }
 
-func event2Labels(kind AbnormalEventKind, event *v1.Event) []string {
+func event2Labels(kind AbnormalEventReason, event *v1.Event) []string {
 	return []string{
 		string(kind),
 		event.InvolvedObject.Kind,
@@ -160,21 +174,31 @@ func event2Labels(kind AbnormalEventKind, event *v1.Event) []string {
 	}
 }
 
-func eventCounterInc(reason, namespace string) {
-	normalEventCounter.WithLabelValues(reason, namespace).Inc()
+func eventCounterInc(reason, namespace, kind string) {
+	normalEventCounter.WithLabelValues(reason, namespace, kind).Inc()
 }
 
-func cleanAbnormalEvent(kind AbnormalEventKind, event *v1.Event) {
-	labels := event2Labels(kind, event)
-	abnormalEventCounter.DeleteLabelValues(labels...)
+func cleanErrorEvent(reason AbnormalEventReason, event *v1.Event) {
+	labels := event2Labels(reason, event)
+	errorEventCounter.DeleteLabelValues(labels...)
 }
 
-func recordAbnormalEvent(kind AbnormalEventKind, event *v1.Event) {
-	labels := event2Labels(kind, event)
-	abnormalEventCounter.WithLabelValues(labels...).Inc()
+func recordErrorEvent(reason AbnormalEventReason, event *v1.Event) {
+	labels := event2Labels(reason, event)
+	errorEventCounter.WithLabelValues(labels...).Inc()
 }
 
-func triageEvent(event *v1.Event) (AbnormalEventKind, bool) {
+func recordWarningEvent(reason AbnormalEventReason, event *v1.Event) {
+	labels := event2Labels(reason, event)
+	warningEventCounter.WithLabelValues(labels...).Inc()
+}
+
+func cleanWarningEvent(reason AbnormalEventReason, event *v1.Event) {
+	labels := event2Labels(reason, event)
+	warningEventCounter.DeleteLabelValues(labels...)
+}
+
+func triageEvent(event *v1.Event) (AbnormalEventReason, bool) {
 	if kind, ok := reasonToEventKind[event.Reason]; ok {
 		return kind, true
 	}
@@ -191,15 +215,22 @@ func triageEvent(event *v1.Event) (AbnormalEventKind, bool) {
 // RecordEvent records event to prometheus metrics
 func RecordEvent(event *v1.Event) {
 	if kind, ok := triageEvent(event); ok {
-		recordAbnormalEvent(kind, event)
+		recordErrorEvent(kind, event)
 	} else {
-		eventCounterInc(event.Reason, event.Namespace)
+		if event.Type == v1.EventTypeWarning {
+			recordWarningEvent(AbnormalEventReason(event.Reason), event)
+		} else {
+			eventCounterInc(event.Reason, event.Namespace, event.InvolvedObject.Kind)
+		}
 	}
 }
 
 // CleanEvent cleans event from prometheus metrics
 func CleanEvent(event *v1.Event) {
 	if kind, ok := triageEvent(event); ok {
-		cleanAbnormalEvent(kind, event)
+		cleanErrorEvent(kind, event)
+	} else if event.Type == v1.EventTypeWarning {
+		cleanWarningEvent(AbnormalEventReason(event.Reason), event)
 	}
+
 }

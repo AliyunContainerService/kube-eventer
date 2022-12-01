@@ -9,6 +9,14 @@ func isPodImagePullBackOff(event *v1.Event) bool {
 	return event.Reason == "Failed" && strings.Contains(event.Message, "ImagePullBackOff")
 }
 
+func isExceedQuota(event *v1.Event) bool {
+	return event.Reason == "FailedCreate" && strings.Contains(event.Message, "exceeded quota")
+}
+
+func isFailCreateContainerDiskNotEnough(event *v1.Event) bool {
+	return event.Reason == "FailedCreatePodSandBox" && strings.Contains(event.Message, "no space left on device")
+}
+
 func isResourceInsufficient(event *v1.Event) bool {
 	return event.Reason == "FailedScheduling" && strings.Contains(event.Message, "Insufficient")
 }
