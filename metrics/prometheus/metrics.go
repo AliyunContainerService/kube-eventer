@@ -108,8 +108,10 @@ var (
 	}
 
 	reasonToEventKindFunc = map[string][]JudgeEvent{
-		"ImagePullBackOff": {{kind: PodImagePullBackOff, judge: isPodImagePullBackOff}},
-		"Failed":           {{kind: PodFailStart, judge: isPodFailStart}},
+		"Failed": {
+			{kind: PodFailStart, judge: isPodFailStart},
+			{kind: PodImagePullBackOff, judge: isPodImagePullBackOff},
+		},
 		"BackOff":          {{kind: PodCrash, judge: isPodCrash}},
 		"FailedScheduling": {{kind: ResourceInsufficient, judge: isResourceInsufficient}},
 		"ProvisioningFailed": {
