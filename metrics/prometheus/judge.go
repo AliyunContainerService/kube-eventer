@@ -9,7 +9,7 @@ func isPodImagePullBackOff(event *v1.Event) bool {
 	return event.Reason == "Failed" && strings.Contains(event.Message, "ImagePullBackOff")
 }
 
-func isExceedQuota(event *v1.Event) bool {
+func isFailCreatePodExceedQuota(event *v1.Event) bool {
 	return event.Reason == "FailedCreate" && strings.Contains(event.Message, "exceeded quota")
 }
 

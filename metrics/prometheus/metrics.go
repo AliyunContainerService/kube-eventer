@@ -19,7 +19,7 @@ var (
 	DiskProvisionFailSize            AbnormalEventReason = "DiskProvisionFailSize"
 	DiskProvisionFail                AbnormalEventReason = "DiskProvisionFail"
 	VolumeFailMount                  AbnormalEventReason = "VolumeFailMount"
-	ExceedQuota                      AbnormalEventReason = "ExceedQuota"
+	FailCreatePodExceedQuota         AbnormalEventReason = "FailCreatePodExceedQuota"
 	FailCreateContainerDiskNotEnough AbnormalEventReason = "FailCreateContainerDiskNotEnough"
 
 	// Node Level Event
@@ -116,7 +116,7 @@ var (
 			{kind: PodImagePullBackOff, judge: isPodImagePullBackOff},
 		},
 		"BackOff":      {{kind: PodCrash, judge: isPodCrash}},
-		"FailedCreate": {{kind: ExceedQuota, judge: isExceedQuota}},
+		"FailedCreate": {{kind: FailCreatePodExceedQuota, judge: isFailCreatePodExceedQuota}},
 		"FailedCreatePodSandBox": {
 			{kind: FailCreateContainerDiskNotEnough, judge: isFailCreateContainerDiskNotEnough},
 		},
@@ -144,7 +144,7 @@ func init() {
 		[]string{"reason", "namespace", "kind"},
 	)
 	errorEventLabels := []string{
-		"event_kind",
+		"reason",
 		"kind",
 		"name",
 		"namespace",
