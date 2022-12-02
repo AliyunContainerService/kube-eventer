@@ -6,7 +6,13 @@ import (
 )
 
 func isPodImagePullBackOff(event *v1.Event) bool {
-	return event.Reason == "Failed" && strings.Contains(event.Message, "ImagePullBackOff")
+	if event.Reason == "Failed" {
+		return strings.Contains(event.Message, "ImagePullBackOff") || strings.Contains(event.Message, "ErrImagePull")
+	}
+	if event.Reason == "BackOff" {
+		return strings.Contains(event.Message, "Back-off pulling image")
+	}
+	return false
 }
 
 func isFailCreatePodExceedQuota(event *v1.Event) bool {
