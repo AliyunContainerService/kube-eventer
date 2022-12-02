@@ -113,9 +113,11 @@ var (
 	reasonToEventKindFunc = map[string][]JudgeEvent{
 		"Failed": {
 			{kind: PodFailStart, judge: isPodFailStart},
+		},
+		"BackOff": {
+			{kind: PodCrash, judge: isPodCrash},
 			{kind: PodImagePullBackOff, judge: isPodImagePullBackOff},
 		},
-		"BackOff":      {{kind: PodCrash, judge: isPodCrash}},
 		"FailedCreate": {{kind: FailCreatePodExceedQuota, judge: isFailCreatePodExceedQuota}},
 		"FailedCreatePodSandBox": {
 			{kind: FailCreateContainerDiskNotEnough, judge: isFailCreateContainerDiskNotEnough},
