@@ -18,6 +18,7 @@ var (
 	PodFailScheduling                AbnormalEventReason = "PodFailScheduling"
 	DiskProvisionFailSize            AbnormalEventReason = "DiskProvisionFailSize"
 	DiskProvisionFail                AbnormalEventReason = "DiskProvisionFail"
+	FailedBinding                    AbnormalEventReason = "FailedBinding"
 	VolumeFailMount                  AbnormalEventReason = "VolumeFailMount"
 	FailCreatePodExceedQuota         AbnormalEventReason = "FailCreatePodExceedQuota"
 	FailCreateContainerDiskNotEnough AbnormalEventReason = "FailCreateContainerDiskNotEnough"
@@ -75,6 +76,7 @@ var (
 		"PodOOMKilling":      PodOOM,
 		"FailedMount":        VolumeFailMount,
 		"FailedAttachVolume": VolumeFailMount,
+		"FailedBinding":      FailedBinding,
 		"FailedScheduling":   PodFailScheduling,
 
 		// Node level
