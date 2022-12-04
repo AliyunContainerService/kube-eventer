@@ -49,6 +49,10 @@ func isDiskProvisionFail(event *v1.Event) bool {
 		!strings.Contains(event.Message, "disk size is not supported")
 }
 
+func isFailedBindingNoStorageClass(event *v1.Event) bool {
+	return event.Reason == "FailedBinding" && strings.Contains(event.Message, "no storage class is set")
+}
+
 func isNodePLEGUnhealthy(event *v1.Event) bool {
 	return event.Reason == "NodeNotReady" && event.InvolvedObject.Kind == "Node" && strings.Contains(event.Message, "PLEG is not healthy")
 }

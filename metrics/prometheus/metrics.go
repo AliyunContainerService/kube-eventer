@@ -18,7 +18,7 @@ var (
 	PodFailScheduling                AbnormalEventReason = "PodFailScheduling"
 	DiskProvisionFailSize            AbnormalEventReason = "DiskProvisionFailSize"
 	DiskProvisionFail                AbnormalEventReason = "DiskProvisionFail"
-	FailedBinding                    AbnormalEventReason = "FailedBinding"
+	FailedBindingNoStorageClass      AbnormalEventReason = "FailedBindingNoStorageClass"
 	VolumeFailMount                  AbnormalEventReason = "VolumeFailMount"
 	FailCreatePodExceedQuota         AbnormalEventReason = "FailCreatePodExceedQuota"
 	FailCreateContainerDiskNotEnough AbnormalEventReason = "FailCreateContainerDiskNotEnough"
@@ -76,7 +76,6 @@ var (
 		"PodOOMKilling":      PodOOM,
 		"FailedMount":        VolumeFailMount,
 		"FailedAttachVolume": VolumeFailMount,
-		"FailedBinding":      FailedBinding,
 		"FailedScheduling":   PodFailScheduling,
 
 		// Node level
@@ -129,6 +128,9 @@ var (
 		"ProvisioningFailed": {
 			{kind: DiskProvisionFailSize, judge: isDiskProvisionFailSize},
 			{kind: DiskProvisionFail, judge: isDiskProvisionFail},
+		},
+		"FailedBinding": {
+			{kind: FailedBindingNoStorageClass, judge: isFailedBindingNoStorageClass},
 		},
 		"NodeNotReady": {
 			{kind: NodePLEGUnhealthy, judge: isNodePLEGUnhealthy},
