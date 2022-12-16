@@ -76,7 +76,6 @@ var (
 		"PodOOMKilling":      PodOOM,
 		"FailedMount":        VolumeFailMount,
 		"FailedAttachVolume": VolumeFailMount,
-		"FailedScheduling":   PodFailScheduling,
 
 		// Node level
 		"SystemOOM":             NodeOOM,
@@ -105,8 +104,6 @@ var (
 		"DeviceBusy":               CSIDeviceBusy,
 		"IOHang":                   CSIIOHang,
 		"AllocIPFailed":            CNIAllocIPFail,
-		"AllocResourceFailed":      CNIAllocResourceFail,
-		"ResourceInvalid":          CNIResourceInvalid,
 		"ParseFailed":              CNIParseFail,
 		"DisposeResourceFailed":    CNIDisposeResourceFail,
 	}
@@ -124,7 +121,10 @@ var (
 		"FailedCreatePodSandBox": {
 			{kind: FailCreateContainerDiskNotEnough, judge: isFailCreateContainerDiskNotEnough},
 		},
-		"FailedScheduling": {{kind: ResourceInsufficient, judge: isResourceInsufficient}},
+		"FailedScheduling": {
+			{kind: ResourceInsufficient, judge: isResourceInsufficient},
+			{kind: PodFailScheduling, judge: always},
+		},
 		"ProvisioningFailed": {
 			{kind: DiskProvisionFailSize, judge: isDiskProvisionFailSize},
 			{kind: DiskProvisionFail, judge: isDiskProvisionFail},
@@ -136,8 +136,14 @@ var (
 			{kind: NodePLEGUnhealthy, judge: isNodePLEGUnhealthy},
 			{kind: NodeNotReady, judge: isNodeNotReady},
 		},
-		"AllocResourceFailed": {{kind: ClusterIPNotEnough, judge: isClusterIPNotEnough}},
-		"ResourceInvalid":     {{kind: ClusterIPNotEnough, judge: isClusterIPNotEnough}},
+		"AllocResourceFailed": {
+			{kind: ClusterIPNotEnough, judge: isClusterIPNotEnough},
+			{kind: CNIAllocResourceFail, judge: always},
+		},
+		"ResourceInvalid": {
+			{kind: ClusterIPNotEnough, judge: isClusterIPNotEnough},
+			{kind: CNIResourceInvalid, judge: always},
+		},
 	}
 )
 

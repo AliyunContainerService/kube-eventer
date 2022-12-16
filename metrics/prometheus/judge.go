@@ -5,6 +5,11 @@ import (
 	"strings"
 )
 
+// always can be used when no finer-grained reason is reached. It should be the last one when used.
+func always(event *v1.Event) bool {
+	return true
+}
+
 func isPodImagePullBackOff(event *v1.Event) bool {
 	if event.Reason == "Failed" {
 		return strings.Contains(event.Message, "ImagePullBackOff") || strings.Contains(event.Message, "ErrImagePull")
