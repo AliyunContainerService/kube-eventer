@@ -248,26 +248,22 @@ func newClient(c *Config) (*sls.Client, error) {
 		}
 	}
 
-	akInfo, err := utils.ParseAKInfoFromConfigPath()
-	if err != nil {
-		akInfo = &utils.AKInfo{}
-		if c.accessKeyId != "" && c.accessKeySecret != "" {
-			akInfo.AccessKeyId = c.accessKeyId
-			akInfo.AccessKeySecret = c.accessKeySecret
-			client := sls.NewClient(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret)
-			return client, nil
-		} else {
-			akInfoInMeta, err := utils.ParseAKInfoFromMeta()
-			if err != nil {
-				klog.Errorf("failed to get RamRoleToken,because of %v", err)
-				return nil, err
-			}
-			akInfo = akInfoInMeta
-			client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
-			return client, nil
-		}
+	// 1. first get ak/sk from env
+	if c.accessKeyId != "" && c.accessKeySecret != "" {
+		akInfo := utils.AKInfo{}
+		akInfo.AccessKeyId = c.accessKeyId
+		akInfo.AccessKeySecret = c.accessKeySecret
+		client := sls.NewClient(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret)
+		return client, nil
 	}
 
-	client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
-	return client, nil
+	// 2. aliyun akInfo fetch
+	akInfo := utils.GetAkInfo(utils.SLSConfigPath)
+	if akInfo != nil {
+		client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
+		return client, nil
+	}
+
+	klog.Errorf("get sls akInfo error.")
+	return nil, errors.New("get sls akInfo error")
 }
