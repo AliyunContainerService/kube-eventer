@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	webhookSink = "https://oapi.dingtalk.com/robot/send?access_token=token&level=Warning&namespaces=kube-system&kinds=Pod&header=contentType=demo&header=content2=3"
+	webhookSink            = "https://oapi.dingtalk.com/robot/send?access_token=token&level=Warning&namespaces=kube-system&kinds=Pod&header=contentType=demo&header=content2=3"
+	webhookSinkReasonRegex = "https://oapi.dingtalk.com/robot/send?access_token=token&level=Warning&namespaces=kube-system&reason=[^Failed*]&kinds=Pod&header=contentType=demo&header=content2=3"
 )
 
 var (
@@ -27,6 +28,19 @@ var (
 		Message: "DEMO",
 	}
 )
+
+func TestNewWebhookSinkReasonRegex(t *testing.T) {
+	uri, err := url.Parse(webhookSinkReasonRegex)
+	if err != nil {
+		t.Fatalf("Failed to prase webhookSinkValid,err: %v", err)
+	}
+	w, err := NewWebHookSink(uri)
+	if err != nil {
+		t.Fatalf("Failed to create NewWebhookSink,err: %v", err)
+	}
+
+	assert.True(t, w.MockSend(newEvent), "newEvent should be matched.")
+}
 
 func TestNewWebhookSink(t *testing.T) {
 	uri, err := url.Parse(webhookSink)
