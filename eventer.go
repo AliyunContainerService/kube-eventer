@@ -56,7 +56,7 @@ func main() {
 	flag.Var(&argSources, "source", "source(s) to read events from")
 	flag.Var(&argSinks, "sink", "external sink(s) that receive events")
 	flag.BoolVar(&argVersion, "version", false, "print version info and exit")
-	flag.BoolVar(&argEventMetrics, "eventMetrics", true, "whether to collect and export event metrics")
+	flag.BoolVar(&argEventMetrics, "event-metrics", true, "whether to collect and export event metrics")
 	flag.Parse()
 
 	if argVersion {
