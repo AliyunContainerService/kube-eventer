@@ -147,7 +147,7 @@ var (
 	}
 )
 
-func init() {
+func InitMetrics() {
 	normalEventCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "eventer",
