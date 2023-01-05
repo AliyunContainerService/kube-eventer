@@ -168,9 +168,6 @@ func (this *KubernetesEventSource) watch() {
 							klog.Errorf("Event buffer full, dropping event")
 						}
 					case kubewatch.Deleted:
-						if this.exportMetric {
-							metrics.CleanEvent(event)
-						}
 					default:
 						klog.Warningf("Unknown watchUpdate.Type: %#v", watchUpdate.Type)
 					}
