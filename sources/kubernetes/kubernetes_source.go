@@ -75,6 +75,8 @@ type KubernetesEventSource struct {
 	stopChannel chan struct{}
 
 	eventClient kubev1core.EventInterface
+
+	exportMetric bool
 }
 
 func (this *KubernetesEventSource) GetNewEvents() *core.EventBatch {
@@ -155,7 +157,9 @@ func (this *KubernetesEventSource) watch() {
 
 					switch watchUpdate.Type {
 					case kubewatch.Added, kubewatch.Modified:
-						metrics.RecordEvent(event)
+						if this.exportMetric {
+							metrics.RecordEvent(event)
+						}
 						select {
 						case this.localEventsBuffer <- event:
 							// Ok, buffer not full.
@@ -164,7 +168,6 @@ func (this *KubernetesEventSource) watch() {
 							klog.Errorf("Event buffer full, dropping event")
 						}
 					case kubewatch.Deleted:
-						metrics.CleanEvent(event)
 					default:
 						klog.Warningf("Unknown watchUpdate.Type: %#v", watchUpdate.Type)
 					}
@@ -181,7 +184,7 @@ func (this *KubernetesEventSource) watch() {
 	}
 }
 
-func NewKubernetesSource(uri *url.URL) (*KubernetesEventSource, error) {
+func NewKubernetesSource(uri *url.URL, exportMetric bool) (*KubernetesEventSource, error) {
 	kubeClient, err := kubernetes.GetKubernetesClient(uri)
 	if err != nil {
 		klog.Errorf("Failed to create kubernetes client,because of %v", err)
@@ -192,6 +195,10 @@ func NewKubernetesSource(uri *url.URL) (*KubernetesEventSource, error) {
 		localEventsBuffer: make(chan *kubeapi.Event, LocalEventsBufferSize),
 		stopChannel:       make(chan struct{}),
 		eventClient:       eventClient,
+		exportMetric:      exportMetric,
+	}
+	if exportMetric {
+		metrics.InitMetrics()
 	}
 	go result.watch()
 	return &result, nil

@@ -6,7 +6,7 @@ import (
 )
 
 // always can be used when no finer-grained reason is reached. It should be the last one when used.
-func always(event *v1.Event) bool {
+func always(_ *v1.Event) bool {
 	return true
 }
 

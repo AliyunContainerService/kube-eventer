@@ -147,7 +147,7 @@ var (
 	}
 )
 
-func init() {
+func InitMetrics() {
 	normalEventCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "eventer",
@@ -191,11 +191,6 @@ func eventCounterInc(reason, namespace, kind string) {
 	normalEventCounter.WithLabelValues(reason, namespace, kind).Inc()
 }
 
-func cleanErrorEvent(reason AbnormalEventReason, event *v1.Event) {
-	labels := event2Labels(reason, event)
-	errorEventCounter.DeleteLabelValues(labels...)
-}
-
 func recordErrorEvent(reason AbnormalEventReason, event *v1.Event) {
 	labels := event2Labels(reason, event)
 	errorEventCounter.WithLabelValues(labels...).Inc()
@@ -204,11 +199,6 @@ func recordErrorEvent(reason AbnormalEventReason, event *v1.Event) {
 func recordWarningEvent(reason AbnormalEventReason, event *v1.Event) {
 	labels := event2Labels(reason, event)
 	warningEventCounter.WithLabelValues(labels...).Inc()
-}
-
-func cleanWarningEvent(reason AbnormalEventReason, event *v1.Event) {
-	labels := event2Labels(reason, event)
-	warningEventCounter.DeleteLabelValues(labels...)
 }
 
 func triageEvent(event *v1.Event) (AbnormalEventReason, bool) {
@@ -236,14 +226,4 @@ func RecordEvent(event *v1.Event) {
 			eventCounterInc(event.Reason, event.Namespace, event.InvolvedObject.Kind)
 		}
 	}
-}
-
-// CleanEvent cleans event from prometheus metrics
-func CleanEvent(event *v1.Event) {
-	if kind, ok := triageEvent(event); ok {
-		cleanErrorEvent(kind, event)
-	} else if event.Type == v1.EventTypeWarning {
-		cleanWarningEvent(AbnormalEventReason(event.Reason), event)
-	}
-
 }

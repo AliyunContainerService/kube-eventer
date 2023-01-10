@@ -37,13 +37,14 @@ import (
 )
 
 var (
-	argFrequency   = flag.Duration("frequency", 30*time.Second, "The resolution at which Eventer pushes events to sinks")
-	argMaxProcs    = flag.Int("max_procs", 0, "max number of CPUs that can be used simultaneously. Less than 1 for default (number of cores)")
-	argSources     flags.Uris
-	argSinks       flags.Uris
-	argVersion     bool
-	argHealthzIP   = flag.String("healthz-ip", "0.0.0.0", "ip eventer health check service uses")
-	argHealthzPort = flag.Uint("healthz-port", 8084, "port eventer health check listens on")
+	argFrequency    = flag.Duration("frequency", 30*time.Second, "The resolution at which Eventer pushes events to sinks")
+	argMaxProcs     = flag.Int("max_procs", 0, "max number of CPUs that can be used simultaneously. Less than 1 for default (number of cores)")
+	argSources      flags.Uris
+	argSinks        flags.Uris
+	argVersion      bool
+	argEventMetrics bool
+	argHealthzIP    = flag.String("healthz-ip", "0.0.0.0", "ip eventer health check service uses")
+	argHealthzPort  = flag.Uint("healthz-port", 8084, "port eventer health check listens on")
 )
 
 func main() {
@@ -55,6 +56,7 @@ func main() {
 	flag.Var(&argSources, "source", "source(s) to read events from")
 	flag.Var(&argSinks, "sink", "external sink(s) that receive events")
 	flag.BoolVar(&argVersion, "version", false, "print version info and exit")
+	flag.BoolVar(&argEventMetrics, "event-metrics", true, "whether to collect and export event metrics")
 	flag.Parse()
 
 	if argVersion {
@@ -75,7 +77,7 @@ func main() {
 		klog.Fatal("Wrong number of sources specified")
 	}
 	sourceFactory := sources.NewSourceFactory()
-	sources, err := sourceFactory.BuildAll(argSources)
+	sources, err := sourceFactory.BuildAll(argSources, argEventMetrics)
 	if err != nil {
 		klog.Fatalf("Failed to create sources: %v", err)
 	}
