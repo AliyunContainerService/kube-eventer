@@ -9,19 +9,18 @@ type AbnormalEventReason string
 
 var (
 	// Namespace Lavel Event
-	PodEvict                         AbnormalEventReason = "PodEvict"
-	PodImagePullBackOff              AbnormalEventReason = "PodImagePullBackOff"
-	PodOOM                           AbnormalEventReason = "PodOOM"
-	ResourceInsufficient             AbnormalEventReason = "ResourceInsufficient"
-	PodFailStart                     AbnormalEventReason = "PodFailStart"
-	PodCrash                         AbnormalEventReason = "PodCrash"
-	PodFailScheduling                AbnormalEventReason = "PodFailScheduling"
-	DiskProvisionFailSize            AbnormalEventReason = "DiskProvisionFailSize"
-	DiskProvisionFail                AbnormalEventReason = "DiskProvisionFail"
-	FailedBindingNoStorageClass      AbnormalEventReason = "FailedBindingNoStorageClass"
-	VolumeFailMount                  AbnormalEventReason = "VolumeFailMount"
-	FailCreatePodExceedQuota         AbnormalEventReason = "FailCreatePodExceedQuota"
-	FailCreateContainerDiskNotEnough AbnormalEventReason = "FailCreateContainerDiskNotEnough"
+	PodEvict                    AbnormalEventReason = "PodEvict"
+	PodImagePullBackOff         AbnormalEventReason = "PodImagePullBackOff"
+	PodOOM                      AbnormalEventReason = "PodOOM"
+	ResourceInsufficient        AbnormalEventReason = "ResourceInsufficient"
+	PodFailStart                AbnormalEventReason = "PodFailStart"
+	PodCrash                    AbnormalEventReason = "PodCrash"
+	PodFailScheduling           AbnormalEventReason = "PodFailScheduling"
+	DiskProvisionFailSize       AbnormalEventReason = "DiskProvisionFailSize"
+	DiskProvisionFail           AbnormalEventReason = "DiskProvisionFail"
+	FailedBindingNoStorageClass AbnormalEventReason = "FailedBindingNoStorageClass"
+	VolumeFailMount             AbnormalEventReason = "VolumeFailMount"
+	FailCreatePodExceedQuota    AbnormalEventReason = "FailCreatePodExceedQuota"
 
 	// Node Level Event
 	NodeOOM           AbnormalEventReason = "NodeOOM"
@@ -118,9 +117,6 @@ var (
 			{kind: PodImagePullBackOff, judge: isPodImagePullBackOff},
 		},
 		"FailedCreate": {{kind: FailCreatePodExceedQuota, judge: isFailCreatePodExceedQuota}},
-		"FailedCreatePodSandBox": {
-			{kind: FailCreateContainerDiskNotEnough, judge: isFailCreateContainerDiskNotEnough},
-		},
 		"FailedScheduling": {
 			{kind: ResourceInsufficient, judge: isResourceInsufficient},
 			{kind: PodFailScheduling, judge: always},
