@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go v1.34.28
 	github.com/denverdino/aliyungo v0.0.0-20190410085603-611ead8a6fed
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/golang/protobuf v1.3.2
+	github.com/golang/protobuf v1.4.3
 	github.com/google/cadvisor v0.33.1
 	github.com/google/uuid v1.1.1
 	github.com/imdario/mergo v0.3.7 // indirect
@@ -18,7 +18,7 @@ require (
 	github.com/olivere/elastic v6.2.23+incompatible // indirect
 	github.com/olivere/elastic/v7 v7.0.6
 	github.com/pborman/uuid v1.2.0
-	github.com/prometheus/client_golang v1.0.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/riemann/riemann-go-client v0.4.0
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9
 	github.com/smartystreets/gunit v1.0.0 // indirect
