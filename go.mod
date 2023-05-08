@@ -7,6 +7,7 @@ require (
 	github.com/alibabacloud-go/eventbridge-sdk v1.2.6
 	github.com/alibabacloud-go/tea-utils v1.3.7
 	github.com/aws/aws-sdk-go v1.34.28
+	github.com/chyroc/lark v0.0.110
 	github.com/denverdino/aliyungo v0.0.0-20190410085603-611ead8a6fed
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/protobuf v1.3.2
@@ -22,7 +23,7 @@ require (
 	github.com/riemann/riemann-go-client v0.4.0
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9
 	github.com/smartystreets/gunit v1.0.0 // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.8.2
 	go.mongodb.org/mongo-driver v1.5.1
 	golang.org/x/sys v0.2.0 // indirect
 	gopkg.in/olivere/elastic.v3 v3.0.75
