@@ -21,6 +21,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/sinks/dingtalk"
 	"github.com/AliyunContainerService/kube-eventer/sinks/elasticsearch"
 	"github.com/AliyunContainerService/kube-eventer/sinks/eventbridge"
+	"github.com/AliyunContainerService/kube-eventer/sinks/feishu"
 	"github.com/AliyunContainerService/kube-eventer/sinks/honeycomb"
 	"github.com/AliyunContainerService/kube-eventer/sinks/influxdb"
 	"github.com/AliyunContainerService/kube-eventer/sinks/kafka"
@@ -65,6 +66,8 @@ func (this *SinkFactory) Build(uri flags.Uri) (core.EventSink, error) {
 		return eventbridge.NewEventBridgeSink(&uri.Val)
 	case "mongo":
 		return mongo.CreateMongoSink(&uri.Val)
+	case "feishu":
+		return feishu.NewFeishuSink(&uri.Val)
 	default:
 		return nil, fmt.Errorf("Sink not recognized: %s", uri.Key)
 	}
