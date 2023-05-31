@@ -41,7 +41,7 @@ spec:
             - >-
               --sink=sls:https://sls.aliyuncs.com?project=<sls_project>&logStore=<sls_logstore>>&topic=<topic_name>
           image: >-
-            registry-vpc.cn-shanghai.aliyuncs.com/acs/kube-eventer-amd64:v1.2.4-0f5aaee-aliyun
+            registry.aliyuncs.com/acs/kube-eventer:v1.2.7-ca03be0-aliyun
           imagePullPolicy: IfNotPresent
           name: eventer
           resources: {}
