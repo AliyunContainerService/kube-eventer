@@ -3,7 +3,6 @@ package dingtalk
 import (
 	"fmt"
 	"strings"
-
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -13,7 +12,6 @@ const (
 	MARKDOWN_LINK_TEMPLATE = "[%s](%s)"
 	MARKDOWN_TEXT_BOLD     = "**%s**"
 	MARKDOWN_NEW_LINE      = "\n\n"
-
 	URL_ALIYUN_K8S_CONSULE = "https://cs.console.aliyun.com/#/k8s"
 	//阿里云 kubernetes 管理控制台, Deployment,StatefulSet,DaemonSet 有同样的URL规律
 	URL_ALIYUN_RESOURCE_DETAIL_TEMPLATE = URL_ALIYUN_K8S_CONSULE + "/%s/detail/%s/%s/%s/%s/pods"
@@ -31,7 +29,7 @@ type MarkdownMsgBuilder struct {
 	OutputText string
 }
 
-func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event) *MarkdownMsgBuilder {
+func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event,msgs ...string) *MarkdownMsgBuilder {
 
 	m := MarkdownMsgBuilder{
 		Region:    region,
@@ -42,6 +40,7 @@ func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event) *MarkdownM
 	kind := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.InvolvedObject.Kind)
 	namespace := fmt.Sprintf(MARKDOWN_LINK_TEMPLATE, event.Namespace, URL_ALIYUN_NAMESPACE_TEMPLATE)
 	name := ""
+
 
 	switch event.InvolvedObject.Kind {
 	case "Deployment":
@@ -81,8 +80,13 @@ func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event) *MarkdownM
 	}
 	reason := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.Reason)
 	timestamp := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.LastTimestamp.String())
-	message := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.Message)
-	m.OutputText = fmt.Sprintf(MARKDOWN_TEMPLATE, level, kind, namespace, name, reason, timestamp, message)
+
+	if len(msgs)==0{
+		message := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.Message)
+		m.OutputText = fmt.Sprintf(MARKDOWN_TEMPLATE, level, kind, namespace, name, reason, timestamp, message)
+	}else{
+		m.OutputText = fmt.Sprintf(MARKDOWN_TEMPLATE, level, kind, namespace, name, reason, timestamp, msgs[0])
+	}
 	return &m
 
 }

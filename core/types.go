@@ -20,6 +20,35 @@ import (
 	kube_api "k8s.io/api/core/v1"
 )
 
+
+
+
+//DistinctSameResourceEvent : Distinct Events base on involvedObject.Name & event.Reason
+func (eventBatch *EventBatch) DistinctSameResourceEvent() {
+	tempMap := make(map[string]bool)
+	var finalEvents []*kube_api.Event
+	for _, event := range eventBatch.Events {
+		involvedObject := event.InvolvedObject
+		if &involvedObject == nil {
+			continue
+		}
+		resourceName := involvedObject.Name
+		reason := event.Reason
+		msg:=event.Message
+		key := resourceName + reason + msg
+		if _, contain := tempMap[key]; !contain {
+			// fmt.Printf("key: %s \n", key)
+			tempMap[key] = true
+			finalEvents = append(finalEvents, event)
+		}
+	}
+
+	if len(finalEvents) > 0 {
+		eventBatch.Events = finalEvents
+	}
+}
+
+
 type EventBatch struct {
 	// When this batch was created.
 	Timestamp time.Time

@@ -20,6 +20,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -54,6 +55,15 @@ var (
 		{"Message"},
 	}
 )
+
+var ArgDDbufferWindows time.Duration
+
+func init() {
+	//dingding buffer windows
+	flag.DurationVar(&ArgDDbufferWindows, "bufferwindows", 0, "if you wanna aggregate the event's message what type is"+
+		" Waring in a given time windows to dingding sink, just set bufferwindows >0 ,but Sugget you set bufferwindows > 300"+
+		"(defult 0s means do not aggregate message) ")
+}
 
 /**
 dingtalk msg struct
@@ -102,13 +112,19 @@ func (d *DingTalkSink) Stop() {
 }
 
 func (d *DingTalkSink) ExportEvents(batch *core.EventBatch) {
-	for _, event := range batch.Events {
-		if d.isEventLevelDangerous(event.Type) {
-			d.Ding(event)
-			// add threshold
-			time.Sleep(time.Millisecond * 50)
+	if ArgDDbufferWindows == 0 {
+		for _, event := range batch.Events {
+			if d.isEventLevelDangerous(event.Type) {
+				d.Ding(event)
+				// add threshold
+				time.Sleep(time.Millisecond * 50)
+			}
 		}
+	} else {
+		klog.V(2).Info("ArgDDbufferWindows value is ", ArgDDbufferWindows, "!=0 , then Trun on dingdingtalk buffer windows.")
+		d.ExportBufferEvents(batch)
 	}
+
 }
 
 func (d *DingTalkSink) isEventLevelDangerous(level string) bool {
