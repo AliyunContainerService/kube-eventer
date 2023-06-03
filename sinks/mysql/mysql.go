@@ -64,7 +64,7 @@ func getEventValue(event *kube_api.Event) (string, error) {
 	return string(bytes), nil
 }
 
-func eventToPoint(event *kube_api.Event) (*mysql_common.MysqlKubeEventPoint, error) {
+func (sink *mysqlSink) EventToPoint(event *kube_api.Event) (*mysql_common.MysqlKubeEventPoint, error) {
 
 	value, err := getEventValue(event)
 	if err != nil {
@@ -73,6 +73,7 @@ func eventToPoint(event *kube_api.Event) (*mysql_common.MysqlKubeEventPoint, err
 	klog.Infof(value)
 
 	point := mysql_common.MysqlKubeEventPoint{
+		Cluster:                  sink.mysqlSvc.Cluster,
 		Name:                     event.InvolvedObject.Name,
 		Namespace:                event.InvolvedObject.Namespace,
 		EventID:                  string(event.UID),
@@ -80,6 +81,7 @@ func eventToPoint(event *kube_api.Event) (*mysql_common.MysqlKubeEventPoint, err
 		Reason:                   event.Reason,
 		Message:                  event.Message,
 		Kind:                     event.InvolvedObject.Kind,
+		Source:                   event.Source.Component,
 		FirstOccurrenceTimestamp: event.FirstTimestamp.Time.String(),
 		LastOccurrenceTimestamp:  event.LastTimestamp.Time.String(),
 	}
@@ -96,7 +98,7 @@ func (sink *mysqlSink) ExportEvents(eventBatch *core.EventBatch) {
 	dataPoints := make([]mysql_common.MysqlKubeEventPoint, 0, 10)
 	for _, event := range eventBatch.Events {
 
-		point, err := eventToPoint(event)
+		point, err := sink.EventToPoint(event)
 		if err != nil {
 			klog.Warningf("Failed to convert event to point: %v", err)
 			klog.Warningf("Skip this event")
