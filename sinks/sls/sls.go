@@ -31,10 +31,11 @@ import (
 )
 
 const (
-	slsSinkName = "SLSSink"
-	eventId     = "eventId"
-	podEvent    = "Pod"
-	eventLevel  = "level"
+	slsSinkName    = "SLSSink"
+	eventId        = "eventId"
+	podEvent       = "Pod"
+	eventLevel     = "level"
+	eventClusterId = "ClusterId"
 )
 
 /*
@@ -56,6 +57,7 @@ type Config struct {
 	internal        bool
 	accessKeyId     string
 	accessKeySecret string
+	clusterId       string
 }
 
 func (s *SLSSink) Name() string {
@@ -138,6 +140,14 @@ func (s *SLSSink) eventToContents(event *v1.Event) []*sls.Log_Content {
 		Key:   &level,
 		Value: &event.Type,
 	})
+
+	clusterId := eventClusterId
+	if s.Config != nil && s.Config.clusterId != "" {
+		contents = append(contents, &sls.Log_Content{
+			Key:   &clusterId,
+			Value: &s.Config.clusterId,
+		})
+	}
 
 	if event.InvolvedObject.Kind == podEvent {
 		podId := string(event.InvolvedObject.UID)
@@ -226,6 +236,13 @@ func parseConfig(uri *url.URL) (*Config, error) {
 			c.internal = internal
 		}
 	}
+
+	if len(opts["clusterId"]) >= 1 {
+		c.clusterId = opts["clusterId"][0]
+	} else {
+		c.clusterId = os.Getenv("ClusterId")
+	}
+
 	return c, nil
 }
 
