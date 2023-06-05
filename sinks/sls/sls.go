@@ -31,10 +31,11 @@ import (
 )
 
 const (
-	slsSinkName = "SLSSink"
-	eventId     = "eventId"
-	podEvent    = "Pod"
-	eventLevel  = "level"
+	slsSinkName         = "SLSSink"
+	eventId             = "eventId"
+	podEvent            = "Pod"
+	eventLevel          = "level"
+	eventExternalLabels = "labels"
 )
 
 /*
@@ -56,6 +57,7 @@ type Config struct {
 	internal        bool
 	accessKeyId     string
 	accessKeySecret string
+	externalLabels  string
 }
 
 func (s *SLSSink) Name() string {
@@ -152,6 +154,16 @@ func (s *SLSSink) eventToContents(event *v1.Event) []*sls.Log_Content {
 		})
 	}
 
+	// external labels
+	labelKey := eventExternalLabels
+	if s.Config != nil && s.Config.externalLabels != "" {
+		klog.V(6).Infof("parse external labels for sls sink. labels: %v", s.Config.externalLabels)
+		contents = append(contents, &sls.Log_Content{
+			Key:   &labelKey,
+			Value: &s.Config.externalLabels,
+		})
+	}
+
 	return contents
 }
 
@@ -226,6 +238,13 @@ func parseConfig(uri *url.URL) (*Config, error) {
 			c.internal = internal
 		}
 	}
+
+	if len(opts["labels"]) >= 1 {
+		c.externalLabels = opts["labels"][0]
+	} else {
+		c.externalLabels = os.Getenv("labels")
+	}
+
 	return c, nil
 }
 
