@@ -10,13 +10,14 @@ The following options are available:
 * `project` - Project of SLS instance. 
 * `logStore` - logStore of SLS instance project. 
 * `topic` - topic for every log sent to SLS. 
+* `labels` - Custom labels on alerting message. (such as clusterId) Suggest define as a json string, and build sls index for this attribute. 
 * `accessKeyId` - optional param. aliyun access key to sink to sls. 
 * `accessKeySecret` - optional param. aliyun access key secret to sink to sls.
 * `internal` - optional param. if true, it will sink to sls through aliyun internal network connection. 
 
 For example:
 
-    --sink=sls:https://sls.aliyuncs.com?project=my_sls_project&logStore=my_sls_project_logStore&topic=k8s-cluster-dev
+    --sink=sls:https://sls.aliyuncs.com?project=my_sls_project&logStore=my_sls_project_logStore&topic=k8s-cluster-dev&labels={"ClusterId":"xxx"}
     
 #### How to config aliyun access key.
 
