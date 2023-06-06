@@ -3,7 +3,7 @@
 *This sink supports sls (Log Service of Alibaba Cloud)*.
 To use the sls sink add the following flag:
 
-	--sink=sls:<SLS_ENDPOINTL>&logStore=[your_logstore]&project=[your_project]&topic=[topic_for_log]&label=<key,value>
+	--sink=sls:<SLS_ENDPOINTL>?logStore=[your_logstore]&project=[your_project]&topic=[topic_for_log]&label=<key,value>
 
 
 The following options are available:
