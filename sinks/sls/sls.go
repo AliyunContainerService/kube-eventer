@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,6 +28,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -38,9 +39,9 @@ const (
 )
 
 /*
-	Usage:
-	--sink=sls:https://sls.aliyuncs.com?logStore=[your_log_store]&project=[your_project_name]
-*/
+ * Usage:
+ * --sink=sls:https://sls.aliyuncs.com?logStore=[your_log_store]&project=[your_project_name]&label=<key,value>
+ */
 type SLSSink struct {
 	Config   *Config
 	Project  string
@@ -56,6 +57,7 @@ type Config struct {
 	internal        bool
 	accessKeyId     string
 	accessKeySecret string
+	label           map[string]string
 }
 
 func (s *SLSSink) Name() string {
@@ -152,6 +154,15 @@ func (s *SLSSink) eventToContents(event *v1.Event) []*sls.Log_Content {
 		})
 	}
 
+	if len(s.Config.label) > 0 {
+		for key, value := range s.Config.label {
+			contents = append(contents, &sls.Log_Content{
+				Key:   &key,
+				Value: &value,
+			})
+		}
+	}
+
 	return contents
 }
 
@@ -226,7 +237,26 @@ func parseConfig(uri *url.URL) (*Config, error) {
 			c.internal = internal
 		}
 	}
+
+	if len(opts["label"]) >= 1 {
+		labelsStrs := opts["label"]
+		c.label = parseLabels(labelsStrs)
+	}
+
 	return c, nil
+}
+
+func parseLabels(labelsStrs []string) map[string]string {
+	labels := make(map[string]string)
+	for _, kv := range labelsStrs {
+		kvItems := strings.Split(kv, ",")
+		if len(kvItems) == 2 {
+			labels[kvItems[0]] = kvItems[1]
+		} else {
+			klog.Errorf("parse sls labels error. labelsStr: %v, kv format error: %v", labelsStrs, kv)
+		}
+	}
+	return labels
 }
 
 // newClient creates client using AK or metadata
