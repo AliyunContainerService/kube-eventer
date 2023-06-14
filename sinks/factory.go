@@ -27,6 +27,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/sinks/log"
 	"github.com/AliyunContainerService/kube-eventer/sinks/mongo"
 	"github.com/AliyunContainerService/kube-eventer/sinks/mysql"
+	"github.com/AliyunContainerService/kube-eventer/sinks/pulsar"
 	"github.com/AliyunContainerService/kube-eventer/sinks/riemann"
 	"github.com/AliyunContainerService/kube-eventer/sinks/sls"
 	"github.com/AliyunContainerService/kube-eventer/sinks/webhook"
@@ -65,6 +66,8 @@ func (this *SinkFactory) Build(uri flags.Uri) (core.EventSink, error) {
 		return eventbridge.NewEventBridgeSink(&uri.Val)
 	case "mongo":
 		return mongo.CreateMongoSink(&uri.Val)
+	case "pulsar":
+		return pulsar.NewPulsarSink(&uri.Val)
 	default:
 		return nil, fmt.Errorf("Sink not recognized: %s", uri.Key)
 	}
