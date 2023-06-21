@@ -156,9 +156,12 @@ func (s *SLSSink) eventToContents(event *v1.Event) []*sls.Log_Content {
 
 	if len(s.Config.label) > 0 {
 		for key, value := range s.Config.label {
+			// deep copy
+			newKey := key
+			newValue := value
 			contents = append(contents, &sls.Log_Content{
-				Key:   &key,
-				Value: &value,
+				Key:   &newKey,
+				Value: &newValue,
 			})
 		}
 	}
