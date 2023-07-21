@@ -34,6 +34,14 @@ var (
 	"EventTime": "{{ .LastTimestamp }}",
 	"EventMessage": "{{ .Message }}"
 }`
+	eventTimeBodyTemplate = `
+{
+	"EventType": "{{ .Type }}",
+	"EventKind": "{{ .InvolvedObject.Kind }}",
+	"EventReason": "{{ .Reason }}",
+	"EventTime": "{{ .EventTime }}",
+	"EventMessage": "{{ .Message }}"
+}`
 )
 
 type WebHookSink struct {
@@ -110,7 +118,11 @@ func (ws *WebHookSink) Send(event *v1.Event) (err error) {
 
 func (ws *WebHookSink) RenderBodyTemplate(event *v1.Event) (body string, err error) {
 	var tpl bytes.Buffer
-	tp, err := template.New("body").Parse(ws.bodyTemplate)
+	tmpl := ws.bodyTemplate
+	if event.LastTimestamp.IsZero() {
+		tmpl = eventTimeBodyTemplate
+	}
+	tp, err := template.New("body").Parse(tmpl)
 	if err != nil {
 		klog.Errorf("Failed to parse template,because of %v", err)
 		return "", err
