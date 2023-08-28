@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	DEFAULT_TABLE = "k8s-event"
+	DEFAULT_TABLE = "kube_event"
 )
 
 type MysqlService struct {
@@ -57,7 +57,7 @@ func (mySvc MysqlService) SaveData(sinkData []interface{}) error {
 	// Prepare statement for inserting data
 	stmtIns, err := mySvc.db.Prepare(prepareStatement)
 	if err != nil {
-		klog.Errorf("failed to Prepare statement for inserting data ")
+		klog.Errorf("failed to Prepare statement for inserting data. SQL: %v, err: %v", prepareStatement, err)
 		return err
 	}
 
@@ -66,14 +66,14 @@ func (mySvc MysqlService) SaveData(sinkData []interface{}) error {
 	for _, data := range sinkData {
 
 		ked := data.(MysqlKubeEventPoint)
-		klog.Infof("Begin Insert Mysql Data ...")
-		klog.Infof("Namespace: %s, Kind: %s, Name: %s, Type: %s, Reason: %s, Message: %s, EventID: %s, FirstOccurrenceTimestamp: %s, LastOccurrenceTimestamp: %s ", ked.Namespace, ked.Kind, ked.Name, ked.Type, ked.Reason, ked.Message, ked.EventID, ked.FirstOccurrenceTimestamp, ked.LastOccurrenceTimestamp)
+		klog.V(7).Infof("Begin Insert Mysql Data ...")
+		klog.V(8).Infof("Namespace: %s, Kind: %s, Name: %s, Type: %s, Reason: %s, Message: %s, EventID: %s, FirstOccurrenceTimestamp: %s, LastOccurrenceTimestamp: %s ", ked.Namespace, ked.Kind, ked.Name, ked.Type, ked.Reason, ked.Message, ked.EventID, ked.FirstOccurrenceTimestamp, ked.LastOccurrenceTimestamp)
 		_, err = stmtIns.Exec(ked.Namespace, ked.Kind, ked.Name, ked.Type, ked.Reason, ked.Message, ked.EventID, ked.FirstOccurrenceTimestamp, ked.LastOccurrenceTimestamp)
 		if err != nil {
 			klog.Errorf("failed to Prepare statement for inserting data ")
 			return err
 		}
-		klog.Infof("Insert Mysql Data Suc...")
+		klog.V(7).Infof("Insert Mysql Data Suc...")
 
 	}
 
