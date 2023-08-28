@@ -24,7 +24,7 @@ Besides this, the following options can be set in query string:
 
 (*) Note that the keys are case sensitive
 
-* `index` - the index for metrics and events. The default is `heapster`
+* `index` - the index for metrics and events. The default is `heapster`, you can define index with uri param: index=xxx
 * `esUserName` - the username if authentication is enabled
 * `esUserSecret` - the password if authentication is enabled
 * `maxRetries` - the number of retries that the Elastic client will perform
