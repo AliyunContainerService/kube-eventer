@@ -17,6 +17,7 @@ package influxdb
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/AliyunContainerService/kube-eventer/util"
 	"net/url"
 	"strings"
 	"sync"
@@ -69,7 +70,7 @@ func getEventValue(event *kube_api.Event) (string, error) {
 func eventToPointWithFields(event *kube_api.Event) (*influxdb.Point, error) {
 	point := influxdb.Point{
 		Measurement: "events",
-		Time:        event.LastTimestamp.Time.UTC(),
+		Time:        util.GetLastEventTimestamp(event).UTC(),
 		Fields: map[string]interface{}{
 			"message": event.Message,
 		},
@@ -98,7 +99,7 @@ func eventToPoint(event *kube_api.Event) (*influxdb.Point, error) {
 
 	point := influxdb.Point{
 		Measurement: eventMeasurementName,
-		Time:        event.LastTimestamp.Time.UTC(),
+		Time:        util.GetLastEventTimestamp(event).UTC(),
 		Fields: map[string]interface{}{
 			valueField: value,
 		},

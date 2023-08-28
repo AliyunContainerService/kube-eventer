@@ -16,6 +16,7 @@ package kafka
 
 import (
 	"encoding/json"
+	"github.com/AliyunContainerService/kube-eventer/util"
 	"net/url"
 	"sync"
 	"time"
@@ -54,7 +55,7 @@ func eventToPoint(event *kube_api.Event) (*KafkaSinkPoint, error) {
 		return nil, err
 	}
 	point := KafkaSinkPoint{
-		EventTimestamp: event.LastTimestamp.Time.UTC(),
+		EventTimestamp: util.GetLastEventTimestamp(event).UTC(),
 		EventValue:     value,
 		EventTags: map[string]string{
 			"eventID": string(event.UID),

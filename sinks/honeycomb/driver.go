@@ -15,6 +15,7 @@
 package honeycomb
 
 import (
+	"github.com/AliyunContainerService/kube-eventer/util"
 	"net/url"
 	"sync"
 
@@ -66,7 +67,7 @@ func (sink *honeycombSink) ExportEvents(eventBatch *event_core.EventBatch) {
 		data := getExportedData(event)
 		exportedBatch[i] = &honeycomb_common.BatchPoint{
 			Data:      data,
-			Timestamp: event.LastTimestamp.UTC(),
+			Timestamp: util.GetLastEventTimestamp(event).UTC(),
 		}
 	}
 	err := sink.client.SendBatch(exportedBatch)
