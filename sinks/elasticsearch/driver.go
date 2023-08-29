@@ -15,6 +15,7 @@
 package elasticsearch
 
 import (
+	"github.com/AliyunContainerService/kube-eventer/util"
 	"net/url"
 	"sync"
 	"time"
@@ -57,17 +58,17 @@ type EsSinkPoint struct {
 
 func eventToPoint(event *kube_api.Event, clusterName string) (*EsSinkPoint, error) {
 	var (
-		lastOccurrenceTimestamp  = event.LastTimestamp.Time.UTC()
 		firstOccurrenceTimestamp = event.FirstTimestamp.Time.UTC()
+		lastOccurrenceTimestamp  = util.GetLastEventTimestamp(event).UTC()
 	)
 
 	// Part of k8s resources FirstOccurrenceTimestamp/LastOccurrenceTimestamp is nil
-	if event.LastTimestamp.UTC().IsZero() {
-		lastOccurrenceTimestamp = event.CreationTimestamp.Time.UTC()
+	if util.GetLastEventTimestamp(event).UTC().IsZero() {
+		lastOccurrenceTimestamp = util.GetLastEventTimestamp(event).UTC()
 	}
 
-	if event.FirstTimestamp.UTC().IsZero() {
-		firstOccurrenceTimestamp = event.CreationTimestamp.Time.UTC()
+	if event.FirstTimestamp.Time.UTC().IsZero() {
+		firstOccurrenceTimestamp = event.FirstTimestamp.Time.UTC()
 	}
 
 	point := EsSinkPoint{

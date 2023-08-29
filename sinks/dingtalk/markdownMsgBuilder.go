@@ -2,6 +2,7 @@ package dingtalk
 
 import (
 	"fmt"
+	"github.com/AliyunContainerService/kube-eventer/util"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -80,7 +81,7 @@ func NewMarkdownMsgBuilder(clusterID, region string, event *v1.Event) *MarkdownM
 		break
 	}
 	reason := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.Reason)
-	timestamp := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.LastTimestamp.String())
+	timestamp := fmt.Sprintf(MARKDOWN_TEXT_BOLD, util.GetLastEventTimestamp(event).String())
 	message := fmt.Sprintf(MARKDOWN_TEXT_BOLD, event.Message)
 	m.OutputText = fmt.Sprintf(MARKDOWN_TEMPLATE, level, kind, namespace, name, reason, timestamp, message)
 	return &m
