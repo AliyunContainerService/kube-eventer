@@ -15,6 +15,7 @@
 package riemann
 
 import (
+	"github.com/AliyunContainerService/kube-eventer/util"
 	"net/url"
 	"strconv"
 	"strings"
@@ -75,8 +76,8 @@ func appendEvent(events []riemanngo.Event, sink *RiemannSink, event *kube_api.Ev
 	if !event.FirstTimestamp.IsZero() {
 		firstTimestamp = strconv.FormatInt(event.FirstTimestamp.Unix(), 10)
 	}
-	if !event.LastTimestamp.IsZero() {
-		lastTimestamp = strconv.FormatInt(event.LastTimestamp.Unix(), 10)
+	if !util.GetLastEventTimestamp(event).IsZero() {
+		lastTimestamp = strconv.FormatInt(util.GetLastEventTimestamp(event).Unix(), 10)
 	}
 	riemannEvent := riemanngo.Event{
 		Time:        timestamp,

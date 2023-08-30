@@ -17,6 +17,7 @@ package logsink
 import (
 	"bytes"
 	"fmt"
+	"github.com/AliyunContainerService/kube-eventer/util"
 
 	"github.com/AliyunContainerService/kube-eventer/core"
 	"k8s.io/klog"
@@ -37,7 +38,7 @@ func batchToString(batch *core.EventBatch) string {
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf("EventBatch     Timestamp: %s\n", batch.Timestamp))
 	for _, event := range batch.Events {
-		buffer.WriteString(fmt.Sprintf("%++v   %s (cnt:%d): %s\n", event, event.LastTimestamp, event.Count, event.Message))
+		buffer.WriteString(fmt.Sprintf("%++v   %s (cnt:%d): %s\n", event, util.GetLastEventTimestamp(event), event.Count, event.Message))
 	}
 	return buffer.String()
 }

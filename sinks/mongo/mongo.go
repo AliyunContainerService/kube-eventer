@@ -17,6 +17,7 @@ package mongo
 import (
 	"context"
 	"github.com/AliyunContainerService/kube-eventer/core"
+	"github.com/AliyunContainerService/kube-eventer/util"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	kube_api "k8s.io/api/core/v1"
@@ -62,17 +63,17 @@ func (m *mongoSink) saveData(sinkData *mongoSinkPoint) error {
 
 func eventToPoint(event *kube_api.Event) (*mongoSinkPoint, error) {
 	var (
-		lastOccurrenceTimestamp  = event.LastTimestamp.Time.UTC()
 		firstOccurrenceTimestamp = event.FirstTimestamp.Time.UTC()
+		lastOccurrenceTimestamp  = util.GetLastEventTimestamp(event).UTC()
 	)
 
 	// Part of k8s resources FirstOccurrenceTimestamp/LastOccurrenceTimestamp is nil
-	if event.LastTimestamp.UTC().IsZero() {
-		lastOccurrenceTimestamp = event.CreationTimestamp.Time.UTC()
+	if util.GetLastEventTimestamp(event).UTC().IsZero() {
+		lastOccurrenceTimestamp = util.GetLastEventTimestamp(event).UTC()
 	}
 
 	if event.FirstTimestamp.UTC().IsZero() {
-		firstOccurrenceTimestamp = event.CreationTimestamp.Time.UTC()
+		firstOccurrenceTimestamp = event.FirstTimestamp.Time.UTC()
 	}
 
 	point := mongoSinkPoint{

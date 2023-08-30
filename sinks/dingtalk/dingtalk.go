@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/AliyunContainerService/kube-eventer/util"
 	"net/http"
 	"net/url"
 	"strings"
@@ -38,7 +39,6 @@ const (
 	DEFAULT_MSG_TYPE      = "text"
 	CONTENT_TYPE_JSON     = "application/json"
 	LABEL_TEMPLATE        = "%s\n"
-	TIME_FORMAT           = "2006-01-02 15:04:05"
 )
 
 var (
@@ -55,7 +55,8 @@ var (
 	}
 )
 
-/**
+/*
+*
 dingtalk msg struct
 */
 type DingTalkMsg struct {
@@ -73,7 +74,8 @@ type DingTalkText struct {
 	Content string `json:"content"`
 }
 
-/**
+/*
+*
 dingtalk sink usage
 --sink:dingtalk:https://oapi.dingtalk.com/robot/send?access_token=[access_token]&level=Warning&label=[label]
 
@@ -226,7 +228,7 @@ func createMsgFromEvent(d *DingTalkSink, event *v1.Event) *DingTalkMsg {
 			}
 		}
 		msg.Text = DingTalkText{
-			Content: fmt.Sprintf(template, event.Type, event.InvolvedObject.Kind, event.Namespace, event.Name, event.Reason, event.LastTimestamp.Format(TIME_FORMAT), event.Message),
+			Content: fmt.Sprintf(template, event.Type, event.InvolvedObject.Kind, event.Namespace, event.Name, event.Reason, util.GetLastEventTimestamp(event).Format(time.DateTime), event.Message),
 		}
 		break
 	}

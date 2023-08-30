@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/AliyunContainerService/kube-eventer/core"
 	"github.com/AliyunContainerService/kube-eventer/sinks/utils"
+	"github.com/AliyunContainerService/kube-eventer/util"
 	"github.com/alibabacloud-go/eventbridge-sdk/eventbridge"
 	ebUtil "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/google/uuid"
@@ -141,7 +142,7 @@ func (ebSink *eventBridgeSink) toCloudEvent(event *v1.Event) (*eventbridge.Cloud
 		SetData(dataBytes).
 		SetId(uuid.New().String()).
 		SetSource(aliyunContainerServiceSource).
-		SetTime(time.Now().UTC().Format(time.RFC3339)).
+		SetTime(util.GetLastEventTimestamp(event).UTC().Format(time.RFC3339)).
 		SetSubject(subject).
 		SetType(eType).
 		SetExtensions(map[string]interface{}{
