@@ -3,14 +3,14 @@
 *This sink supports Mysql versions v5.7 and above*.
 To use the Mysql sink add the following flag:
 
-	--sink=mysql:?<MYSQL_JDBC_URL>
+	--sink=mysql:?<MYSQL_JDBC_URL>?charset=utf8&table=<Your Table Name>
+    (table name default is kube_event)
 
-*First build table*
+*First build table *
 
 ```
 create database kube_eventer;
 use kube_eventer;
-
 
 create table k8s_event
 (
@@ -30,4 +30,4 @@ create table k8s_event
 
 For example:
 
-    --sink=mysql:?root:transwarp@tcp(172.16.180.132:3306)/kube_eventer?charset=utf8
+    --sink=mysql:?root:transwarp@tcp(172.16.180.132:3306)/kube_eventer?charset=utf8&table=kube_event

@@ -17,7 +17,9 @@ package kubernetes
 import (
 	"fmt"
 	"io/ioutil"
+	"k8s.io/client-go/util/homedir"
 	"net/url"
+	"path/filepath"
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -96,6 +98,18 @@ func GetKubeClientConfig(uri *url.URL) (*kube_rest.Config, error) {
 			kubeConfig.TLSClientConfig.CAFile = ""
 		}
 	} else {
+
+		localKubeConfig := filepath.Join(homedir.HomeDir(), ".kube", "config")
+		if len(opts["localKubeConfig"]) > 0 {
+			localKubeConfig = opts["localKubeConfig"][0]
+			// use the current context in kubeconfig
+			kubeConfig, err := kubeClientCmd.BuildConfigFromFlags("", localKubeConfig)
+			if err != nil {
+				panic(err.Error())
+			}
+			return kubeConfig, nil
+		}
+
 		authFile := ""
 		if len(opts["auth"]) > 0 {
 			authFile = opts["auth"][0]

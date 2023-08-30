@@ -59,6 +59,7 @@ func (ws *WebHookSink) ExportEvents(batch *core.EventBatch) {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
+	klog.V(1).Infof("Webhook %v Exporting %v events.", ws.endpoint, len(batch.Events))
 }
 
 // send msg to generic webHook

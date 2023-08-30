@@ -71,7 +71,7 @@ func eventToPoint(event *kube_api.Event) (*mysql_common.MysqlKubeEventPoint, err
 	if err != nil {
 		return nil, err
 	}
-	klog.Infof(value)
+	klog.V(9).Infof(value)
 
 	point := mysql_common.MysqlKubeEventPoint{
 		Name:                     event.InvolvedObject.Name,
@@ -114,7 +114,7 @@ func (sink *mysqlSink) ExportEvents(eventBatch *core.EventBatch) {
 		}
 
 	}
-
+	klog.V(1).Infof("sinking %v events to mysql success.", len(eventBatch.Events))
 }
 
 func (sink *mysqlSink) Name() string {
