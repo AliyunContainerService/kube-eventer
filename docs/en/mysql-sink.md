@@ -24,7 +24,6 @@ create table k8s_event
     kind             varchar(64)  not null default '' comment 'event kind' ,
     first_occurrence_time   varchar(64)    not null default '' comment 'event first occurrence time',
     last_occurrence_time    varchar(64)    not null default '' comment 'event last occurrence time',
-    unique index event_id_index (event_id)
 ) ENGINE = InnoDB default CHARSET = utf8 comment ='Event info tables';
 ```
 
