@@ -126,18 +126,19 @@ metadata:
 ### Sink Configure 
 Supported Sinks:
 
-| Sink Name                    | Description                       |
-| ---------------------------- | :-------------------------------- |
-| <a href="docs/en/dingtalk-sink.md">dingtalk</a>      | sink to dingtalk bot              |
-| <a href="docs/en/sls-sink.md">sls</a>           | sink to alibaba cloud sls service |
+| Sink Name                                                 | Description                       |
+|-----------------------------------------------------------|:----------------------------------|
+| <a href="docs/en/dingtalk-sink.md">dingtalk</a>           | sink to dingtalk bot              |
+| <a href="docs/en/sls-sink.md">sls</a>                     | sink to alibaba cloud sls service |
 | <a href="docs/en/elasticsearch-sink.md">elasticsearch</a> | sink to elasticsearch             |
-| <a href="docs/en/honeycomb-sink.md">honeycomb</a>     | sink to honeycomb                 |
-| <a href="docs/en/influxdb-sink.md">influxdb</a>      | sink to influxdb                  |
-| <a href="docs/en/kafka-sink.md">kafka</a>         | sink to kafka                     |
-| <a href="docs/en/mysql-sink.md">mysql</a>               | sink to mysql database           |
-| <a href="docs/en/wechat-sink.md">wechat</a>               | sink to wechat           |
-| <a href="docs/en/webhook-sink.md">webhook</a>               | sink to webhook           |
-| <a href="docs/en/mongodb-sink.md">mongodb</a>               | sink to mongodb           |
+| <a href="docs/en/honeycomb-sink.md">honeycomb</a>         | sink to honeycomb                 |
+| <a href="docs/en/influxdb-sink.md">influxdb</a>           | sink to influxdb                  |
+| <a href="docs/en/kafka-sink.md">kafka</a>                 | sink to kafka                     |
+| <a href="docs/en/mysql-sink.md">mysql</a>                 | sink to mysql database            |
+| <a href="docs/en/wechat-sink.md">wechat</a>               | sink to wechat                    |
+| <a href="docs/en/webhook-sink.md">webhook</a>             | sink to webhook                   |
+| <a href="docs/en/mongodb-sink.md">mongodb</a>             | sink to mongodb                   |
+| <a href="docs/en/pulsar-sink.md">pulsar</a>               | sink to pulsar                    |
 
 ### Contributing 
 Please check <a href="docs/en/CONTRIBUTING.md" target="_blank">CONTRIBUTING.md</a>
