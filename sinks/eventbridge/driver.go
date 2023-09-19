@@ -249,19 +249,19 @@ func (ebSink *eventBridgeSink) isAkValid() bool {
 
 	t, err := time.Parse(utils.StsTokenTimeLayout, ebSink.akInfo.Expiration)
 	if err != nil {
-		klog.Errorf("failed to parse time layout, %v", err)
+		klog.Errorf("failed to parse time layout, akInfo: %v, err: %v", ebSink.akInfo, err)
 		return false
 	}
 	nowT := time.Now()
 
 	if t.Before(nowT) {
-		klog.Error("invalid token which is expired")
+		klog.Errorf("invalid token which is expired. now: %v, expirationTime: %v", nowT, t)
 		return false
 	}
 
 	t = t.Add(-time.Minute * time.Duration(10))
 	if t.Before(nowT) {
-		klog.Error("valid token which will be expired in ten minutes, should refresh it")
+		klog.Errorf("valid token which will be expired in ten minutes, should refresh it. now: %v, expirationTime: %v", nowT, t)
 		return false
 	}
 
