@@ -15,8 +15,10 @@
 package rabbitmq
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"io/ioutil"
@@ -28,11 +30,11 @@ import (
 )
 
 const (
-	brokerDialTimeout      = 10 * time.Second
-	brokerDialRetryLimit   = 1
-	brokerDialRetryWait    = 0
-	metricsTopic           = "heapster-metrics"
-	eventsTopic            = "heapster-events"
+	brokerDialTimeout    = 10 * time.Second
+	brokerDialRetryLimit = 1
+	brokerDialRetryWait  = 0
+	metricsTopic         = "heapster-metrics"
+	eventsTopic          = "heapster-events"
 )
 
 const (
@@ -52,6 +54,32 @@ type amqpSink struct {
 }
 
 func (sink *amqpSink) ProduceAmqpMessage(msgData interface{}) error {
+	start := time.Now()
+	msgJson, err := json.Marshal(msgData)
+	if err != nil {
+		return fmt.Errorf("failed to transform the items to json : %s", err)
+	}
+
+	ctx := context.Background()
+
+	err = sink.producer.PublishWithContext(
+		ctx,
+		sink.dataTopic,
+		"#",
+		false,
+		false,
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        msgJson,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	end := time.Now()
+	klog.V(4).Infof("Exported %d data to kafka in %s", len(msgJson), end.Sub(start))
+
 	return nil
 }
 
@@ -189,6 +217,18 @@ func NewAmqpClient(uri *url.URL, topicType string) (AmqpClient, error) {
 	sinkProducer, err := conn.Channel()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to setup Producer: - %v", err)
+	}
+	err = sinkProducer.ExchangeDeclare(
+		topic,
+		amqp.ExchangeTopic,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to declare exchange: %v", err)
 	}
 	klog.V(3).Infof("amqp sink setup successfully")
 
