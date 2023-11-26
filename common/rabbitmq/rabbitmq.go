@@ -15,13 +15,22 @@
 package rabbitmq
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"io/ioutil"
 	"k8s.io/klog"
+	"net"
 	"net/url"
+	"strconv"
+	"time"
 )
 
 const (
+	brokerDialTimeout      = 10 * time.Second
+	brokerDialRetryLimit   = 1
+	brokerDialRetryWait    = 0
 	metricsTopic           = "heapster-metrics"
 	eventsTopic            = "heapster-events"
 )
@@ -86,6 +95,63 @@ func getOptionsWithoutSecrets(values url.Values) string {
 	return options
 }
 
+func CustomDialer(brokerDialTimeout time.Duration, brokerDialRetryLimit int, brokerDialRetryWait time.Duration) func(network, addr string) (net.Conn, error) {
+	return func(network, addr string) (net.Conn, error) {
+		var conn net.Conn
+		var err error
+		for i := 0; i <= brokerDialRetryLimit; i++ {
+			conn, err = net.DialTimeout(network, addr, brokerDialTimeout)
+			if err == nil {
+				return conn, nil
+			}
+			if i < brokerDialRetryLimit {
+				time.Sleep(brokerDialRetryWait)
+			}
+		}
+		return nil, fmt.Errorf("failed to dial: %v", err)
+	}
+}
+
+func getTlsConfiguration(opts url.Values) (*tls.Config, bool, error) {
+	if len(opts["cacert"]) == 0 &&
+		(len(opts["cert"]) == 0 || len(opts["key"]) == 0) {
+		return nil, false, nil
+	}
+
+	t := &tls.Config{}
+	if len(opts["cacert"]) != 0 {
+		caFile := opts["cacert"][0]
+		caCert, err := ioutil.ReadFile(caFile)
+		if err != nil {
+			return nil, false, err
+		}
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+		t.RootCAs = caCertPool
+	}
+
+	if len(opts["cert"]) != 0 && len(opts["key"]) != 0 {
+		certFile := opts["cert"][0]
+		keyFile := opts["key"][0]
+		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+		if err != nil {
+			return nil, false, err
+		}
+		t.Certificates = []tls.Certificate{cert}
+	}
+
+	if len(opts["insecuressl"]) != 0 {
+		insecuressl := opts["insecuressl"][0]
+		insecure, err := strconv.ParseBool(insecuressl)
+		if err != nil {
+			return nil, false, err
+		}
+		t.InsecureSkipVerify = insecure
+	}
+
+	return t, true, nil
+}
+
 func GetRabbitMQURL(values url.Values) string {
 	return fmt.Sprintf("amqp://%s:%s@%s:%s", values["username"], values["password"], values["host"], values["port"])
 }
@@ -104,7 +170,17 @@ func NewAmqpClient(uri *url.URL, topicType string) (AmqpClient, error) {
 
 	amqp.Logger = GologAdapterLogger{}
 
-	conn, err := amqp.Dial(GetRabbitMQURL(opts))
+	TLSClientConfig, TLSClientConfigEnable, err := getTlsConfiguration(opts)
+
+	var config = amqp.Config{}
+
+	if TLSClientConfigEnable {
+		config.TLSClientConfig = TLSClientConfig
+	}
+
+	config.Dial = CustomDialer(brokerDialTimeout, brokerDialRetryLimit, brokerDialRetryWait)
+
+	conn, err := amqp.DialConfig(GetRabbitMQURL(opts), config)
 	if err != nil {
 		return nil, err
 	}
