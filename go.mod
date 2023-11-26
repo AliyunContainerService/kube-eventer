@@ -19,6 +19,7 @@ require (
 	github.com/olivere/elastic/v7 v7.0.6
 	github.com/pborman/uuid v1.2.0
 	github.com/prometheus/client_golang v1.11.1
+	github.com/rabbitmq/amqp091-go v1.9.0 // indirect
 	github.com/riemann/riemann-go-client v0.4.0
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9
 	github.com/smartystreets/gunit v1.0.0 // indirect
