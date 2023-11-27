@@ -78,7 +78,7 @@ func (sink *amqpSink) ProduceAmqpMessage(msgData interface{}) error {
 	}
 
 	end := time.Now()
-	klog.V(4).Infof("Exported %d data to kafka in %s", len(msgJson), end.Sub(start))
+	klog.V(4).Infof("Exported %d data to rabbitmq in %s", len(msgJson), end.Sub(start))
 
 	return nil
 }
