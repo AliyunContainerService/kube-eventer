@@ -181,7 +181,7 @@ func getTlsConfiguration(opts url.Values) (*tls.Config, bool, error) {
 }
 
 func GetRabbitMQURL(values url.Values) string {
-	return fmt.Sprintf("amqp://%s:%s@%s:%s", values["username"], values["password"], values["host"], values["port"])
+	return fmt.Sprintf("amqp://%s:%s@%s:%s", values.Get("username"), values.Get("password"), values.Get("host"), values.Get("port"))
 }
 
 func NewAmqpClient(uri *url.URL, topicType string) (AmqpClient, error) {
