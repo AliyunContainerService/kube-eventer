@@ -14,7 +14,7 @@ To use the RabbitMQ sink, add the following flag to your command line or configu
 * `port`: RabbitMQ server port. (e.g., 5672)
 * `username`: RabbitMQ username.
 * `password`: RabbitMQ password.
-* `eventtopic`: RabbitMQ's topic for events. Default value: heapster-events. (e.g., heapster-metrics)
+* `eventtopic`: RabbitMQ's topic for events. 
 
 For example,
 
