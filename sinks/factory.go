@@ -27,6 +27,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/sinks/log"
 	"github.com/AliyunContainerService/kube-eventer/sinks/mongo"
 	"github.com/AliyunContainerService/kube-eventer/sinks/mysql"
+	"github.com/AliyunContainerService/kube-eventer/sinks/rabbitmq"
 	"github.com/AliyunContainerService/kube-eventer/sinks/riemann"
 	"github.com/AliyunContainerService/kube-eventer/sinks/sls"
 	"github.com/AliyunContainerService/kube-eventer/sinks/webhook"
@@ -49,6 +50,8 @@ func (this *SinkFactory) Build(uri flags.Uri) (core.EventSink, error) {
 		return elasticsearch.NewElasticSearchSink(&uri.Val)
 	case "kafka":
 		return kafka.NewKafkaSink(&uri.Val)
+	case "rabbitmq":
+		return rabbitmq.NewRabbitmqSink(&uri.Val)
 	case "riemann":
 		return riemann.CreateRiemannSink(&uri.Val)
 	case "honeycomb":
