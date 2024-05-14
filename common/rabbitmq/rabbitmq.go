@@ -20,13 +20,14 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"io/ioutil"
-	"k8s.io/klog"
 	"net"
 	"net/url"
 	"strconv"
 	"time"
+
+	amqp "github.com/rabbitmq/amqp091-go"
+	"k8s.io/klog"
 )
 
 const (
@@ -181,7 +182,11 @@ func getTlsConfiguration(opts url.Values) (*tls.Config, bool, error) {
 }
 
 func GetRabbitMQURL(values url.Values) string {
-	return fmt.Sprintf("amqp://%s:%s@%s:%s", values.Get("username"), values.Get("password"), values.Get("host"), values.Get("port"))
+	if values.Get("vhost") == "" {
+		values.Set("vhost", "/")
+	}
+
+	return fmt.Sprintf("amqp://%s:%s@%s:%s/%s", values.Get("username"), values.Get("password"), values.Get("host"), values.Get("port"), values.Get("vhost"))
 }
 
 func NewAmqpClient(uri *url.URL, topicType string) (AmqpClient, error) {
