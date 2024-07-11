@@ -16,12 +16,12 @@ package sls
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/AliyunContainerService/kube-eventer/core"
 	metrics_core "github.com/AliyunContainerService/kube-eventer/metrics/core"
 	"github.com/AliyunContainerService/kube-eventer/sinks/utils"
 	"github.com/AliyunContainerService/kube-eventer/util"
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/sls"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"k8s.io/api/core/v1"
 	"k8s.io/klog"
 	"log"
@@ -32,10 +32,12 @@ import (
 )
 
 const (
-	slsSinkName = "SLSSink"
-	eventId     = "eventId"
-	podEvent    = "Pod"
-	eventLevel  = "level"
+	slsSinkName        = "SLSSink"
+	eventId            = "eventId"
+	podEvent           = "Pod"
+	eventLevel         = "level"
+	SLSDefaultEndpoint = "log.aliyuncs.com"
+	SLSUserAgent       = "ack-kube-eventer"
 )
 
 /*
@@ -82,18 +84,15 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 
 		logs = append(logs, log)
 	}
-	request := &sls.PutLogsRequest{
-		Project:  s.Project,
-		LogStore: s.LogStore,
-		LogItems: sls.LogGroup{
-			Logs: logs,
-		},
+
+	logGroup := sls.LogGroup{
+		Logs: logs,
 	}
 	if len(s.Config.topic) > 0 {
-		request.LogItems.Topic = &s.Config.topic
+		logGroup.Topic = &s.Config.topic
 	}
 
-	err := s.client().PutLogs(request)
+	err := s.client().PutLogs(s.Project, s.LogStore, &logGroup)
 	if err != nil {
 		klog.Errorf("failed to put events to sls,because of %v", err)
 	}
@@ -103,8 +102,8 @@ func (s *SLSSink) Stop() {
 	//not implement
 }
 
-func (s *SLSSink) eventToContents(event *v1.Event) []*sls.Log_Content {
-	contents := make([]*sls.Log_Content, 0)
+func (s *SLSSink) eventToContents(event *v1.Event) []*sls.LogContent {
+	contents := make([]*sls.LogContent, 0)
 	bytes, err := json.MarshalIndent(event, "", " ")
 	if err != nil {
 		return nil
@@ -112,30 +111,30 @@ func (s *SLSSink) eventToContents(event *v1.Event) []*sls.Log_Content {
 
 	indexKey := eventId
 	fullContent := string(bytes)
-	contents = append(contents, &sls.Log_Content{
+	contents = append(contents, &sls.LogContent{
 		Key:   &indexKey,
 		Value: &fullContent,
 	})
 
-	contents = append(contents, &sls.Log_Content{
+	contents = append(contents, &sls.LogContent{
 		Key:   &metrics_core.LabelHostname.Key,
 		Value: &event.Source.Host,
 	})
 
 	level := eventLevel
-	contents = append(contents, &sls.Log_Content{
+	contents = append(contents, &sls.LogContent{
 		Key:   &level,
 		Value: &event.Type,
 	})
 
 	if event.InvolvedObject.Kind == podEvent {
 		podId := string(event.InvolvedObject.UID)
-		contents = append(contents, &sls.Log_Content{
+		contents = append(contents, &sls.LogContent{
 			Key:   &metrics_core.LabelPodId.Key,
 			Value: &podId,
 		})
 
-		contents = append(contents, &sls.Log_Content{
+		contents = append(contents, &sls.LogContent{
 			Key:   &metrics_core.LabelPodName.Key,
 			Value: &event.InvolvedObject.Name,
 		})
@@ -146,7 +145,7 @@ func (s *SLSSink) eventToContents(event *v1.Event) []*sls.Log_Content {
 			// deep copy
 			newKey := key
 			newValue := value
-			contents = append(contents, &sls.Log_Content{
+			contents = append(contents, &sls.LogContent{
 				Key:   &newKey,
 				Value: &newValue,
 			})
@@ -274,7 +273,14 @@ func newClient(c *Config) (*sls.Client, error) {
 		if c.accessKeyId != "" && c.accessKeySecret != "" {
 			akInfo.AccessKeyId = c.accessKeyId
 			akInfo.AccessKeySecret = c.accessKeySecret
-			client := sls.NewClient(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret)
+			client := &sls.Client{
+				Endpoint:        getSLSEndpoint(region, c.internal),
+				Region:          region,
+				AccessKeyID:     akInfo.AccessKeyId,
+				AccessKeySecret: akInfo.AccessKeySecret,
+				UserAgent:       SLSUserAgent,
+			}
+			client.SetAuthVersion(sls.AuthV4)
 			return client, nil
 		} else {
 			akInfoInMeta, err := utils.ParseAKInfoFromMeta()
@@ -283,11 +289,44 @@ func newClient(c *Config) (*sls.Client, error) {
 				return nil, err
 			}
 			akInfo = akInfoInMeta
-			client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
+			client := &sls.Client{
+				Endpoint:        getSLSEndpoint(region, c.internal),
+				Region:          region,
+				AccessKeyID:     akInfo.AccessKeyId,
+				AccessKeySecret: akInfo.AccessKeySecret,
+				SecurityToken:   akInfo.SecurityToken,
+				UserAgent:       SLSUserAgent,
+			}
+			client.SetAuthVersion(sls.AuthV4)
 			return client, nil
 		}
 	}
 
-	client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
+	client := &sls.Client{
+		Endpoint:        getSLSEndpoint(region, c.internal),
+		Region:          region,
+		AccessKeyID:     akInfo.AccessKeyId,
+		AccessKeySecret: akInfo.AccessKeySecret,
+		SecurityToken:   akInfo.SecurityToken,
+		UserAgent:       SLSUserAgent,
+	}
+	client.SetAuthVersion(sls.AuthV4)
+
 	return client, nil
+}
+
+// refer doc: https://help.aliyun.com/zh/sls/developer-reference/endpoints
+func getSLSEndpoint(region string, internal bool) string {
+	finalEndpoint := SLSDefaultEndpoint
+	endpointFromEnv := os.Getenv("SLS_ENDPOINT")
+	if endpointFromEnv != "" {
+		finalEndpoint = endpointFromEnv
+	}
+
+	if internal {
+		region = fmt.Sprintf("%s-intranet", region)
+		finalEndpoint = fmt.Sprintf("%s.%s", region, SLSDefaultEndpoint)
+	}
+	klog.V(6).Infof("sls endpoint, %v", finalEndpoint)
+	return finalEndpoint
 }
