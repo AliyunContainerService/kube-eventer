@@ -17,18 +17,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/AliyunContainerService/kube-eventer/core"
 	metrics_core "github.com/AliyunContainerService/kube-eventer/metrics/core"
 	"github.com/AliyunContainerService/kube-eventer/sinks/utils"
 	"github.com/AliyunContainerService/kube-eventer/util"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
-	"k8s.io/api/core/v1"
+	sls_producer "github.com/aliyun/aliyun-log-go-sdk/producer"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
-	"log"
-	"net/url"
-	"os"
-	"strconv"
-	"strings"
 )
 
 const (
@@ -48,6 +49,7 @@ type SLSSink struct {
 	Config   *Config
 	Project  string
 	LogStore string
+	Producer *sls_producer.Producer
 }
 
 // Config can be specific
@@ -85,21 +87,17 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 		logs = append(logs, log)
 	}
 
-	logGroup := sls.LogGroup{
-		Logs: logs,
-	}
-	if len(s.Config.topic) > 0 {
-		logGroup.Topic = &s.Config.topic
-	}
-
-	err := s.client().PutLogs(s.Project, s.LogStore, &logGroup)
+	err := s.Producer.SendLogList(s.Project, s.LogStore, s.Config.topic, "", logs)
 	if err != nil {
 		klog.Errorf("failed to put events to sls,because of %v", err)
+		return
 	}
+	s.Producer.SafeClose()
 }
 
 func (s *SLSSink) Stop() {
-	//not implement
+	// safe close producer: close after all data is sent
+	s.Producer.SafeClose()
 }
 
 func (s *SLSSink) eventToContents(event *v1.Event) []*sls.LogContent {
@@ -155,15 +153,6 @@ func (s *SLSSink) eventToContents(event *v1.Event) []*sls.LogContent {
 	return contents
 }
 
-func (s *SLSSink) client() *sls.Client {
-	c, e := newClient(s.Config)
-	if e != nil {
-		log.Fatalf("can not create sls client because of %s", e.Error())
-		return nil
-	}
-	return c
-}
-
 // NewSLSSink returns new SLSSink
 func NewSLSSink(uri *url.URL) (*SLSSink, error) {
 	s := &SLSSink{}
@@ -175,6 +164,13 @@ func NewSLSSink(uri *url.URL) (*SLSSink, error) {
 	s.Project = c.project
 	s.LogStore = c.logStore
 	s.Config = c
+
+	producer, err := newProducer(c)
+	if err != nil {
+		return nil, err
+	}
+	producer.Start()
+	s.Producer = producer
 	return s, nil
 }
 
@@ -248,8 +244,8 @@ func parseLabels(labelsStrs []string) map[string]string {
 	return labels
 }
 
-// newClient creates client using AK or metadata
-func newClient(c *Config) (*sls.Client, error) {
+// newProducer create producer with config.
+func newProducer(c *Config) (*sls_producer.Producer, error) {
 	// get region from env
 	region, err := utils.GetRegionFromEnv()
 	if err != nil {
@@ -267,21 +263,13 @@ func newClient(c *Config) (*sls.Client, error) {
 		}
 	}
 
+	// get ak info
 	akInfo, err := utils.ParseAKInfoFromConfigPath()
 	if err != nil {
-		akInfo = &utils.AKInfo{}
-		if c.accessKeyId != "" && c.accessKeySecret != "" {
+		if len(c.accessKeyId) > 0 && len(c.accessKeySecret) > 0 {
 			akInfo.AccessKeyId = c.accessKeyId
 			akInfo.AccessKeySecret = c.accessKeySecret
-			client := &sls.Client{
-				Endpoint:        getSLSEndpoint(region, c.internal),
-				Region:          region,
-				AccessKeyID:     akInfo.AccessKeyId,
-				AccessKeySecret: akInfo.AccessKeySecret,
-				UserAgent:       SLSUserAgent,
-			}
-			client.SetAuthVersion(sls.AuthV4)
-			return client, nil
+			akInfo.SecurityToken = ""
 		} else {
 			akInfoInMeta, err := utils.ParseAKInfoFromMeta()
 			if err != nil {
@@ -289,30 +277,18 @@ func newClient(c *Config) (*sls.Client, error) {
 				return nil, err
 			}
 			akInfo = akInfoInMeta
-			client := &sls.Client{
-				Endpoint:        getSLSEndpoint(region, c.internal),
-				Region:          region,
-				AccessKeyID:     akInfo.AccessKeyId,
-				AccessKeySecret: akInfo.AccessKeySecret,
-				SecurityToken:   akInfo.SecurityToken,
-				UserAgent:       SLSUserAgent,
-			}
-			client.SetAuthVersion(sls.AuthV4)
-			return client, nil
 		}
 	}
 
-	client := &sls.Client{
-		Endpoint:        getSLSEndpoint(region, c.internal),
-		Region:          region,
-		AccessKeyID:     akInfo.AccessKeyId,
-		AccessKeySecret: akInfo.AccessKeySecret,
-		SecurityToken:   akInfo.SecurityToken,
-		UserAgent:       SLSUserAgent,
-	}
-	client.SetAuthVersion(sls.AuthV4)
-
-	return client, nil
+	// construct sls producer config
+	cfg := sls_producer.GetDefaultProducerConfig()
+	cfg.Endpoint = getSLSEndpoint(region, c.internal)
+	cfg.Region = region
+	cfg.UserAgent = SLSUserAgent
+	cfg.CredentialsProvider = sls.NewStaticCredentialsProvider(akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
+	cfg.AuthVersion = sls.AuthV4
+	producer := sls_producer.InitProducer(cfg)
+	return producer, nil
 }
 
 // refer doc: https://help.aliyun.com/zh/sls/developer-reference/endpoints
