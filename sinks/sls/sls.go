@@ -87,12 +87,11 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 		logs = append(logs, log)
 	}
 
-	err := s.Producer.SendLogList(s.Project, s.LogStore, s.Config.topic, "", logs)
+	err := s.Producer.SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs, callback{})
 	if err != nil {
 		klog.Errorf("failed to put events to sls,because of %v", err)
 		return
 	}
-	s.Producer.SafeClose()
 }
 
 func (s *SLSSink) Stop() {
@@ -305,4 +304,23 @@ func getSLSEndpoint(region string, internal bool) string {
 	}
 	klog.V(6).Infof("sls endpoint, %v", finalEndpoint)
 	return finalEndpoint
+}
+
+// callback, use it to implement the sls_producer.Callback interface
+// to obtain the result of each send,
+// because the producer sends requests to the server asynchronously.
+type callback struct {
+}
+
+func (c callback) Success(result *sls_producer.Result) {
+	klog.V(0).Infof("Successfully used Producer to send log list!")
+}
+
+func (c callback) Fail(result *sls_producer.Result) {
+	klog.Errorf("Failed to send log list using Producer. "+
+		"ErrorCode: %v, ErrorMessage: %v, RequestID: %v, Timestamp: %v",
+		result.GetErrorCode(),
+		result.GetErrorMessage(),
+		result.GetRequestId(),
+		result.GetTimeStampMs())
 }
