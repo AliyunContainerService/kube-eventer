@@ -80,7 +80,7 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 
 		log.Time = &time
 
-		cts := s.eventToContents(event)
+		cts := eventToContents(event, s.Config.label)
 
 		log.Contents = cts
 
@@ -100,7 +100,7 @@ func (s *SLSSink) Stop() {
 	s.Producer.SafeClose()
 }
 
-func (s *SLSSink) eventToContents(event *v1.Event) []*sls.LogContent {
+func eventToContents(event *v1.Event, labels map[string]string) []*sls.LogContent {
 	contents := make([]*sls.LogContent, 0)
 	bytes, err := json.MarshalIndent(event, "", " ")
 	if err != nil {
@@ -138,16 +138,14 @@ func (s *SLSSink) eventToContents(event *v1.Event) []*sls.LogContent {
 		})
 	}
 
-	if len(s.Config.label) > 0 {
-		for key, value := range s.Config.label {
-			// deep copy
-			newKey := key
-			newValue := value
-			contents = append(contents, &sls.LogContent{
-				Key:   &newKey,
-				Value: &newValue,
-			})
-		}
+	for key, value := range labels {
+		// deep copy
+		newKey := key
+		newValue := value
+		contents = append(contents, &sls.LogContent{
+			Key:   &newKey,
+			Value: &newValue,
+		})
 	}
 
 	return contents
