@@ -87,6 +87,7 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 		logs = append(logs, log)
 	}
 
+	klog.V(0).Infof("Exporting %d logs", len(logs))
 	err := s.Producer.SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs, callback{})
 	if err != nil {
 		klog.Errorf("failed to put events to sls,because of %v", err)
