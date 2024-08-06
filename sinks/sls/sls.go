@@ -87,8 +87,7 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 		logs = append(logs, log)
 	}
 
-	klog.V(0).Infof("Exporting %d logs", len(logs))
-	err := s.Producer.SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs, callback{})
+	err := s.getProducer().SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs, callback{})
 	if err != nil {
 		klog.Errorf("failed to put events to sls,because of %v", err)
 		return
@@ -97,7 +96,15 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 
 func (s *SLSSink) Stop() {
 	// safe close producer: close after all data is sent
-	s.Producer.SafeClose()
+	s.getProducer().SafeClose()
+}
+
+func (s *SLSSink) getProducer() *sls_producer.Producer {
+	if s.Producer == nil {
+		klog.Error("get producer, err: %w", errors.New("producer is nil"))
+		return nil
+	}
+	return s.Producer
 }
 
 func eventToContents(event *v1.Event, labels map[string]string) []*sls.LogContent {
@@ -167,8 +174,8 @@ func NewSLSSink(uri *url.URL) (*SLSSink, error) {
 	if err != nil {
 		return nil, err
 	}
-	producer.Start()
 	s.Producer = producer
+	s.getProducer().Start()
 	return s, nil
 }
 
@@ -316,6 +323,10 @@ func (c callback) Success(result *sls_producer.Result) {
 }
 
 func (c callback) Fail(result *sls_producer.Result) {
+	if result == nil {
+		klog.Error("producer failed to send requests, but result is nil")
+		return
+	}
 	klog.Errorf("Failed to send log list using Producer. "+
 		"ErrorCode: %v, ErrorMessage: %v, RequestID: %v, Timestamp: %v",
 		result.GetErrorCode(),
