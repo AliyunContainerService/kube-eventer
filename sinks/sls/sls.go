@@ -319,7 +319,7 @@ type callback struct {
 }
 
 func (c callback) Success(result *sls_producer.Result) {
-	klog.V(0).Infof("Successfully used Producer to send log list!")
+	klog.V(6).Infof("Successfully used Producer to send log list")
 }
 
 func (c callback) Fail(result *sls_producer.Result) {
