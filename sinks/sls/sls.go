@@ -17,18 +17,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/AliyunContainerService/kube-eventer/core"
 	metrics_core "github.com/AliyunContainerService/kube-eventer/metrics/core"
 	"github.com/AliyunContainerService/kube-eventer/sinks/utils"
 	"github.com/AliyunContainerService/kube-eventer/util"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
-	"k8s.io/api/core/v1"
+	sls_producer "github.com/aliyun/aliyun-log-go-sdk/producer"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
-	"log"
-	"net/url"
-	"os"
-	"strconv"
-	"strings"
 )
 
 const (
@@ -48,6 +49,7 @@ type SLSSink struct {
 	Config   *Config
 	Project  string
 	LogStore string
+	Producer *sls_producer.Producer
 }
 
 // Config can be specific
@@ -78,31 +80,34 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 
 		log.Time = &time
 
-		cts := s.eventToContents(event)
+		cts := eventToContents(event, s.Config.label)
 
 		log.Contents = cts
 
 		logs = append(logs, log)
 	}
 
-	logGroup := sls.LogGroup{
-		Logs: logs,
-	}
-	if len(s.Config.topic) > 0 {
-		logGroup.Topic = &s.Config.topic
-	}
-
-	err := s.client().PutLogs(s.Project, s.LogStore, &logGroup)
+	err := s.getProducer().SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs, callback{})
 	if err != nil {
 		klog.Errorf("failed to put events to sls,because of %v", err)
+		return
 	}
 }
 
 func (s *SLSSink) Stop() {
-	//not implement
+	// safe close producer: close after all data is sent
+	s.getProducer().SafeClose()
 }
 
-func (s *SLSSink) eventToContents(event *v1.Event) []*sls.LogContent {
+func (s *SLSSink) getProducer() *sls_producer.Producer {
+	if s.Producer == nil {
+		klog.Error("get producer, err: %w", errors.New("producer is nil"))
+		return nil
+	}
+	return s.Producer
+}
+
+func eventToContents(event *v1.Event, labels map[string]string) []*sls.LogContent {
 	contents := make([]*sls.LogContent, 0)
 	bytes, err := json.MarshalIndent(event, "", " ")
 	if err != nil {
@@ -140,28 +145,17 @@ func (s *SLSSink) eventToContents(event *v1.Event) []*sls.LogContent {
 		})
 	}
 
-	if len(s.Config.label) > 0 {
-		for key, value := range s.Config.label {
-			// deep copy
-			newKey := key
-			newValue := value
-			contents = append(contents, &sls.LogContent{
-				Key:   &newKey,
-				Value: &newValue,
-			})
-		}
+	for key, value := range labels {
+		// deep copy
+		newKey := key
+		newValue := value
+		contents = append(contents, &sls.LogContent{
+			Key:   &newKey,
+			Value: &newValue,
+		})
 	}
 
 	return contents
-}
-
-func (s *SLSSink) client() *sls.Client {
-	c, e := newClient(s.Config)
-	if e != nil {
-		log.Fatalf("can not create sls client because of %s", e.Error())
-		return nil
-	}
-	return c
 }
 
 // NewSLSSink returns new SLSSink
@@ -175,6 +169,13 @@ func NewSLSSink(uri *url.URL) (*SLSSink, error) {
 	s.Project = c.project
 	s.LogStore = c.logStore
 	s.Config = c
+
+	producer, err := newProducer(c)
+	if err != nil {
+		return nil, err
+	}
+	s.Producer = producer
+	s.getProducer().Start()
 	return s, nil
 }
 
@@ -248,8 +249,8 @@ func parseLabels(labelsStrs []string) map[string]string {
 	return labels
 }
 
-// newClient creates client using AK or metadata
-func newClient(c *Config) (*sls.Client, error) {
+// newProducer create producer with config.
+func newProducer(c *Config) (*sls_producer.Producer, error) {
 	// get region from env
 	region, err := utils.GetRegionFromEnv()
 	if err != nil {
@@ -267,21 +268,13 @@ func newClient(c *Config) (*sls.Client, error) {
 		}
 	}
 
+	// get ak info
 	akInfo, err := utils.ParseAKInfoFromConfigPath()
 	if err != nil {
-		akInfo = &utils.AKInfo{}
-		if c.accessKeyId != "" && c.accessKeySecret != "" {
+		if len(c.accessKeyId) > 0 && len(c.accessKeySecret) > 0 {
 			akInfo.AccessKeyId = c.accessKeyId
 			akInfo.AccessKeySecret = c.accessKeySecret
-			client := &sls.Client{
-				Endpoint:        getSLSEndpoint(region, c.internal),
-				Region:          region,
-				AccessKeyID:     akInfo.AccessKeyId,
-				AccessKeySecret: akInfo.AccessKeySecret,
-				UserAgent:       SLSUserAgent,
-			}
-			client.SetAuthVersion(sls.AuthV4)
-			return client, nil
+			akInfo.SecurityToken = ""
 		} else {
 			akInfoInMeta, err := utils.ParseAKInfoFromMeta()
 			if err != nil {
@@ -289,30 +282,18 @@ func newClient(c *Config) (*sls.Client, error) {
 				return nil, err
 			}
 			akInfo = akInfoInMeta
-			client := &sls.Client{
-				Endpoint:        getSLSEndpoint(region, c.internal),
-				Region:          region,
-				AccessKeyID:     akInfo.AccessKeyId,
-				AccessKeySecret: akInfo.AccessKeySecret,
-				SecurityToken:   akInfo.SecurityToken,
-				UserAgent:       SLSUserAgent,
-			}
-			client.SetAuthVersion(sls.AuthV4)
-			return client, nil
 		}
 	}
 
-	client := &sls.Client{
-		Endpoint:        getSLSEndpoint(region, c.internal),
-		Region:          region,
-		AccessKeyID:     akInfo.AccessKeyId,
-		AccessKeySecret: akInfo.AccessKeySecret,
-		SecurityToken:   akInfo.SecurityToken,
-		UserAgent:       SLSUserAgent,
-	}
-	client.SetAuthVersion(sls.AuthV4)
-
-	return client, nil
+	// construct sls producer config
+	cfg := sls_producer.GetDefaultProducerConfig()
+	cfg.Endpoint = getSLSEndpoint(region, c.internal)
+	cfg.Region = region
+	cfg.UserAgent = SLSUserAgent
+	cfg.CredentialsProvider = sls.NewStaticCredentialsProvider(akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
+	cfg.AuthVersion = sls.AuthV4
+	producer := sls_producer.InitProducer(cfg)
+	return producer, nil
 }
 
 // refer doc: https://help.aliyun.com/zh/sls/developer-reference/endpoints
@@ -329,4 +310,27 @@ func getSLSEndpoint(region string, internal bool) string {
 	}
 	klog.V(6).Infof("sls endpoint, %v", finalEndpoint)
 	return finalEndpoint
+}
+
+// callback, use it to implement the sls_producer.Callback interface
+// to obtain the result of each send,
+// because the producer sends requests to the server asynchronously.
+type callback struct {
+}
+
+func (c callback) Success(result *sls_producer.Result) {
+	klog.V(6).Infof("Successfully used Producer to send log list")
+}
+
+func (c callback) Fail(result *sls_producer.Result) {
+	if result == nil {
+		klog.Error("producer failed to send requests, but result is nil")
+		return
+	}
+	klog.Errorf("Failed to send log list using Producer. "+
+		"ErrorCode: %v, ErrorMessage: %v, RequestID: %v, Timestamp: %v",
+		result.GetErrorCode(),
+		result.GetErrorMessage(),
+		result.GetRequestId(),
+		result.GetTimeStampMs())
 }
