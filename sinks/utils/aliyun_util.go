@@ -6,11 +6,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/denverdino/aliyungo/metadata"
 	"io/ioutil"
-	"k8s.io/klog"
 	"os"
 	"time"
+
+	"github.com/denverdino/aliyungo/metadata"
+	"k8s.io/klog"
 )
 
 const (
@@ -27,6 +28,12 @@ type AKInfo struct {
 }
 
 func (akInfo *AKInfo) IsExpired() bool {
+	klog.V(7).Infof("akinfo Expiration: %v, Now: %v", akInfo.Expiration, time.Now().Format(StsTokenTimeLayout))
+
+	if len(akInfo.AccessKeyId) > 0 && len(akInfo.AccessKeySecret) > 0 && len(akInfo.SecurityToken) == 0 {
+		return false
+	}
+
 	t, err := time.Parse(StsTokenTimeLayout, akInfo.Expiration)
 	if err != nil {
 		klog.Errorf("failed to parse time layout, akInfo Expiration: %v, err: %v", akInfo.Expiration, err)
@@ -137,6 +144,7 @@ func ParseAKInfoFromMeta() (*AKInfo, error) {
 	akInfo.AccessKeyId = auth.AccessKeyId
 	akInfo.AccessKeySecret = auth.AccessKeySecret
 	akInfo.SecurityToken = auth.SecurityToken
+	akInfo.Expiration = auth.Expiration.Format(StsTokenTimeLayout)
 
 	return &akInfo, nil
 }
