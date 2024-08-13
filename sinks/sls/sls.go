@@ -107,17 +107,17 @@ func (s *SLSSink) Stop() {
 // get a sls producer.
 // if akInfo expiration, recreate a new producer.
 func (s *SLSSink) getProducer() *sls_producer.Producer {
-	if !s.AkInfo.IsExpired() {
-		if s.Producer == nil {
-			klog.Error("get producer, err: %w", errors.New("producer is nil"))
-			return nil
-		}
-		return s.Producer
-	} else {
+	if s.Producer == nil {
+		klog.Error("get producer, err: %w", errors.New("producer is nil"))
+		return nil
+	}
+
+	if s.AkInfo.IsExpired() {
 		// if akInfo expiration, recreate a new producer.
 		klog.Infof("akInfo is expiration, start to recreate a new producer.")
 		// 1. stop the old producer
 		s.Producer.SafeClose()
+		// 2. create a new producer
 		newProducer, newAkInfo, err := newProducer(s.Config)
 		if err != nil {
 			klog.Errorf("failed to recreate new producer, because of %v", err)
@@ -125,10 +125,13 @@ func (s *SLSSink) getProducer() *sls_producer.Producer {
 		}
 		s.Producer = newProducer
 		s.AkInfo = newAkInfo
-		s.Producer.Start()
+		// 3. start the new producer
+		if s.Producer != nil {
+			s.Producer.Start()
+		}
 		klog.Infof("recreate new producer, when akInfo expiration")
-		return s.Producer
 	}
+	return s.Producer
 }
 
 func eventToContents(event *v1.Event, labels map[string]string) []*sls.LogContent {
@@ -200,7 +203,9 @@ func NewSLSSink(uri *url.URL) (*SLSSink, error) {
 	}
 	s.Producer = producer
 	s.AkInfo = akInfo
-	s.getProducer().Start()
+	if s.Producer != nil {
+		s.Producer.Start()
+	}
 	return s, nil
 }
 
@@ -304,7 +309,7 @@ func newProducer(c *Config) (*sls_producer.Producer, *utils.AKInfo, error) {
 			akInfoInMeta, err := utils.ParseAKInfoFromMeta()
 			if err != nil {
 				klog.Errorf("failed to get RamRoleToken,because of %v", err)
-				return nil, akInfo, err
+				return nil, nil, err
 			}
 			akInfo = akInfoInMeta
 		}
