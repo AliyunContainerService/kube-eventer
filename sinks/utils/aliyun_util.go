@@ -28,6 +28,11 @@ type AKInfo struct {
 }
 
 func (akInfo *AKInfo) IsExpired() bool {
+	if akInfo == nil {
+		klog.Errorf("determine whether akinfo is expired, err: %v", errors.New("akInfo is nil"))
+		return true
+	}
+
 	klog.V(7).Infof("akinfo Expiration: %v, Now: %v", akInfo.Expiration, time.Now().Format(StsTokenTimeLayout))
 
 	if len(akInfo.AccessKeyId) > 0 && len(akInfo.AccessKeySecret) > 0 && len(akInfo.SecurityToken) == 0 {
