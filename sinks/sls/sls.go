@@ -49,7 +49,12 @@ type SLSSink struct {
 	Config   *Config
 	Project  string
 	LogStore string
+
+	// current sls producer
 	Producer *sls_producer.Producer
+
+	// current ak_info with expiration time
+	AkInfo *utils.AKInfo
 }
 
 // Config can be specific
@@ -99,10 +104,32 @@ func (s *SLSSink) Stop() {
 	s.getProducer().SafeClose()
 }
 
+// get a sls producer.
+// if akInfo expiration, recreate a new producer.
 func (s *SLSSink) getProducer() *sls_producer.Producer {
 	if s.Producer == nil {
 		klog.Error("get producer, err: %w", errors.New("producer is nil"))
 		return nil
+	}
+
+	if s.AkInfo.IsExpired() {
+		// if akInfo expiration, recreate a new producer.
+		klog.Infof("akInfo is expiration, start to recreate a new producer.")
+		// 1. stop the old producer
+		s.Producer.SafeClose()
+		// 2. create a new producer
+		newProducer, newAkInfo, err := newProducer(s.Config)
+		if err != nil {
+			klog.Errorf("failed to recreate new producer, because of %v", err)
+			return nil
+		}
+		s.Producer = newProducer
+		s.AkInfo = newAkInfo
+		// 3. start the new producer
+		if s.Producer != nil {
+			s.Producer.Start()
+		}
+		klog.Infof("recreate new producer, when akInfo expiration")
 	}
 	return s.Producer
 }
@@ -170,12 +197,15 @@ func NewSLSSink(uri *url.URL) (*SLSSink, error) {
 	s.LogStore = c.logStore
 	s.Config = c
 
-	producer, err := newProducer(c)
+	producer, akInfo, err := newProducer(c)
 	if err != nil {
 		return nil, err
 	}
 	s.Producer = producer
-	s.getProducer().Start()
+	s.AkInfo = akInfo
+	if s.Producer != nil {
+		s.Producer.Start()
+	}
 	return s, nil
 }
 
@@ -249,11 +279,11 @@ func parseLabels(labelsStrs []string) map[string]string {
 	return labels
 }
 
-// newProducer create producer with config.
-func newProducer(c *Config) (*sls_producer.Producer, error) {
+// newProducer create producer with config and new akInfo.
+func newProducer(c *Config) (*sls_producer.Producer, *utils.AKInfo, error) {
 	// get region from env
-	region, err := utils.GetRegionFromEnv()
-	if err != nil {
+	region, parseEnvErr := utils.GetRegionFromEnv()
+	if parseEnvErr != nil {
 		if c.regionId != "" {
 			// region from client
 			region = c.regionId
@@ -261,8 +291,8 @@ func newProducer(c *Config) (*sls_producer.Producer, error) {
 			// region from meta data
 			regionInMeta, err := utils.ParseRegionFromMeta()
 			if err != nil {
-				klog.Errorf("failed to get Region,because of %v", err)
-				return nil, err
+				klog.Errorf("failed to get Region, because of %v", err)
+				return nil, nil, err
 			}
 			region = regionInMeta
 		}
@@ -279,7 +309,7 @@ func newProducer(c *Config) (*sls_producer.Producer, error) {
 			akInfoInMeta, err := utils.ParseAKInfoFromMeta()
 			if err != nil {
 				klog.Errorf("failed to get RamRoleToken,because of %v", err)
-				return nil, err
+				return nil, nil, err
 			}
 			akInfo = akInfoInMeta
 		}
@@ -293,7 +323,7 @@ func newProducer(c *Config) (*sls_producer.Producer, error) {
 	cfg.CredentialsProvider = sls.NewStaticCredentialsProvider(akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
 	cfg.AuthVersion = sls.AuthV4
 	producer := sls_producer.InitProducer(cfg)
-	return producer, nil
+	return producer, akInfo, nil
 }
 
 // refer doc: https://help.aliyun.com/zh/sls/developer-reference/endpoints
