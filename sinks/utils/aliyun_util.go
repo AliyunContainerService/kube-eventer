@@ -26,6 +26,19 @@ type AKInfo struct {
 	Keyring         string `json:"keyring"`
 }
 
+func (akInfo *AKInfo) IsExpired() bool {
+	t, err := time.Parse(StsTokenTimeLayout, akInfo.Expiration)
+	if err != nil {
+		klog.Errorf("failed to parse time layout, akInfo Expiration: %v, err: %v", akInfo.Expiration, err)
+		return true
+	}
+	if t.Before(time.Now()) {
+		klog.Errorf("invalid token which is expired, akInfo Expiration: %v, now: %v", akInfo.Expiration, time.Now())
+		return true
+	}
+	return false
+}
+
 func PKCS5UnPadding(origData []byte) []byte {
 	length := len(origData)
 	unpadding := int(origData[length-1])
