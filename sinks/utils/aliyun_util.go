@@ -47,7 +47,7 @@ func (akInfo *AKInfo) IsExpired() bool {
 	klog.V(7).Infof("akinfo Expiration: %v, Now: %v", t.Local().Format(TimeLogLayout), time.Now().Local().Format(TimeLogLayout))
 
 	if t.Before(time.Now()) {
-		klog.Errorf("invalid token which is expired, akInfo Expiration: %v, now: %v", akInfo.Expiration, time.Now())
+		klog.Errorf("invalid token which is expired, akInfo Expiration: %v, now: %v", t.Local().Format(TimeLogLayout), time.Now().Local().Format(TimeLogLayout))
 		return true
 	}
 	return false
