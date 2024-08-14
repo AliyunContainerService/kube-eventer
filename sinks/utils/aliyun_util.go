@@ -17,6 +17,7 @@ import (
 const (
 	ConfigPath         = "/var/addon/token-config"
 	StsTokenTimeLayout = "2006-01-02T15:04:05Z"
+	TimeLogLayout      = "2006-01-02 15:04:05 -07 UTC"
 )
 
 type AKInfo struct {
@@ -33,8 +34,6 @@ func (akInfo *AKInfo) IsExpired() bool {
 		return true
 	}
 
-	klog.V(7).Infof("akinfo Expiration: %v, Now: %v", akInfo.Expiration, time.Now().Format(StsTokenTimeLayout))
-
 	if len(akInfo.AccessKeyId) > 0 && len(akInfo.AccessKeySecret) > 0 && len(akInfo.SecurityToken) == 0 {
 		return false
 	}
@@ -44,6 +43,9 @@ func (akInfo *AKInfo) IsExpired() bool {
 		klog.Errorf("failed to parse time layout, akInfo Expiration: %v, err: %v", akInfo.Expiration, err)
 		return true
 	}
+
+	klog.V(7).Infof("akinfo Expiration: %v, Now: %v", t.Local().Format(TimeLogLayout), time.Now().Local().Format(TimeLogLayout))
+
 	if t.Before(time.Now()) {
 		klog.Errorf("invalid token which is expired, akInfo Expiration: %v, now: %v", akInfo.Expiration, time.Now())
 		return true
@@ -149,7 +151,7 @@ func ParseAKInfoFromMeta() (*AKInfo, error) {
 	akInfo.AccessKeyId = auth.AccessKeyId
 	akInfo.AccessKeySecret = auth.AccessKeySecret
 	akInfo.SecurityToken = auth.SecurityToken
-	akInfo.Expiration = auth.Expiration.Format(StsTokenTimeLayout)
+	akInfo.Expiration = auth.Expiration.UTC().Format(StsTokenTimeLayout)
 
 	return &akInfo, nil
 }
