@@ -102,7 +102,7 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 
 // SendLogs send logs to sls.
 func (s *SLSSink) SendLogs(logs []*sls.Log) (err error) {
-	nextSentIndex := 0 // the start index of next sent logs
+	nextSendIndex := 0 // the start index of next send logs
 	size := 0
 
 	// send logs in batches
@@ -112,17 +112,17 @@ func (s *SLSSink) SendLogs(logs []*sls.Log) (err error) {
 		}
 		size += log.Size()
 		if size > MaxLogGroupInBytes {
-			err = s.getProducer().SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs[nextSentIndex:i], callback{})
+			err = s.getProducer().SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs[nextSendIndex:i], callback{})
 			if err != nil {
 				return fmt.Errorf("send logs in batches [logs size: %v], err: %w", size, err)
 			}
-			nextSentIndex = i
+			nextSendIndex = i
 			size = log.Size()
 		}
 	}
 
 	// send remaining logs
-	err = s.getProducer().SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs[nextSentIndex:], callback{})
+	err = s.getProducer().SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs[nextSendIndex:], callback{})
 	if err != nil {
 		return fmt.Errorf("send remaining logs [logs size: %v], err: %w", size, err)
 	}
