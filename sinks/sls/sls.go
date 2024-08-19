@@ -39,6 +39,8 @@ const (
 	eventLevel         = "level"
 	SLSDefaultEndpoint = "log.aliyuncs.com"
 	SLSUserAgent       = "ack-kube-eventer"
+
+	MaxLogGroupInBytes = 5 * 1024 * 1024 // 5MB
 )
 
 /*
@@ -92,11 +94,39 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 		logs = append(logs, log)
 	}
 
-	err := s.getProducer().SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs, callback{})
-	if err != nil {
-		klog.Errorf("failed to put events to sls,because of %v", err)
+	if err := s.SendLogs(logs); err != nil {
+		klog.Errorf("failed to export events to sls, because of %v", err)
 		return
 	}
+}
+
+// SendLogs send logs to sls.
+func (s *SLSSink) SendLogs(logs []*sls.Log) (err error) {
+	nextSentIndex := 0 // the start index of next sent logs
+	size := 0
+
+	// send logs in batches
+	for i, log := range logs {
+		if log.Size() > MaxLogGroupInBytes {
+			return fmt.Errorf("send logs [logs size: %v], %w", log.Size(), errors.New("the size of log too large"))
+		}
+		size += log.Size()
+		if size > MaxLogGroupInBytes {
+			err = s.getProducer().SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs[nextSentIndex:i], callback{})
+			if err != nil {
+				return fmt.Errorf("send logs in batches [logs size: %v], err: %w", size, err)
+			}
+			nextSentIndex = i
+			size = log.Size()
+		}
+	}
+
+	// send remaining logs
+	err = s.getProducer().SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs[nextSentIndex:], callback{})
+	if err != nil {
+		return fmt.Errorf("send remaining logs [logs size: %v], err: %w", size, err)
+	}
+	return nil
 }
 
 func (s *SLSSink) Stop() {
