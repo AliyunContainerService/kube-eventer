@@ -79,7 +79,7 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 	if len(batch.Events) == 0 {
 		return
 	}
-	logs := make([]*sls.Log, 0)
+
 	for _, event := range batch.Events {
 		log := &sls.Log{}
 
@@ -91,27 +91,11 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 
 		log.Contents = cts
 
-		logs = append(logs, log)
-	}
-
-	if err := s.SendLogs(logs); err != nil {
-		klog.Errorf("failed to export events to sls, because of %v", err)
-		return
-	}
-}
-
-// SendLogs send logs to sls.
-func (s *SLSSink) SendLogs(logs []*sls.Log) error {
-	for _, log := range logs {
-		if log.Size() > MaxLogGroupInBytes {
-			return fmt.Errorf("send logs [log size: %v], %w", log.Size(), errors.New("the size of log too large"))
-		}
 		err := s.getProducer().SendLogWithCallBack(s.Project, s.LogStore, s.Config.topic, "", log, callback{})
 		if err != nil {
-			return fmt.Errorf("send logs one by one [log size: %v], err: %w", log.Size(), err)
+			klog.Errorf("failed to export events to sls, because of %v", err)
 		}
 	}
-	return nil
 }
 
 func (s *SLSSink) Stop() {
