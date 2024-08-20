@@ -101,30 +101,15 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 }
 
 // SendLogs send logs to sls.
-func (s *SLSSink) SendLogs(logs []*sls.Log) (err error) {
-	nextSendIndex := 0 // the start index of next send logs
-	size := 0
-
-	// send logs in batches
-	for i, log := range logs {
+func (s *SLSSink) SendLogs(logs []*sls.Log) error {
+	for _, log := range logs {
 		if log.Size() > MaxLogGroupInBytes {
-			return fmt.Errorf("send logs [logs size: %v], %w", log.Size(), errors.New("the size of log too large"))
+			return fmt.Errorf("send logs [log size: %v], %w", log.Size(), errors.New("the size of log too large"))
 		}
-		size += log.Size()
-		if size > MaxLogGroupInBytes {
-			err = s.getProducer().SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs[nextSendIndex:i], callback{})
-			if err != nil {
-				return fmt.Errorf("send logs in batches [logs size: %v], err: %w", size, err)
-			}
-			nextSendIndex = i
-			size = log.Size()
+		err := s.getProducer().SendLogWithCallBack(s.Project, s.LogStore, s.Config.topic, "", log, callback{})
+		if err != nil {
+			return fmt.Errorf("send logs one by one [log size: %v], err: %w", log.Size(), err)
 		}
-	}
-
-	// send remaining logs
-	err = s.getProducer().SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs[nextSendIndex:], callback{})
-	if err != nil {
-		return fmt.Errorf("send remaining logs [logs size: %v], err: %w", size, err)
 	}
 	return nil
 }
