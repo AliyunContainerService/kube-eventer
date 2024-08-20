@@ -39,8 +39,6 @@ const (
 	eventLevel         = "level"
 	SLSDefaultEndpoint = "log.aliyuncs.com"
 	SLSUserAgent       = "ack-kube-eventer"
-
-	MaxLogGroupInBytes = 5 * 1024 * 1024 // 5MB
 )
 
 /*
