@@ -77,7 +77,7 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 	if len(batch.Events) == 0 {
 		return
 	}
-	logs := make([]*sls.Log, 0)
+
 	for _, event := range batch.Events {
 		log := &sls.Log{}
 
@@ -89,13 +89,10 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 
 		log.Contents = cts
 
-		logs = append(logs, log)
-	}
-
-	err := s.getProducer().SendLogListWithCallBack(s.Project, s.LogStore, s.Config.topic, "", logs, callback{})
-	if err != nil {
-		klog.Errorf("failed to put events to sls,because of %v", err)
-		return
+		err := s.getProducer().SendLogWithCallBack(s.Project, s.LogStore, s.Config.topic, "", log, callback{})
+		if err != nil {
+			klog.Errorf("failed to export events to sls, because of %v", err)
+		}
 	}
 }
 
