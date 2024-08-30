@@ -2,6 +2,8 @@ module github.com/AliyunContainerService/kube-eventer
 
 go 1.22.0
 
+toolchain go1.22.5
+
 require (
 	github.com/Shopify/sarama v1.38.1
 	github.com/alibabacloud-go/eventbridge-sdk v1.3.3
