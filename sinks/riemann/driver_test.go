@@ -41,7 +41,7 @@ func NewFakeRiemannClient() *fakeRiemannClient {
 	return &fakeRiemannClient{[]proto.Event{}}
 }
 
-func (client *fakeRiemannClient) Connect(timeout int32) error {
+func (client *fakeRiemannClient) Connect() error {
 	return nil
 }
 

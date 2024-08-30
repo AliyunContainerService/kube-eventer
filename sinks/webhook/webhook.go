@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/AliyunContainerService/kube-eventer/util"
 	"io/ioutil"
@@ -206,7 +207,7 @@ func NewWebHookSink(uri *url.URL) (*WebHookSink, error) {
 			s.bodyTemplate = defaultBodyTemplate
 			return s, nil
 		}
-		configmap, err := client.CoreV1().ConfigMaps(s.bodyConfigMapNamespace).Get(s.bodyConfigMapName, metav1.GetOptions{})
+		configmap, err := client.CoreV1().ConfigMaps(s.bodyConfigMapNamespace).Get(context.Background(), s.bodyConfigMapName, metav1.GetOptions{})
 		if err != nil {
 			klog.Warningf("Failed to get configMap %s in namespace %s and use default bodyTemplate instead,because of %v", s.bodyConfigMapName, s.bodyConfigMapNamespace, err)
 			s.bodyTemplate = defaultBodyTemplate
