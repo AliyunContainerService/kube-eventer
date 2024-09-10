@@ -15,6 +15,7 @@
 package kubernetes
 
 import (
+	"context"
 	metrics "github.com/AliyunContainerService/kube-eventer/metrics/prometheus"
 	"net/url"
 	"time"
@@ -108,7 +109,7 @@ event_loop:
 func (this *KubernetesEventSource) watch() {
 	// Outer loop, for reconnections.
 	for {
-		events, err := this.eventClient.List(metav1.ListOptions{Limit: 1})
+		events, err := this.eventClient.List(context.Background(), metav1.ListOptions{Limit: 1})
 		if err != nil {
 			klog.Errorf("Failed to load events: %v", err)
 			time.Sleep(time.Second)
@@ -120,6 +121,7 @@ func (this *KubernetesEventSource) watch() {
 		resourceVersion := events.ResourceVersion
 
 		watcher, err := this.eventClient.Watch(
+			context.Background(),
 			metav1.ListOptions{
 				Watch:           true,
 				ResourceVersion: resourceVersion})

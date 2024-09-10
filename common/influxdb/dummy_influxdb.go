@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	influxdb "github.com/influxdata/influxdb/client"
+	influxdb "github.com/influxdata/influxdb/client/v2"
 )
 
 type PointSavedToInfluxdb struct {
@@ -33,11 +33,11 @@ func NewFakeInfluxDBClient() *FakeInfluxDBClient {
 	return &FakeInfluxDBClient{[]PointSavedToInfluxdb{}}
 }
 
-func (client *FakeInfluxDBClient) Write(bps influxdb.BatchPoints) (*influxdb.Response, error) {
-	for _, pnt := range bps.Points {
-		client.Pnts = append(client.Pnts, PointSavedToInfluxdb{pnt})
+func (client *FakeInfluxDBClient) Write(bps influxdb.BatchPoints) error {
+	for _, pnt := range bps.Points() {
+		client.Pnts = append(client.Pnts, PointSavedToInfluxdb{*pnt})
 	}
-	return nil, nil
+	return nil
 }
 
 func (client *FakeInfluxDBClient) Query(q influxdb.Query) (*influxdb.Response, error) {
@@ -49,8 +49,12 @@ func (client *FakeInfluxDBClient) Query(q influxdb.Query) (*influxdb.Response, e
 	}, nil
 }
 
-func (client *FakeInfluxDBClient) Ping() (time.Duration, string, error) {
+func (client *FakeInfluxDBClient) Ping(timeout time.Duration) (time.Duration, string, error) {
 	return 0, "", nil
+}
+
+func (client *FakeInfluxDBClient) Close() error {
+	return nil
 }
 
 var Client = NewFakeInfluxDBClient()

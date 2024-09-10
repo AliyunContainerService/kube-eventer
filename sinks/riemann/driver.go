@@ -96,7 +96,7 @@ func appendEvent(events []riemanngo.Event, sink *RiemannSink, event *kube_api.Ev
 			"first-timestamp":  firstTimestamp,
 		},
 		Metric: event.Count,
-		Ttl:    sink.config.Ttl,
+		TTL:    time.Duration(sink.config.Ttl),
 		State:  getEventState(event),
 		Tags:   sink.config.Tags,
 	}

@@ -101,10 +101,11 @@ func CreateRiemannSink(uri *url.URL) (*RiemannSink, error) {
 // Receives a sink, connect the riemann client.
 func GetRiemannClient(config RiemannConfig) (riemanngo.Client, error) {
 	klog.Infof("Connect Riemann client...")
-	client := riemanngo.NewTcpClient(config.Host)
+	// client := riemanngo.NewTcpClient(config.Host)
+	client := riemanngo.NewTCPClient(config.Host, 5)
 	runtime.SetFinalizer(client, func(c riemanngo.Client) { c.Close() })
 	// 5 seconds timeout
-	err := client.Connect(5)
+	err := client.Connect()
 	if err != nil {
 		return nil, err
 	}
