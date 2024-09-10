@@ -23,13 +23,16 @@ import (
 
 	"k8s.io/client-go/pkg/version"
 
-	influxdb "github.com/influxdata/influxdb/client"
+	influxdb "github.com/influxdata/influxdb/client/v2"
 )
 
+const PingTimeout = time.Second * 5
+
 type InfluxdbClient interface {
-	Write(influxdb.BatchPoints) (*influxdb.Response, error)
+	Write(influxdb.BatchPoints) error
 	Query(influxdb.Query) (*influxdb.Response, error)
-	Ping() (time.Duration, string, error)
+	Ping(time.Duration) (time.Duration, string, error)
+	Close() error
 }
 
 type InfluxdbConfig struct {
@@ -55,19 +58,18 @@ func NewClient(c InfluxdbConfig) (InfluxdbClient, error) {
 		url.Scheme = "https"
 	}
 
-	iConfig := &influxdb.Config{
-		URL:       *url,
-		Username:  c.User,
-		Password:  c.Password,
-		UserAgent: fmt.Sprintf("%v/%v", "kube-eventer", version.Get().GitVersion),
-		UnsafeSsl: c.InsecureSsl,
+	iConfig := influxdb.HTTPConfig{
+		Addr:               url.String(),
+		Username:           c.User,
+		Password:           c.Password,
+		UserAgent:          fmt.Sprintf("%v/%v", "kube-eventer", version.Get().GitVersion),
+		InsecureSkipVerify: c.InsecureSsl,
 	}
-	client, err := influxdb.NewClient(*iConfig)
-
+	client, err := influxdb.NewHTTPClient(iConfig)
 	if err != nil {
 		return nil, err
 	}
-	if _, _, err := client.Ping(); err != nil {
+	if _, _, err := client.Ping(PingTimeout); err != nil {
 		return nil, fmt.Errorf("failed to ping InfluxDB server at %q - %v", c.Host, err)
 	}
 	return client, nil

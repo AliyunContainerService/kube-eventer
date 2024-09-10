@@ -26,7 +26,7 @@ import (
 	influxdb_common "github.com/AliyunContainerService/kube-eventer/common/influxdb"
 	"github.com/AliyunContainerService/kube-eventer/core"
 	metrics_core "github.com/AliyunContainerService/kube-eventer/metrics/core"
-	influxdb "github.com/influxdata/influxdb/client"
+	influxdb "github.com/influxdata/influxdb/client/v2"
 	kube_api "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
@@ -68,58 +68,64 @@ func getEventValue(event *kube_api.Event) (string, error) {
 }
 
 func eventToPointWithFields(event *kube_api.Event) (*influxdb.Point, error) {
-	point := influxdb.Point{
-		Measurement: "events",
-		Time:        util.GetLastEventTimestamp(event).UTC(),
-		Fields: map[string]interface{}{
-			"message": event.Message,
-		},
-		Tags: map[string]string{
-			eventUID: string(event.UID),
-		},
+	tags := map[string]string{
+		eventUID:                            string(event.UID),
+		"object_name":                       event.InvolvedObject.Name,
+		"type":                              event.Type,
+		"kind":                              event.InvolvedObject.Kind,
+		"component":                         event.Source.Component,
+		"reason":                            event.Reason,
+		metrics_core.LabelNamespaceName.Key: event.Namespace,
+		metrics_core.LabelHostname.Key:      event.Source.Host,
 	}
 	if event.InvolvedObject.Kind == "Pod" {
-		point.Tags[metrics_core.LabelPodId.Key] = string(event.InvolvedObject.UID)
+		tags[metrics_core.LabelPodId.Key] = string(event.InvolvedObject.UID)
 	}
-	point.Tags["object_name"] = event.InvolvedObject.Name
-	point.Tags["type"] = event.Type
-	point.Tags["kind"] = event.InvolvedObject.Kind
-	point.Tags["component"] = event.Source.Component
-	point.Tags["reason"] = event.Reason
-	point.Tags[metrics_core.LabelNamespaceName.Key] = event.Namespace
-	point.Tags[metrics_core.LabelHostname.Key] = event.Source.Host
-	return &point, nil
+
+	fields := map[string]interface{}{
+		"message": event.Message,
+	}
+
+	timestamp := util.GetLastEventTimestamp(event).UTC()
+
+	point, err := influxdb.NewPoint("events", tags, fields, timestamp)
+	if err != nil {
+		return nil, fmt.Errorf("new point with fields, err: %w", err)
+	}
+	return point, nil
 }
 
 func eventToPoint(event *kube_api.Event) (*influxdb.Point, error) {
+	tags := map[string]string{
+		eventUID:                       string(event.UID),
+	}
+	if event.InvolvedObject.Kind == "Pod" {
+		tags[metrics_core.LabelPodId.Key] = string(event.InvolvedObject.UID)
+		tags[metrics_core.LabelPodName.Key] = event.InvolvedObject.Name
+	}
+
 	value, err := getEventValue(event)
 	if err != nil {
 		return nil, err
 	}
+	fields := map[string]interface{}{
+		valueField: value,
+	}
 
-	point := influxdb.Point{
-		Measurement: eventMeasurementName,
-		Time:        util.GetLastEventTimestamp(event).UTC(),
-		Fields: map[string]interface{}{
-			valueField: value,
-		},
-		Tags: map[string]string{
-			eventUID: string(event.UID),
-		},
+	timestamp := util.GetLastEventTimestamp(event).UTC()
+
+	point, err := influxdb.NewPoint(eventMeasurementName, tags, fields, timestamp)
+	if err != nil {
+		return nil, fmt.Errorf("new point, err: %w", err)
 	}
-	if event.InvolvedObject.Kind == "Pod" {
-		point.Tags[metrics_core.LabelPodId.Key] = string(event.InvolvedObject.UID)
-		point.Tags[metrics_core.LabelPodName.Key] = event.InvolvedObject.Name
-	}
-	point.Tags[metrics_core.LabelHostname.Key] = event.Source.Host
-	return &point, nil
+	return point, nil
 }
 
 func (sink *influxdbSink) ExportEvents(eventBatch *core.EventBatch) {
 	sink.Lock()
 	defer sink.Unlock()
 
-	dataPoints := make([]influxdb.Point, 0, 10)
+	dataPoints := make([]*influxdb.Point, 0, 10)
 	for _, event := range eventBatch.Events {
 		var point *influxdb.Point
 		var err error
@@ -132,12 +138,12 @@ func (sink *influxdbSink) ExportEvents(eventBatch *core.EventBatch) {
 			klog.Warningf("Failed to convert event to point: %v", err)
 		}
 
-		point.Tags["cluster_name"] = sink.c.ClusterName
+		point.Tags()["cluster_name"] = sink.c.ClusterName
 
-		dataPoints = append(dataPoints, *point)
+		dataPoints = append(dataPoints, point)
 		if len(dataPoints) >= maxSendBatchSize {
 			sink.sendData(dataPoints)
-			dataPoints = make([]influxdb.Point, 0, 1)
+			dataPoints = make([]*influxdb.Point, 0, 1)
 		}
 	}
 	if len(dataPoints) >= 0 {
@@ -145,23 +151,29 @@ func (sink *influxdbSink) ExportEvents(eventBatch *core.EventBatch) {
 	}
 }
 
-func (sink *influxdbSink) sendData(dataPoints []influxdb.Point) {
+func (sink *influxdbSink) sendData(dataPoints []*influxdb.Point) {
 	if err := sink.createDatabase(); err != nil {
 		klog.Errorf("Failed to create influxdb: %v", err)
 		return
 	}
-	bp := influxdb.BatchPoints{
-		Points:          dataPoints,
+
+	bp, err := influxdb.NewBatchPoints(influxdb.BatchPointsConfig{
 		Database:        sink.c.DbName,
 		RetentionPolicy: "default",
+	})
+	if err != nil {
+		klog.Errorf("InfluxDB new BatchPoints: %v", err)
+		return
 	}
 
+	bp.AddPoints(dataPoints)
+
 	start := time.Now()
-	if _, err := sink.client.Write(bp); err != nil {
+	if err := sink.client.Write(bp); err != nil {
 		klog.Errorf("InfluxDB write failed: %v", err)
 		if strings.Contains(err.Error(), dbNotFoundError) {
 			sink.resetConnection()
-		} else if _, _, err := sink.client.Ping(); err != nil {
+		} else if _, _, err := sink.client.Ping(influxdb_common.PingTimeout); err != nil {
 			klog.Errorf("InfluxDB ping failed: %v", err)
 			sink.resetConnection()
 		}
@@ -175,7 +187,7 @@ func (sink *influxdbSink) Name() string {
 }
 
 func (sink *influxdbSink) Stop() {
-	// nothing needs to be done.
+	sink.client.Close()
 }
 
 func (sink *influxdbSink) createDatabase() error {
@@ -197,7 +209,7 @@ func (sink *influxdbSink) createDatabase() error {
 
 	if resp, err := sink.client.Query(q); err != nil {
 		// We want to return error only if it is not "already exists" error.
-		if !(resp != nil && resp.Err != nil && strings.Contains(resp.Err.Error(), "existing policy")) {
+		if !(resp != nil && len(resp.Err) != 0 && strings.Contains(resp.Err, "existing policy")) {
 			err := sink.createRetentionPolicy()
 			if err != nil {
 				return err
@@ -217,7 +229,7 @@ func (sink *influxdbSink) createRetentionPolicy() error {
 
 	if resp, err := sink.client.Query(q); err != nil {
 		// We want to return error only if it is not "already exists" error.
-		if !(resp != nil && resp.Err != nil && strings.Contains(resp.Err.Error(), "already exists")) {
+		if !(resp != nil && len(resp.Err) != 0 && strings.Contains(resp.Err, "already exists")) {
 			return fmt.Errorf("Retention policy creation failed: %v", err)
 		}
 	}
