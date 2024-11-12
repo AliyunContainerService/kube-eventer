@@ -1,6 +1,7 @@
 package webhook
 
 import (
+	"fmt"
 	"net/url"
 	"testing"
 
@@ -79,7 +80,7 @@ func TestRenderMessageWithDoubleQuote(t *testing.T) {
 	}
 	event := &v1.Event{
 		Type:    Warning,
-		Message: "pod \"demo-1rare3\" OOMKilled",
+		Message: "pod \"demo-1rare3\" OOMKilled\n",
 	}
 	w.bodyTemplate = `{"EventMessage": "{{ .Message }}"}`
 	template, _ := w.RenderBodyTemplate(event)
@@ -95,4 +96,10 @@ func (ws *WebHookSink) MockSend(event *v1.Event) (matched bool) {
 	}
 	// this event should be send, this return value just for testing
 	return true
+}
+func TestSanitizeMessage(t *testing.T) {
+	Message := "---pod \"demo-1rare3\" OOMKilled\n---"
+	fmt.Println(Message)
+	sanitizedMessage := sanitizeMessage(Message)
+	fmt.Println(sanitizedMessage)
 }

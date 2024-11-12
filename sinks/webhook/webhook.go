@@ -3,13 +3,14 @@ package webhook
 import (
 	"bytes"
 	"fmt"
-	"github.com/AliyunContainerService/kube-eventer/util"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/AliyunContainerService/kube-eventer/util"
 
 	"github.com/AliyunContainerService/kube-eventer/common/filters"
 	"github.com/AliyunContainerService/kube-eventer/common/kubernetes"
@@ -117,7 +118,7 @@ func (ws *WebHookSink) RenderBodyTemplate(event *v1.Event) (body string, err err
 		klog.Errorf("Failed to parse template,because of %v", err)
 		return "", err
 	}
-	event.Message = strings.Replace(event.Message, `"`, ``, -1)
+	event.Message = sanitizeMessage(event.Message)
 	event.LastTimestamp = metav1.Time{Time: util.GetLastEventTimestamp(event)}
 	if err := tp.Execute(&tpl, event); err != nil {
 		klog.Errorf("Failed to renderTemplate,because of %v", err)
@@ -129,6 +130,42 @@ func (ws *WebHookSink) RenderBodyTemplate(event *v1.Event) (body string, err err
 func (ws *WebHookSink) Stop() {
 	// not implement
 	return
+}
+
+// sanitizeMessage 清理消息中的特定字符。
+// 该函数主要用于移除消息字符串中的引号、换行符和制表符，以确保消息的格式符合特定要求。
+// 参数:
+//
+//	message (string): 需要清理的原始消息字符串。
+//
+// 返回值:
+//
+//	string: 清理后的消息字符串。
+func sanitizeMessage(message string) string {
+	// 检查消息是否为空，如果为空则直接返回。
+	// 这样做可以避免对空字符串进行不必要的处理，提高函数效率。
+	if message == "" {
+		return message
+	}
+
+	// 使用strings.Builder高效地构建字符串。
+	// Builder提供了一种灵活且高效的方式来构建字符串，特别适用于需要动态构建字符串的场景。
+	var b strings.Builder
+	// 遍历消息中的每个字符。
+	for _, r := range message {
+		// 根据字符的不同，采取不同的处理方式。
+		switch r {
+		case '"', '\n', '\t':
+			// 对于引号、换行符和制表符，跳过这些字符，不将其写入最终的消息中。
+			// 这是为了确保消息中不包含可能引起误解或格式问题的特殊字符。
+			continue
+		default:
+			// 对于其他字符，将其添加到Builder中。
+			b.WriteRune(r)
+		}
+	}
+	// 返回构建好的字符串。
+	return b.String()
 }
 
 func getLevels(level string) []string {
