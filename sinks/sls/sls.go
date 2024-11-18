@@ -334,10 +334,14 @@ func getSLSEndpoint(region string, internal bool) string {
 	}
 
 	if internal {
+		// vpc network
 		region = fmt.Sprintf("%s-intranet", region)
 		finalEndpoint = fmt.Sprintf("%s.%s", region, SLSDefaultEndpoint)
+	} else {
+		// public network
+		finalEndpoint = fmt.Sprintf("%s.%s", region, finalEndpoint)
 	}
-	klog.V(6).Infof("sls endpoint, %v", finalEndpoint)
+	klog.Infof("sls endpoint, %v", finalEndpoint)
 	return finalEndpoint
 }
 
