@@ -65,7 +65,6 @@ type JudgeEvent struct {
 
 var (
 	normalEventCounter  *prometheus.CounterVec
-	errorEventCounter   *prometheus.CounterVec
 	warningEventCounter *prometheus.CounterVec
 
 	reasonToEventKind = map[string]AbnormalEventReason{
@@ -152,26 +151,16 @@ func InitMetrics() {
 		},
 		[]string{"reason", "namespace", "kind"},
 	)
-	errorEventLabels := []string{
-		"reason",
-		"kind",
-		"name",
-		"namespace",
-	}
-	errorEventCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "eventer",
-		Subsystem: "events",
-		Name:      "error_total",
-	}, errorEventLabels)
-	warningEventCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "eventer",
-		Subsystem: "events",
-		Name:      "warning_total",
-	}, errorEventLabels)
+	warningEventCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "eventer",
+			Subsystem: "events",
+			Name:      "warning_total",
+		}, []string{"reason", "kind", "name", "namespace"},
+	)
 
 	prometheus.MustRegister(normalEventCounter)
 	prometheus.MustRegister(warningEventCounter)
-	prometheus.MustRegister(errorEventCounter)
 }
 
 func event2Labels(kind AbnormalEventReason, event *v1.Event) []string {
@@ -185,11 +174,6 @@ func event2Labels(kind AbnormalEventReason, event *v1.Event) []string {
 
 func eventCounterInc(reason, namespace, kind string) {
 	normalEventCounter.WithLabelValues(reason, namespace, kind).Inc()
-}
-
-func recordErrorEvent(reason AbnormalEventReason, event *v1.Event) {
-	labels := event2Labels(reason, event)
-	errorEventCounter.WithLabelValues(labels...).Inc()
 }
 
 func recordWarningEvent(reason AbnormalEventReason, event *v1.Event) {
@@ -213,13 +197,10 @@ func triageEvent(event *v1.Event) (AbnormalEventReason, bool) {
 
 // RecordEvent records event to prometheus metrics
 func RecordEvent(event *v1.Event) {
-	if kind, ok := triageEvent(event); ok {
-		recordErrorEvent(kind, event)
-	} else {
-		if event.Type == v1.EventTypeWarning {
-			recordWarningEvent(AbnormalEventReason(event.Reason), event)
-		} else {
-			eventCounterInc(event.Reason, event.Namespace, event.InvolvedObject.Kind)
-		}
+	if kind, ok := triageEvent(event); ok || event.Type == v1.EventTypeWarning {
+		recordWarningEvent(kind, event)
+		return
 	}
+
+	eventCounterInc(event.Reason, event.Namespace, event.InvolvedObject.Kind)
 }
