@@ -15,6 +15,7 @@
 package sources
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/AliyunContainerService/kube-eventer/common/flags"
@@ -26,23 +27,23 @@ import (
 type SourceFactory struct {
 }
 
-func (this *SourceFactory) Build(uri flags.Uri, exportMetric bool) (core.EventSource, error) {
+func (this *SourceFactory) Build(ctx context.Context, uri flags.Uri, exportMetric bool) (core.EventSource, error) {
 	switch uri.Key {
 	case "kubernetes":
-		src, err := kube.NewKubernetesSource(&uri.Val, exportMetric)
+		src, err := kube.NewKubernetesSource(ctx, &uri.Val, exportMetric)
 		return src, err
 	default:
 		return nil, fmt.Errorf("Source not recognized: %s", uri.Key)
 	}
 }
 
-func (this *SourceFactory) BuildAll(uris flags.Uris, exportMetric bool) ([]core.EventSource, error) {
+func (this *SourceFactory) BuildAll(ctx context.Context, uris flags.Uris, exportMetric bool) ([]core.EventSource, error) {
 	if len(uris) != 1 {
 		return nil, fmt.Errorf("Only one source is supported")
 	}
 	result := []core.EventSource{}
 	for _, uri := range uris {
-		source, err := this.Build(uri, exportMetric)
+		source, err := this.Build(ctx, uri, exportMetric)
 		if err != nil {
 			klog.Errorf("Failed to create %s: %v", uri.Key, err)
 		} else {

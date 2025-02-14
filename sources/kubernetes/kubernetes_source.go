@@ -15,9 +15,11 @@
 package kubernetes
 
 import (
-	metrics "github.com/AliyunContainerService/kube-eventer/metrics/prometheus"
+	"context"
 	"net/url"
 	"time"
+
+	metrics "github.com/AliyunContainerService/kube-eventer/metrics/prometheus"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -72,7 +74,7 @@ type KubernetesEventSource struct {
 	// Large local buffer, periodically read.
 	localEventsBuffer chan *kubeapi.Event
 
-	stopChannel chan struct{}
+	context context.Context
 
 	eventClient kubev1core.EventInterface
 
@@ -175,7 +177,7 @@ func (this *KubernetesEventSource) watch() {
 					klog.Errorf("Wrong object received: %v", watchUpdate)
 				}
 
-			case <-this.stopChannel:
+			case <-this.context.Done():
 				watcher.Stop()
 				klog.Infof("Event watching stopped")
 				return
@@ -184,7 +186,7 @@ func (this *KubernetesEventSource) watch() {
 	}
 }
 
-func NewKubernetesSource(uri *url.URL, exportMetric bool) (*KubernetesEventSource, error) {
+func NewKubernetesSource(ctx context.Context, uri *url.URL, exportMetric bool) (*KubernetesEventSource, error) {
 	kubeClient, err := kubernetes.GetKubernetesClient(uri)
 	if err != nil {
 		klog.Errorf("Failed to create kubernetes client,because of %v", err)
@@ -193,13 +195,14 @@ func NewKubernetesSource(uri *url.URL, exportMetric bool) (*KubernetesEventSourc
 	eventClient := kubeClient.CoreV1().Events(kubeapi.NamespaceAll)
 	result := KubernetesEventSource{
 		localEventsBuffer: make(chan *kubeapi.Event, LocalEventsBufferSize),
-		stopChannel:       make(chan struct{}),
+		context:           ctx,
 		eventClient:       eventClient,
 		exportMetric:      exportMetric,
 	}
 	if exportMetric {
 		metrics.InitMetrics()
 	}
+
 	go result.watch()
 	return &result, nil
 }

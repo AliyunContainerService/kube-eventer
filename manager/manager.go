@@ -15,6 +15,7 @@
 package manager
 
 import (
+	"context"
 	"time"
 
 	"github.com/AliyunContainerService/kube-eventer/core"
@@ -49,26 +50,25 @@ type realManager struct {
 	source    core.EventSource
 	sink      core.EventSink
 	frequency time.Duration
-	stopChan  chan struct{}
+	context   context.Context
 }
 
-func NewManager(source core.EventSource, sink core.EventSink, frequency time.Duration) (Manager, error) {
+func NewManager(ctx context.Context, source core.EventSource, sink core.EventSink, frequency time.Duration) (Manager, error) {
 	manager := realManager{
 		source:    source,
 		sink:      sink,
 		frequency: frequency,
-		stopChan:  make(chan struct{}),
+		context:   ctx,
 	}
 
 	return &manager, nil
 }
 
 func (rm *realManager) Start() {
-	go rm.Housekeep()
+	rm.Housekeep()
 }
 
 func (rm *realManager) Stop() {
-	rm.stopChan <- struct{}{}
 }
 
 func (rm *realManager) Housekeep() {
@@ -82,7 +82,7 @@ func (rm *realManager) Housekeep() {
 		select {
 		case <-time.After(timeToNextSync):
 			rm.housekeep()
-		case <-rm.stopChan:
+		case <-rm.context.Done():
 			rm.sink.Stop()
 			return
 		}

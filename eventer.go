@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net"
@@ -25,6 +26,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/AliyunContainerService/kube-eventer/api"
@@ -35,6 +37,8 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/version"
 	"k8s.io/klog"
 )
+
+const ServerShutdownTimeout = 20 * time.Second
 
 var (
 	argFrequency    = flag.Duration("frequency", 30*time.Second, "The resolution at which Eventer pushes events to sinks")
@@ -47,11 +51,11 @@ var (
 	argHealthzPort  = flag.Uint("healthz-port", 8084, "port eventer health check listens on")
 )
 
-func main() {
-	quitChannel := make(chan struct{}, 0)
-
-	klog.InitFlags(nil)
-	defer klog.Flush()
+func eventer(ctx context.Context) <-chan struct{} {
+	end := make(chan struct{})
+	defer func(end chan<- struct{}) {
+		end <- struct{}{}
+	}(end)
 
 	flag.Var(&argSources, "source", "source(s) to read events from")
 	flag.Var(&argSinks, "sink", "external sink(s) that receive events")
@@ -66,7 +70,7 @@ func main() {
 
 	setMaxProcs()
 
-	klog.Infof(strings.Join(os.Args, " "))
+	klog.Info(strings.Join(os.Args, " "))
 	klog.Info(version.VersionInfo())
 	if err := validateFlags(); err != nil {
 		klog.Fatal(err)
@@ -77,7 +81,7 @@ func main() {
 		klog.Fatal("Wrong number of sources specified")
 	}
 	sourceFactory := sources.NewSourceFactory()
-	sources, err := sourceFactory.BuildAll(argSources, argEventMetrics)
+	sources, err := sourceFactory.BuildAll(ctx, argSources, argEventMetrics)
 	if err != nil {
 		klog.Fatalf("Failed to create sources: %v", err)
 	}
@@ -101,27 +105,56 @@ func main() {
 	}
 
 	// main manager
-	manager, err := manager.NewManager(sources[0], sinkManager, *argFrequency)
+	manager, err := manager.NewManager(ctx, sources[0], sinkManager, *argFrequency)
 	if err != nil {
 		klog.Fatalf("Failed to create main manager: %v", err)
 	}
 
-	manager.Start()
-	klog.Infof("Starting eventer")
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		manager.Start()
+	}()
 
-	go startHTTPServer()
+	err = startHTTPServer(ctx)
+	if err != nil {
+		klog.Fatalf("Failed to start http server: %v", err)
+	}
+	klog.Info("HTTP server gracefully shutdown")
 
-	<-quitChannel
+	// wait for all goroutine to avoid leak
+	wg.Wait()
+
+	return end
 }
 
-func startHTTPServer() {
+func startHTTPServer(ctx context.Context) error {
+	srv := http.Server{Addr: net.JoinHostPort(*argHealthzIP, strconv.Itoa(int(*argHealthzPort)))}
+
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(200)
 		w.Write([]byte("ok"))
 	})
 
-	klog.Info("Starting eventer http service")
-	klog.Fatal(http.ListenAndServe(net.JoinHostPort(*argHealthzIP, strconv.Itoa(int(*argHealthzPort))), nil))
+	serverErr := make(chan error, 1)
+	go func() {
+		// Capture ListenAndServe errors such as "port already in use".
+		// However, when a server is gracefully shutdown, it is safe to ignore errors
+		// returned from this method (given the select logic below), because
+		// Shutdown causes ListenAndServe to always return http.ErrServerClosed.
+		klog.Info("Starting eventer http service")
+		serverErr <- srv.ListenAndServe()
+	}()
+	var err error
+	select {
+	case <-ctx.Done():
+		ctx, cancel := context.WithTimeout(context.Background(), ServerShutdownTimeout)
+		defer cancel()
+		err = srv.Shutdown(ctx)
+	case err = <-serverErr:
+	}
+	return err
 }
 
 func validateFlags() error {
