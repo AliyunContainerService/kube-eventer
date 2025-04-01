@@ -99,6 +99,7 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 func (s *SLSSink) Stop() {
 	// safe close producer: close after all data is sent
 	s.getProducer().SafeClose()
+	klog.Info("sls producer safely closed")
 }
 
 // get a sls producer.
