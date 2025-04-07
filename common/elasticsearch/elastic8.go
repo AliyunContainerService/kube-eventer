@@ -11,13 +11,13 @@ import (
 	"github.com/pborman/uuid"
 )
 
-type Elastic7Wrapper struct {
+type Elastic8Wrapper struct {
 	client        *elastic7.Client
 	pipeline      string
 	bulkProcessor *elastic7.BulkProcessor
 }
 
-func NewEsClient7(config ElasticConfig, bulkWorkers int, pipeline string) (*Elastic7Wrapper, error) {
+func NewEsClient8(config ElasticConfig, bulkWorkers int, pipeline string) (*Elastic8Wrapper, error) {
 	var startupFns []elastic7.ClientOptionFunc
 
 	if len(config.Url) > 0 {
@@ -59,7 +59,7 @@ func NewEsClient7(config ElasticConfig, bulkWorkers int, pipeline string) (*Elas
 	bps, err := client.BulkProcessor().
 		Name("ElasticSearchWorker").
 		Workers(bulkWorkers).
-		After(bulkAfterCBV7).
+		After(bulkAfterCBV8).
 		Stats(true).
 		BulkActions(1000).               // commit if # requests >= 1000
 		BulkSize(2 << 20).               // commit if size of requests >= 2 MB
@@ -69,14 +69,14 @@ func NewEsClient7(config ElasticConfig, bulkWorkers int, pipeline string) (*Elas
 		return nil, fmt.Errorf("failed to an ElasticSearch Bulk Processor: %v", err)
 	}
 
-	return &Elastic7Wrapper{client: client, bulkProcessor: bps, pipeline: pipeline}, nil
+	return &Elastic8Wrapper{client: client, bulkProcessor: bps, pipeline: pipeline}, nil
 }
 
-func (es *Elastic7Wrapper) IndexExists(indices ...string) (bool, error) {
+func (es *Elastic8Wrapper) IndexExists(indices ...string) (bool, error) {
 	return es.client.IndexExists(indices...).Do(context.Background())
 }
 
-func (es *Elastic7Wrapper) CreateIndex(name string, mapping string) (bool, error) {
+func (es *Elastic8Wrapper) CreateIndex(name string, mapping string) (bool, error) {
 	res, err := es.client.CreateIndex(name).Do(context.Background())
 	if err != nil {
 		return false, err
@@ -84,11 +84,11 @@ func (es *Elastic7Wrapper) CreateIndex(name string, mapping string) (bool, error
 	return res.Acknowledged, err
 }
 
-func (es *Elastic7Wrapper) getAliases(index string) (*elastic7.AliasesResult, error) {
+func (es *Elastic8Wrapper) getAliases(index string) (*elastic7.AliasesResult, error) {
 	return es.client.Aliases().Index(index).Do(context.Background())
 }
 
-func (es *Elastic7Wrapper) AddAlias(index string, alias string) (bool, error) {
+func (es *Elastic8Wrapper) AddAlias(index string, alias string) (bool, error) {
 	res, err := es.client.Alias().Add(index, alias).Do(context.Background())
 	if err != nil {
 		return false, err
@@ -96,7 +96,7 @@ func (es *Elastic7Wrapper) AddAlias(index string, alias string) (bool, error) {
 	return res.Acknowledged, err
 }
 
-func (es *Elastic7Wrapper) HasAlias(indexName string, aliasName string) (bool, error) {
+func (es *Elastic8Wrapper) HasAlias(indexName string, aliasName string) (bool, error) {
 	aliases, err := es.getAliases(indexName)
 	if err != nil {
 		return false, err
@@ -104,17 +104,17 @@ func (es *Elastic7Wrapper) HasAlias(indexName string, aliasName string) (bool, e
 	return aliases.Indices[indexName].HasAlias(aliasName), nil
 }
 
-func (es *Elastic7Wrapper) ErrorStats() int64 {
+func (es *Elastic8Wrapper) ErrorStats() int64 {
 	if es.bulkProcessor != nil {
 		return es.bulkProcessor.Stats().Failed
 	}
 	return 0
 }
 
-func (es *Elastic7Wrapper) AddBulkReq(index, typeName string, data interface{}) error {
+func (es *Elastic8Wrapper) AddBulkReq(index, typeName string, data interface{}) error {
 	req := elastic7.NewBulkIndexRequest().
 		Index(index).
-		Type(typeName).
+		// Type(typeName).
 		Id(uuid.NewUUID().String()).
 		Doc(data)
 	if es.pipeline != "" {
@@ -125,11 +125,11 @@ func (es *Elastic7Wrapper) AddBulkReq(index, typeName string, data interface{}) 
 	return nil
 }
 
-func (es *Elastic7Wrapper) FlushBulk() error {
+func (es *Elastic8Wrapper) FlushBulk() error {
 	return es.bulkProcessor.Flush()
 }
 
-func bulkAfterCBV7(_ int64, _ []elastic7.BulkableRequest, response *elastic7.BulkResponse, err error) {
+func bulkAfterCBV8(_ int64, _ []elastic7.BulkableRequest, response *elastic7.BulkResponse, err error) {
 	if err != nil {
 		klog.Warningf("Failed to execute bulk operation to ElasticSearch: %v", err)
 	}
