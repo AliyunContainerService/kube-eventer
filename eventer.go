@@ -28,6 +28,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -99,7 +100,12 @@ func main() {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
 	go func() {
+		defer wg.Done()
+
 		if err = startHTTPServer(ctx); err != nil {
 			klog.Fatalf("start http server, err: %v", err)
 		}
@@ -116,6 +122,8 @@ func main() {
 	if err = run(ctx); err != nil {
 		klog.Fatal(err)
 	}
+
+	wg.Wait()
 }
 
 func run(ctx context.Context) error {
@@ -154,14 +162,15 @@ func run(ctx context.Context) error {
 
 	manager.Start()
 	klog.Info("Manager started")
-	go func() {
-		<-ctx.Done()
+	defer func() {
 		manager.Stop()
 		// TODO: How to ensure all sinks are stopped correctly?
 		// Currently simply implemented through time.Sleep function.
 		// time.Sleep(time.Second * 5)
 		klog.Info("Manager stopped")
 	}()
+
+	<-ctx.Done()
 	return nil
 }
 
