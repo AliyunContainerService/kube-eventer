@@ -102,6 +102,7 @@ func main() {
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
+	defer wg.Wait()
 
 	go func() {
 		defer wg.Done()
@@ -122,8 +123,6 @@ func main() {
 	if err = run(ctx); err != nil {
 		klog.Fatal(err)
 	}
-
-	wg.Wait()
 }
 
 func run(ctx context.Context) error {
