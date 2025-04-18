@@ -99,6 +99,13 @@ func main() {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	go func() {
+		if err = startHTTPServer(ctx); err != nil {
+			klog.Fatalf("start http server, err: %v", err)
+		}
+		klog.Info("HTTP server shutdown gracefully")
+	}()
+
 	if argLeaderElectionConfig.LeaderElect {
 		err = util.NewLeaderElection(run, kubeclient, &argLeaderElectionConfig, ctx)
 		if err != nil {
@@ -155,11 +162,6 @@ func run(ctx context.Context) error {
 		// time.Sleep(time.Second * 5)
 		klog.Info("Manager stopped")
 	}()
-
-	if err = startHTTPServer(ctx); err != nil {
-		return fmt.Errorf("start http server, err: %w", err)
-	}
-	klog.Info("HTTP server shutdown gracefully")
 	return nil
 }
 
