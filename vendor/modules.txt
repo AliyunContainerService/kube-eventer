@@ -8,11 +8,14 @@ github.com/alibabacloud-go/debug/debug
 github.com/alibabacloud-go/eventbridge-sdk/eventbridge
 # github.com/alibabacloud-go/eventbridge-util v1.0.4
 github.com/alibabacloud-go/eventbridge-util/client
-# github.com/alibabacloud-go/tea v1.1.10
+# github.com/alibabacloud-go/tea v1.1.19
 github.com/alibabacloud-go/tea/tea
 github.com/alibabacloud-go/tea/utils
 # github.com/alibabacloud-go/tea-utils v1.3.7
 github.com/alibabacloud-go/tea-utils/service
+# github.com/aliyun/aliyun-log-go-sdk v0.1.80
+github.com/aliyun/aliyun-log-go-sdk
+github.com/aliyun/aliyun-log-go-sdk/util
 # github.com/aliyun/credentials-go v1.1.2
 github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/request
@@ -56,6 +59,8 @@ github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
+# github.com/cenkalti/backoff v2.2.1+incompatible
+github.com/cenkalti/backoff
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
@@ -63,7 +68,6 @@ github.com/davecgh/go-spew/spew
 # github.com/denverdino/aliyungo v0.0.0-20190410085603-611ead8a6fed
 github.com/denverdino/aliyungo/common
 github.com/denverdino/aliyungo/metadata
-github.com/denverdino/aliyungo/sls
 github.com/denverdino/aliyungo/util
 # github.com/eapache/go-resiliency v1.1.0
 github.com/eapache/go-resiliency/breaker
@@ -71,12 +75,19 @@ github.com/eapache/go-resiliency/breaker
 github.com/eapache/go-xerial-snappy
 # github.com/eapache/queue v1.1.0
 github.com/eapache/queue
+# github.com/go-kit/kit v0.10.0
+github.com/go-kit/kit/log
+github.com/go-kit/kit/log/level
+# github.com/go-logfmt/logfmt v0.5.0
+github.com/go-logfmt/logfmt
 # github.com/go-sql-driver/mysql v1.5.0
 github.com/go-sql-driver/mysql
 # github.com/go-stack/stack v1.8.0
 github.com/go-stack/stack
-# github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
+# github.com/gogo/protobuf v1.3.2
+github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
+github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 github.com/gogo/protobuf/sortkeys
 # github.com/golang/protobuf v1.4.3
 github.com/golang/protobuf/proto
@@ -106,10 +117,12 @@ github.com/influxdata/influxdb/pkg/escape
 github.com/jmespath/go-jmespath
 # github.com/json-iterator/go v1.1.11
 github.com/json-iterator/go
-# github.com/klauspost/compress v1.9.5
+# github.com/klauspost/compress v1.17.8
+github.com/klauspost/compress
 github.com/klauspost/compress/fse
 github.com/klauspost/compress/huff0
-github.com/klauspost/compress/snappy
+github.com/klauspost/compress/internal/cpuinfo
+github.com/klauspost/compress/internal/snapref
 github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/mailru/easyjson v0.7.0
@@ -132,7 +145,7 @@ github.com/olivere/elastic/v7/config
 github.com/olivere/elastic/v7/uritemplates
 # github.com/pborman/uuid v1.2.0
 github.com/pborman/uuid
-# github.com/pierrec/lz4 v2.0.5+incompatible
+# github.com/pierrec/lz4 v2.6.0+incompatible
 github.com/pierrec/lz4
 github.com/pierrec/lz4/internal/xxh32
 # github.com/pkg/errors v0.9.1
@@ -207,11 +220,16 @@ go.mongodb.org/mongo-driver/x/mongo/driver/session
 go.mongodb.org/mongo-driver/x/mongo/driver/topology
 go.mongodb.org/mongo-driver/x/mongo/driver/uuid
 go.mongodb.org/mongo-driver/x/mongo/driver/wiremessage
+# go.uber.org/atomic v1.5.0
+go.uber.org/atomic
 # golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 golang.org/x/crypto/ocsp
 golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20200625001655-4c5254603344
+# golang.org/x/lint v0.0.0-20190930215403-16217165b5de
+golang.org/x/lint
+golang.org/x/lint/golint
+# golang.org/x/net v0.0.0-20201021035429-f5854403a974
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -235,8 +253,12 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
+# golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 golang.org/x/time/rate
+# golang.org/x/tools v0.0.0-20210106214847-113979e3529a
+golang.org/x/tools/go/ast/astutil
+golang.org/x/tools/go/gcexportdata
+golang.org/x/tools/go/internal/gcimporter
 # google.golang.org/appengine v1.5.0
 google.golang.org/appengine/internal
 google.golang.org/appengine/internal/base
@@ -278,6 +300,8 @@ google.golang.org/protobuf/types/known/timestamppb
 gopkg.in/inf.v0
 # gopkg.in/ini.v1 v1.56.0
 gopkg.in/ini.v1
+# gopkg.in/natefinch/lumberjack.v2 v2.0.0
+gopkg.in/natefinch/lumberjack.v2
 # gopkg.in/olivere/elastic.v3 v3.0.75
 gopkg.in/olivere/elastic.v3
 gopkg.in/olivere/elastic.v3/backoff

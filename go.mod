@@ -6,6 +6,7 @@ require (
 	github.com/Shopify/sarama v1.22.1
 	github.com/alibabacloud-go/eventbridge-sdk v1.2.6
 	github.com/alibabacloud-go/tea-utils v1.3.7
+	github.com/aliyun/aliyun-log-go-sdk v0.1.80
 	github.com/aws/aws-sdk-go v1.34.28
 	github.com/denverdino/aliyungo v0.0.0-20190410085603-611ead8a6fed
 	github.com/go-sql-driver/mysql v1.5.0

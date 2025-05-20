@@ -16,26 +16,29 @@ package sls
 import (
 	"encoding/json"
 	"errors"
-	"github.com/AliyunContainerService/kube-eventer/core"
-	metrics_core "github.com/AliyunContainerService/kube-eventer/metrics/core"
-	"github.com/AliyunContainerService/kube-eventer/sinks/utils"
-	"github.com/AliyunContainerService/kube-eventer/util"
-	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/sls"
-	"k8s.io/api/core/v1"
-	"k8s.io/klog"
-	"log"
+	"fmt"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/AliyunContainerService/kube-eventer/core"
+	metrics_core "github.com/AliyunContainerService/kube-eventer/metrics/core"
+	"github.com/AliyunContainerService/kube-eventer/sinks/utils"
+	"github.com/AliyunContainerService/kube-eventer/util"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	sls_producer "github.com/aliyun/aliyun-log-go-sdk/producer"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/klog"
 )
 
 const (
-	slsSinkName = "SLSSink"
-	eventId     = "eventId"
-	podEvent    = "Pod"
-	eventLevel  = "level"
+	slsSinkName        = "SLSSink"
+	eventId            = "eventId"
+	podEvent           = "Pod"
+	eventLevel         = "level"
+	SLSDefaultEndpoint = "log.aliyuncs.com"
+	SLSUserAgent       = "ack-kube-eventer"
 )
 
 /*
@@ -46,6 +49,12 @@ type SLSSink struct {
 	Config   *Config
 	Project  string
 	LogStore string
+
+	// current sls producer
+	Producer *sls_producer.Producer
+
+	// current ak_info with expiration time
+	AkInfo *utils.AKInfo
 }
 
 // Config can be specific
@@ -68,7 +77,7 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 	if len(batch.Events) == 0 {
 		return
 	}
-	logs := make([]*sls.Log, 0)
+
 	for _, event := range batch.Events {
 		log := &sls.Log{}
 
@@ -76,35 +85,54 @@ func (s *SLSSink) ExportEvents(batch *core.EventBatch) {
 
 		log.Time = &time
 
-		cts := s.eventToContents(event)
+		cts := eventToContents(event, s.Config.label)
 
 		log.Contents = cts
 
-		logs = append(logs, log)
-	}
-	request := &sls.PutLogsRequest{
-		Project:  s.Project,
-		LogStore: s.LogStore,
-		LogItems: sls.LogGroup{
-			Logs: logs,
-		},
-	}
-	if len(s.Config.topic) > 0 {
-		request.LogItems.Topic = &s.Config.topic
-	}
-
-	err := s.client().PutLogs(request)
-	if err != nil {
-		klog.Errorf("failed to put events to sls,because of %v", err)
+		err := s.getProducer().SendLogWithCallBack(s.Project, s.LogStore, s.Config.topic, "", log, callback{})
+		if err != nil {
+			klog.Errorf("failed to export events to sls, because of %v", err)
+		}
 	}
 }
 
 func (s *SLSSink) Stop() {
-	//not implement
+	// safe close producer: close after all data is sent
+	s.getProducer().SafeClose()
 }
 
-func (s *SLSSink) eventToContents(event *v1.Event) []*sls.Log_Content {
-	contents := make([]*sls.Log_Content, 0)
+// get a sls producer.
+// if akInfo expiration, recreate a new producer.
+func (s *SLSSink) getProducer() *sls_producer.Producer {
+	if s.Producer == nil {
+		klog.Error("get producer, err: %w", errors.New("producer is nil"))
+		return nil
+	}
+
+	if s.AkInfo.IsExpired() {
+		// if akInfo expiration, recreate a new producer.
+		klog.Infof("akInfo is expiration, start to recreate a new producer.")
+		// 1. stop the old producer
+		s.Producer.SafeClose()
+		// 2. create a new producer
+		newProducer, newAkInfo, err := newProducer(s.Config)
+		if err != nil {
+			klog.Errorf("failed to recreate new producer, because of %v", err)
+			return nil
+		}
+		s.Producer = newProducer
+		s.AkInfo = newAkInfo
+		// 3. start the new producer
+		if s.Producer != nil {
+			s.Producer.Start()
+		}
+		klog.Infof("recreate new producer, when akInfo expiration")
+	}
+	return s.Producer
+}
+
+func eventToContents(event *v1.Event, labels map[string]string) []*sls.LogContent {
+	contents := make([]*sls.LogContent, 0)
 	bytes, err := json.MarshalIndent(event, "", " ")
 	if err != nil {
 		return nil
@@ -112,57 +140,46 @@ func (s *SLSSink) eventToContents(event *v1.Event) []*sls.Log_Content {
 
 	indexKey := eventId
 	fullContent := string(bytes)
-	contents = append(contents, &sls.Log_Content{
+	contents = append(contents, &sls.LogContent{
 		Key:   &indexKey,
 		Value: &fullContent,
 	})
 
-	contents = append(contents, &sls.Log_Content{
+	contents = append(contents, &sls.LogContent{
 		Key:   &metrics_core.LabelHostname.Key,
 		Value: &event.Source.Host,
 	})
 
 	level := eventLevel
-	contents = append(contents, &sls.Log_Content{
+	contents = append(contents, &sls.LogContent{
 		Key:   &level,
 		Value: &event.Type,
 	})
 
 	if event.InvolvedObject.Kind == podEvent {
 		podId := string(event.InvolvedObject.UID)
-		contents = append(contents, &sls.Log_Content{
+		contents = append(contents, &sls.LogContent{
 			Key:   &metrics_core.LabelPodId.Key,
 			Value: &podId,
 		})
 
-		contents = append(contents, &sls.Log_Content{
+		contents = append(contents, &sls.LogContent{
 			Key:   &metrics_core.LabelPodName.Key,
 			Value: &event.InvolvedObject.Name,
 		})
 	}
 
-	if len(s.Config.label) > 0 {
-		for key, value := range s.Config.label {
-			// deep copy
-			newKey := key
-			newValue := value
-			contents = append(contents, &sls.Log_Content{
-				Key:   &newKey,
-				Value: &newValue,
-			})
-		}
+	for key, value := range labels {
+		// deep copy
+		newKey := key
+		newValue := value
+		contents = append(contents, &sls.LogContent{
+			Key:   &newKey,
+			Value: &newValue,
+		})
 	}
 
 	return contents
-}
-
-func (s *SLSSink) client() *sls.Client {
-	c, e := newClient(s.Config)
-	if e != nil {
-		log.Fatalf("can not create sls client because of %s", e.Error())
-		return nil
-	}
-	return c
 }
 
 // NewSLSSink returns new SLSSink
@@ -176,6 +193,16 @@ func NewSLSSink(uri *url.URL) (*SLSSink, error) {
 	s.Project = c.project
 	s.LogStore = c.logStore
 	s.Config = c
+
+	producer, akInfo, err := newProducer(c)
+	if err != nil {
+		return nil, err
+	}
+	s.Producer = producer
+	s.AkInfo = akInfo
+	if s.Producer != nil {
+		s.Producer.Start()
+	}
 	return s, nil
 }
 
@@ -249,11 +276,11 @@ func parseLabels(labelsStrs []string) map[string]string {
 	return labels
 }
 
-// newClient creates client using AK or metadata
-func newClient(c *Config) (*sls.Client, error) {
+// newProducer create producer with config and new akInfo.
+func newProducer(c *Config) (*sls_producer.Producer, *utils.AKInfo, error) {
 	// get region from env
-	region, err := utils.GetRegionFromEnv()
-	if err != nil {
+	region, parseEnvErr := utils.GetRegionFromEnv()
+	if parseEnvErr != nil {
 		if c.regionId != "" {
 			// region from client
 			region = c.regionId
@@ -261,33 +288,82 @@ func newClient(c *Config) (*sls.Client, error) {
 			// region from meta data
 			regionInMeta, err := utils.ParseRegionFromMeta()
 			if err != nil {
-				klog.Errorf("failed to get Region,because of %v", err)
-				return nil, err
+				klog.Errorf("failed to get Region, because of %v", err)
+				return nil, nil, err
 			}
 			region = regionInMeta
 		}
 	}
 
+	// get ak info
 	akInfo, err := utils.ParseAKInfoFromConfigPath()
 	if err != nil {
 		akInfo = &utils.AKInfo{}
-		if c.accessKeyId != "" && c.accessKeySecret != "" {
+		if len(c.accessKeyId) > 0 && len(c.accessKeySecret) > 0 {
+			akInfo = &utils.AKInfo{}
 			akInfo.AccessKeyId = c.accessKeyId
 			akInfo.AccessKeySecret = c.accessKeySecret
-			client := sls.NewClient(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret)
-			return client, nil
+			akInfo.SecurityToken = ""
 		} else {
 			akInfoInMeta, err := utils.ParseAKInfoFromMeta()
 			if err != nil {
 				klog.Errorf("failed to get RamRoleToken,because of %v", err)
-				return nil, err
+				return nil, nil, err
 			}
 			akInfo = akInfoInMeta
-			client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
-			return client, nil
 		}
 	}
 
-	client := sls.NewClientForAssumeRole(common.Region(region), c.internal, akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
-	return client, nil
+	// construct sls producer config
+	cfg := sls_producer.GetDefaultProducerConfig()
+	cfg.Endpoint = getSLSEndpoint(region, c.internal)
+	cfg.Region = region
+	cfg.UserAgent = SLSUserAgent
+	cfg.CredentialsProvider = sls.NewStaticCredentialsProvider(akInfo.AccessKeyId, akInfo.AccessKeySecret, akInfo.SecurityToken)
+	cfg.AuthVersion = sls.AuthV4
+	producer := sls_producer.InitProducer(cfg)
+	return producer, akInfo, nil
+}
+
+// refer doc: https://help.aliyun.com/zh/sls/developer-reference/endpoints
+func getSLSEndpoint(region string, internal bool) string {
+	finalEndpoint := SLSDefaultEndpoint
+	endpointFromEnv := os.Getenv("SLS_ENDPOINT")
+	if endpointFromEnv != "" {
+		finalEndpoint = endpointFromEnv
+	}
+
+	if internal {
+		// vpc network
+		region = fmt.Sprintf("%s-intranet", region)
+		finalEndpoint = fmt.Sprintf("%s.%s", region, SLSDefaultEndpoint)
+	} else {
+		// public network
+		finalEndpoint = fmt.Sprintf("%s.%s", region, finalEndpoint)
+	}
+	klog.Infof("sls endpoint, %v", finalEndpoint)
+	return finalEndpoint
+}
+
+// callback, use it to implement the sls_producer.Callback interface
+// to obtain the result of each send,
+// because the producer sends requests to the server asynchronously.
+type callback struct {
+}
+
+func (c callback) Success(result *sls_producer.Result) {
+	klog.V(6).Infof("Successfully used Producer to send log list")
+}
+
+func (c callback) Fail(result *sls_producer.Result) {
+	if result == nil {
+		klog.Error("producer failed to send requests, but result is nil")
+		return
+	}
+	klog.Errorf("Failed to send log list using Producer. "+
+		"ErrorCode: %v, ErrorMessage: %v, RequestID: %v, Timestamp: %v",
+		result.GetErrorCode(),
+		result.GetErrorMessage(),
+		result.GetRequestId(),
+		result.GetTimeStampMs())
 }
