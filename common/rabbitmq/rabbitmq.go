@@ -199,6 +199,9 @@ func NewAmqpClient(uri *url.URL, topicType string) (AmqpClient, error) {
 	amqp.Logger = GologAdapterLogger{}
 
 	TLSClientConfig, TLSClientConfigEnable, err := getTlsConfiguration(opts)
+	if err != nil {
+		return nil, err
+	}
 
 	var config = amqp.Config{}
 
