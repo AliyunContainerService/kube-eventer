@@ -20,10 +20,11 @@ require (
 	github.com/olivere/elastic/v7 v7.0.6
 	github.com/pborman/uuid v1.2.0
 	github.com/prometheus/client_golang v1.11.1
+	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/riemann/riemann-go-client v0.4.0
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9
 	github.com/smartystreets/gunit v1.0.0 // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.8.0
 	go.mongodb.org/mongo-driver v1.5.1
 	golang.org/x/sys v0.2.0 // indirect
 	gopkg.in/olivere/elastic.v3 v3.0.75

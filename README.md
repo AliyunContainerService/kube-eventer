@@ -134,6 +134,7 @@ Supported Sinks:
 | <a href="docs/en/honeycomb-sink.md">honeycomb</a>     | sink to honeycomb                 |
 | <a href="docs/en/influxdb-sink.md">influxdb</a>      | sink to influxdb                  |
 | <a href="docs/en/kafka-sink.md">kafka</a>         | sink to kafka                     |
+| <a href="docs/en/rabbitmq-sink.md">rabbitMQ</a>         | sink to rabbitMQ                     |
 | <a href="docs/en/mysql-sink.md">mysql</a>               | sink to mysql database           |
 | <a href="docs/en/wechat-sink.md">wechat</a>               | sink to wechat           |
 | <a href="docs/en/webhook-sink.md">webhook</a>               | sink to webhook           |
