@@ -1,3 +1,5 @@
+# github.com/AliyunContainerService/ack-ram-tool/pkg/ecsmetadata v0.0.9
+github.com/AliyunContainerService/ack-ram-tool/pkg/ecsmetadata
 # github.com/DataDog/zstd v1.3.6-0.20190409195224-796139022798
 github.com/DataDog/zstd
 # github.com/Shopify/sarama v1.22.1
@@ -15,6 +17,7 @@ github.com/alibabacloud-go/tea/utils
 github.com/alibabacloud-go/tea-utils/service
 # github.com/aliyun/aliyun-log-go-sdk v0.1.80
 github.com/aliyun/aliyun-log-go-sdk
+github.com/aliyun/aliyun-log-go-sdk/producer
 github.com/aliyun/aliyun-log-go-sdk/util
 # github.com/aliyun/credentials-go v1.1.2
 github.com/aliyun/credentials-go/credentials
@@ -65,10 +68,6 @@ github.com/cenkalti/backoff
 github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/denverdino/aliyungo v0.0.0-20190410085603-611ead8a6fed
-github.com/denverdino/aliyungo/common
-github.com/denverdino/aliyungo/metadata
-github.com/denverdino/aliyungo/util
 # github.com/eapache/go-resiliency v1.1.0
 github.com/eapache/go-resiliency/breaker
 # github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21

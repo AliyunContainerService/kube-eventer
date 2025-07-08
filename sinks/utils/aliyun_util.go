@@ -1,17 +1,17 @@
 package utils
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"github.com/AliyunContainerService/ack-ram-tool/pkg/ecsmetadata"
 	"io/ioutil"
+	"k8s.io/klog"
 	"os"
 	"time"
-
-	"github.com/denverdino/aliyungo/metadata"
-	"k8s.io/klog"
 )
 
 const (
@@ -99,8 +99,8 @@ func GetOwnerAccountFromEnv() (accountId string, err error) {
 func ParseRegion() (string, error) {
 	region, err := GetRegionFromEnv()
 	if err != nil {
-		m := metadata.NewMetaData(nil)
-		region, err = m.Region()
+		m := ecsmetadata.DefaultClient
+		region, err = m.GetRegionId(context.Background())
 		if err != nil {
 			klog.Errorf("failed to get Region, because of %v", err)
 			return "", err
@@ -110,8 +110,8 @@ func ParseRegion() (string, error) {
 }
 
 func ParseRegionFromMeta() (string, error) {
-	m := metadata.NewMetaData(nil)
-	region, err := m.Region()
+	m := ecsmetadata.DefaultClient
+	region, err := m.GetRegionId(context.Background())
 	if err != nil {
 		klog.Errorf("failed to get Region, because of %v", err)
 		return "", err
@@ -122,8 +122,8 @@ func ParseRegionFromMeta() (string, error) {
 func ParseOwnerAccountId() (string, error) {
 	accountId, err := GetOwnerAccountFromEnv()
 	if err != nil {
-		m := metadata.NewMetaData(nil)
-		accountId, err = m.OwnerAccountID()
+		m := ecsmetadata.DefaultClient
+		accountId, err = m.GetOwnerAccountId(context.Background())
 		if err != nil {
 			klog.Errorf("failed to get OwnerAccount, because of %v", err)
 			return "", err
@@ -134,14 +134,14 @@ func ParseOwnerAccountId() (string, error) {
 
 func ParseAKInfoFromMeta() (*AKInfo, error) {
 	var akInfo AKInfo
-	m := metadata.NewMetaData(nil)
-	roleName, err := m.RoleName()
+	m := ecsmetadata.DefaultClient
+	roleName, err := m.GetRoleName(context.Background())
 	if err != nil {
 		klog.Errorf("failed to get RoleName,because of %v", err)
 		return nil, err
 	}
 
-	auth, err := m.RamRoleToken(roleName)
+	auth, err := m.GetRoleCredentials(context.Background(), roleName)
 	if err != nil {
 		klog.Errorf("failed to get RamRoleToken,because of %v", err)
 		return nil, err
