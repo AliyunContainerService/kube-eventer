@@ -26,6 +26,8 @@ RUN apk --no-cache --update upgrade
 COPY --from=build-env /src/github.com/AliyunContainerService/kube-eventer/kube-eventer /
 COPY --from=build-env /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
+RUN ls -hl
+
 ENV TZ "Asia/Shanghai"
 RUN apk add --no-cache tzdata
 #COPY deploy/entrypoint.sh /
