@@ -340,7 +340,6 @@ func getSLSEndpoint(region string, internal bool) string {
 		region = fmt.Sprintf("%s-intranet", region)
 		finalEndpoint = fmt.Sprintf("https://%s.%s", region, SLSDefaultEndpoint)
 	} else {
-		qq
 		// public network
 		finalEndpoint = fmt.Sprintf("https://%s.%s", region, finalEndpoint)
 	}
