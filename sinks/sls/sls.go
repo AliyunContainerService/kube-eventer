@@ -331,6 +331,8 @@ func getSLSEndpoint(region string, internal bool) string {
 	endpointFromEnv := os.Getenv("SLS_ENDPOINT")
 	if endpointFromEnv != "" {
 		finalEndpoint = endpointFromEnv
+		klog.Infof("sls endpoint from env, %v", finalEndpoint)
+		return finalEndpoint
 	}
 
 	if internal {
