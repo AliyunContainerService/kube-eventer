@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.25.3 AS build-env
+FROM --platform=$BUILDPLATFORM golang:1.25.6 AS build-env
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG BUILDARCH
@@ -17,7 +17,7 @@ RUN echo "I am running on $BUILDPLATFORM $BUILDARCH, building for $TARGETPLATFOR
 RUN make ARCH=$TARGETARCH
 
 
-FROM registry-cn-hangzhou.ack.aliyuncs.com/dev/alpine:3.18-update
+FROM registry-cn-hangzhou.ack.aliyuncs.com/dev/alpine:3.20-update
 # this image is maintained by Alibaba Cloud Container Service Team with CVE fixed.
 LABEL maintainer="KeyOfSpectator <shichun.fsc@alibaba-inc.com>"
 
@@ -37,4 +37,3 @@ RUN addgroup -g 1000 nonroot && \
 USER nonroot:nonroot
 
 ENTRYPOINT ["/kube-eventer"]
-
