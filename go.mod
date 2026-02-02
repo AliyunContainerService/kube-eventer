@@ -1,6 +1,8 @@
 module github.com/AliyunContainerService/kube-eventer
 
-go 1.24
+go 1.24.0
+
+toolchain go1.24.11
 
 require (
 	github.com/AliyunContainerService/ack-ram-tool/pkg/ecsmetadata v0.0.9
