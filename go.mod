@@ -27,7 +27,7 @@ require (
 	k8s.io/api v0.17.16
 	k8s.io/apimachinery v0.17.16
 	k8s.io/client-go v0.17.16
-	k8s.io/klog v1.0.0
+	k8s.io/klog/v2 v2.140.0
 )
 
 require (
@@ -45,6 +45,7 @@ require (
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
@@ -89,6 +90,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20220521103104-8f96da9f5d5e // indirect
+	k8s.io/klog v1.0.0 // indirect
 	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )

@@ -25,7 +25,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/metrics/core"
 	"github.com/prometheus/client_golang/prometheus"
 	kube_api "k8s.io/api/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 const (

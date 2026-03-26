@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/riemann/riemann-go-client"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // Used to store the Riemann configuration specified in the Heapster cli
