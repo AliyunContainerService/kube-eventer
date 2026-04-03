@@ -18,7 +18,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"net/url"
 	"strings"
 )

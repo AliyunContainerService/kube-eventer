@@ -19,7 +19,7 @@ import (
 	"net/url"
 	"sync"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	honeycomb_common "github.com/AliyunContainerService/kube-eventer/common/honeycomb"
 	event_core "github.com/AliyunContainerService/kube-eventer/core"

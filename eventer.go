@@ -33,7 +33,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/sinks"
 	"github.com/AliyunContainerService/kube-eventer/sources"
 	"github.com/AliyunContainerService/kube-eventer/version"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -51,6 +51,8 @@ func main() {
 	quitChannel := make(chan struct{}, 0)
 
 	klog.InitFlags(nil)
+	_ = flag.Set("legacy_stderr_threshold_behavior", "false")
+	_ = flag.Set("stderrthreshold", "INFO")
 	defer klog.Flush()
 
 	flag.Var(&argSources, "source", "source(s) to read events from")

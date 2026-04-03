@@ -20,7 +20,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	awsauth "github.com/smartystreets/go-aws-auth"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // AWSSigningTransport used to sign outgoing requests to AWS ES

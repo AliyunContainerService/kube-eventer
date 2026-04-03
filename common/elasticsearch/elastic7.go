@@ -3,7 +3,7 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"time"
 
 	elastic7 "github.com/olivere/elastic/v7"

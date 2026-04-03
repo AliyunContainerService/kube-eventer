@@ -5,7 +5,7 @@ import (
 	"regexp"
 
 	v1 "k8s.io/api/core/v1"
-	log "k8s.io/klog"
+	log "k8s.io/klog/v2"
 )
 
 type GenericFilter struct {

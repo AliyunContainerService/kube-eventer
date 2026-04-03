@@ -20,7 +20,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/core"
 	"github.com/AliyunContainerService/kube-eventer/util"
 	kube_api "k8s.io/api/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"net/url"
 	"sync"
 )

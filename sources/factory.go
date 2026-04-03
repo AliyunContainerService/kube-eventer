@@ -20,7 +20,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/common/flags"
 	"github.com/AliyunContainerService/kube-eventer/core"
 	kube "github.com/AliyunContainerService/kube-eventer/sources/kubernetes"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 type SourceFactory struct {

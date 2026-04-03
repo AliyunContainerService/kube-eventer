@@ -18,7 +18,7 @@ package kafka
 //
 // * https://github.com/Shopify/sarama/blob/master/sarama.go
 
-import "k8s.io/klog"
+import "k8s.io/klog/v2"
 
 type GologAdapterLogger struct {
 }
