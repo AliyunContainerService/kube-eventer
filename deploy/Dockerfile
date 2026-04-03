@@ -4,7 +4,7 @@ ENV GOPATH /:/src/github.com/AliyunContainerService/kube-eventer/vendor
 ENV GO111MODULE on
 ENV GOPROXY=https://goproxy.cn,direct
 WORKDIR /src/github.com/AliyunContainerService/kube-eventer
-RUN apt-get update -y && apt-get install gcc ca-certificates
+RUN apt-get update -y && apt-get install gcc ca-certificates -y
 RUN make
 
 
