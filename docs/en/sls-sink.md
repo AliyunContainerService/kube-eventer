@@ -10,34 +10,24 @@ The following options are available:
 * `project` - Project of SLS instance. 
 * `logStore` - logStore of SLS instance project. 
 * `topic` - topic for every log sent to SLS. 
-* `regionId` - **Strongly recommended for self-built (non-Alibaba Cloud managed) clusters.** The Alibaba Cloud region ID where your SLS instance resides (e.g. `cn-hangzhou`). If not set via this parameter or the `RegionId` environment variable, kube-eventer will attempt to auto-detect the region from the instance metadata service (`http://100.100.100.200/latest/meta-data/region-id`), which is unavailable in self-built clusters and will cause a startup error. Can also be configured via the `RegionId` environment variable.
+* `regionId` - optional param. Region of SLS instance. **Must set for self-built (non-Alibaba Cloud managed) clusters.**
 * `label` - Custom labels on alerting message.(such as clusterId), format is label=ClusterId,test_clusterId&label=RegionId,test_regionId&label=UserId,test_uid
 * `accessKeyId` - optional param. aliyun access key to sink to sls. 
 * `accessKeySecret` - optional param. aliyun access key secret to sink to sls.
 * `internal` - optional param. if true, it will sink to sls through aliyun internal network connection. 
 
-> **Note for self-built clusters:** If `regionId` is not specified and the metadata service is unreachable, kube-eventer will fail at startup with an error like:
+> **Note for self-built clusters:** If `regionId` is not specified, kube-eventer will try to get region info from the metadata service. In self-built clusters this usually fails and kube-eventer will fail at startup with an error like:
 > `can not create sls client because of Get "http://100.100.100.200/latest/meta-data/region-id": dial tcp 100.100.100.200:80: i/o timeout`
 >
 > Always set `regionId` explicitly when running outside of Alibaba Cloud managed environments.
 
 For example:
 
-    --sink=sls:https://sls.aliyuncs.com?project=my_sls_project&logStore=my_sls_project_logStore&topic=k8s-cluster-dev&regionId=cn-hangzhou&label=Key1,Value1&label=Key2,Value2
+    --sink=sls:https://cn-hangzhou.log.aliyuncs.com?project=my_sls_project&logStore=my_sls_project_logStore&topic=k8s-cluster-dev&regionId=cn-hangzhou&label=Key1,Value1&label=Key2,Value2
 
 For VPC/internal network access:
 
-    --sink=sls:https://sls.aliyuncs.com?project=my_sls_project&logStore=my_sls_project_logStore&topic=k8s-cluster-dev&regionId=cn-hangzhou&internal=true&label=Key1,Value1
-
-#### How to configure regionId via environment variable.
-
-You can also set `regionId` through the `RegionId` environment variable in the kube-eventer deployment template:
-
-    env:
-     - name: RegionId
-       value: "cn-hangzhou"
-
-> Note: The environment variable name is `RegionId` (case-sensitive).
+    --sink=sls:https://cn-hangzhou-internal.log.aliyuncs.com?project=my_sls_project&logStore=my_sls_project_logStore&topic=k8s-cluster-dev&regionId=cn-hangzhou&internal=true&label=Key1,Value1&label=Key2,Value2
 
 #### How to config aliyun access key.
 
