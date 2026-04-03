@@ -25,7 +25,7 @@ For example:
 
     --sink=sls:https://cn-hangzhou.log.aliyuncs.com?project=my_sls_project&logStore=my_sls_project_logStore&topic=k8s-cluster-dev&regionId=cn-hangzhou&label=Key1,Value1&label=Key2,Value2
 
-For VPC/internal network access:
+For Alibaba Cloud VPC network access:
 
     --sink=sls:https://cn-hangzhou-internal.log.aliyuncs.com?project=my_sls_project&logStore=my_sls_project_logStore&topic=k8s-cluster-dev&regionId=cn-hangzhou&internal=true&label=Key1,Value1&label=Key2,Value2
 
