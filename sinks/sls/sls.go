@@ -29,7 +29,7 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	sls_producer "github.com/aliyun/aliyun-log-go-sdk/producer"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 const (

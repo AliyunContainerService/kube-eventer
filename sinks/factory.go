@@ -31,7 +31,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/sinks/sls"
 	"github.com/AliyunContainerService/kube-eventer/sinks/webhook"
 	"github.com/AliyunContainerService/kube-eventer/sinks/wechat"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 type SinkFactory struct {

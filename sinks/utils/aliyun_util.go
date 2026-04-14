@@ -9,7 +9,7 @@ import (
 	"errors"
 	"github.com/AliyunContainerService/ack-ram-tool/pkg/ecsmetadata"
 	"io/ioutil"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"os"
 	"time"
 )

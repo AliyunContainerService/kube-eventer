@@ -26,7 +26,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/core"
 	"github.com/riemann/riemann-go-client"
 	kube_api "k8s.io/api/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // contains the riemann client, the riemann configuration, and a RWMutex

@@ -20,7 +20,7 @@ import (
 	"github.com/AliyunContainerService/kube-eventer/util"
 
 	"github.com/AliyunContainerService/kube-eventer/core"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 type LogSink struct {

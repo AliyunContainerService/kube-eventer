@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	kafka_common "github.com/AliyunContainerService/kube-eventer/common/kafka"
 	event_core "github.com/AliyunContainerService/kube-eventer/core"
