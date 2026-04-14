@@ -17,10 +17,11 @@ package kubernetes
 import (
 	"fmt"
 	"io/ioutil"
-	"k8s.io/client-go/util/homedir"
 	"net/url"
 	"path/filepath"
 	"strconv"
+
+	"k8s.io/client-go/util/homedir"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -65,14 +66,20 @@ func getConfigOverrides(uri *url.URL) (*kubeClientCmd.ConfigOverrides, error) {
 
 func GetKubeClientConfig(uri *url.URL) (*kube_rest.Config, error) {
 	var (
-		kubeConfig *kube_rest.Config
-		err        error
+		kubeConfig      *kube_rest.Config
+		err             error
+		configOverrides = &kubeClientCmd.ConfigOverrides{
+			ClusterInfo: kubeClientCmdApi.Cluster{},
+		}
+		opts = make(url.Values, 0)
 	)
 
-	opts := uri.Query()
-	configOverrides, err := getConfigOverrides(uri)
-	if err != nil {
-		return nil, err
+	if uri != nil {
+		opts = uri.Query()
+		configOverrides, err = getConfigOverrides(uri)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	inClusterConfig := defaultInClusterConfig
@@ -166,7 +173,7 @@ func GetKubeClientConfig(uri *url.URL) (*kube_rest.Config, error) {
 }
 
 func GetKubernetesClient(uri *url.URL) (client kubernetes.Interface, err error) {
-	if uri == nil {
+	if uri == nil && KubernetesClientSingleton != nil {
 		return KubernetesClientSingleton, nil
 	}
 	kubeConfig, err := GetKubeClientConfig(uri)
