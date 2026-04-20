@@ -12,7 +12,7 @@ To use the Mysql sink add the following flag:
 create database kube_eventer;
 use kube_eventer;
 
-create table k8s_event
+create table kube_event
 (
     id               bigint(20)   not null auto_increment primary key comment 'event primary key',
     name             varchar(64)  not null default '' comment 'event name',
