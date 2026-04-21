@@ -167,6 +167,8 @@ func ParseAKInfoFromConfigPath() (*AKInfo, error) {
 		if err != nil {
 			klog.Fatalf("error unmarshal token config: %v", err)
 		}
+		klog.V(8).Infof("parse ak info from config path: %v, akInfo: %v", ConfigPath, akInfo)
+
 		keyring := akInfo.Keyring
 		ak, err := Decrypt(akInfo.AccessKeyId, []byte(keyring))
 		if err != nil {
